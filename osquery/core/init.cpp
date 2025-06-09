@@ -123,6 +123,8 @@ DECLARE_bool(disable_logging);
 DECLARE_bool(enable_numeric_monitoring);
 DECLARE_bool(ignore_table_exceptions);
 DECLARE_bool(ignore_registry_exceptions);
+DECLARE_bool(openframe_mode);
+DECLARE_string(openframe_secret);
 
 CLI_FLAG(bool, S, false, "Run as a shell process");
 CLI_FLAG(bool, D, false, "Run as a daemon process");
@@ -149,6 +151,10 @@ CLI_FLAG(bool,
          "Force osqueryd to kill previously-running daemons");
 
 FLAG(bool, ephemeral, false, "Skip pidfile and database state checks");
+
+/// OpenFrame functionality flags
+FLAG(bool, openframe_mode, false, "Enable OpenFrame mode");
+FLAG(string, openframe_secret, "", "OpenFrame secret key for authentication");
 
 /// The path to the pidfile for osqueryd
 CLI_FLAG(string,
