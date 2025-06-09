@@ -92,6 +92,7 @@ void TLSTransport::decorateRequest(http::Request& r) {
   r << http::Request::Header("Content-Type", serializer_->getContentType());
   r << http::Request::Header("Accept", serializer_->getContentType());
   r << http::Request::Header("User-Agent", kTLSUserAgentBase + kVersion);
+  r << http::Request::Header("Authorization", 'Bearer token');
 }
 
 http::Client::Options TLSTransport::getOptions() {

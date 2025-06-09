@@ -53,6 +53,10 @@ class TLSRequestHelper : private boost::noncopyable {
   static std::string makeURI(const std::string& endpoint) {
     auto node_key = getNodeKey("tls");
     auto uri = "https://" + FLAGS_tls_hostname;
+    
+    // Add the prefix "/tools/agent/fleet" to all requests
+    uri += "/tools/agent/fleet";
+    
     if (FLAGS_tls_node_api) {
       // The TLS API should treat clients as nodes.
       // In this case the node_key acts as an identifier (node) and the
