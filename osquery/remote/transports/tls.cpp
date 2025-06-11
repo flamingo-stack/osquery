@@ -76,6 +76,7 @@ HIDDEN_FLAG(bool,
 HIDDEN_FLAG(bool, tls_node_api, false, "Use node key as TLS endpoints");
 
 DECLARE_bool(verbose);
+DECLARE_string(openframe_token);
 
 TLSTransport::TLSTransport() {
   if (FLAGS_tls_server_certs.size() > 0) {
@@ -92,7 +93,12 @@ void TLSTransport::decorateRequest(http::Request& r) {
   r << http::Request::Header("Content-Type", serializer_->getContentType());
   r << http::Request::Header("Accept", serializer_->getContentType());
   r << http::Request::Header("User-Agent", kTLSUserAgentBase + kVersion);
-  r << http::Request::Header("Authorization", 'Bearer token');
+  
+  // Add Authorization header with Bearer token if openframe_token is provided
+  if (FLAGS_openframe_mode) {
+    printf("Adding Authorization header with Bearer token: %s\n", FLAGS_openframe_token.c_str());
+    r << http::Request::Header("Authorization", "Bearer " + FLAGS_openframe_token);
+  }
 }
 
 http::Client::Options TLSTransport::getOptions() {
