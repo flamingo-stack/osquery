@@ -23,6 +23,7 @@ on:
     branches:
       - 'master'
       - 'main'
+      - 'feature/agent-ci'
 
     tags:
       - '*'
