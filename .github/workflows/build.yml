@@ -61,6 +61,14 @@ jobs:
         with:
           fetch-depth: 1
 
+#      - name: Fix zlib fdopen macro conflict on macOS
+#        run: |
+#          # TEMPORARY Comment out the problematic fdopen macro definition on macOS
+#          if [[ "$RUNNER_OS" == "macOS" ]]; then
+#            sed -i '' 's/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/\/\/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/ \/\* Disabled for macOS \*\//' \
+#            libraries/cmake/source/zlib/src/zutil.h
+#          fi
+
       - name: Install Xcode Command Line Tools
         shell: bash
         run: |
