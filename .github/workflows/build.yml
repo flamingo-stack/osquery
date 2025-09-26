@@ -90,17 +90,6 @@ jobs:
         run: brew install ccache git git-lfs cmake python clang-format flex bison cppcheck
         shell: bash
       
-      - name: Setup ccache
-        run: |
-          echo "Setting up ccache..."
-          ccache --version
-          ccache --zero-stats
-          ccache --show-stats
-          
-          # Configure ccache
-          ccache --set-config max_size=2G
-          ccache --set-config compression=true
-
       - name: Cache CMake Build for faster rebuilds
         uses: actions/cache@v4
         with:
@@ -135,8 +124,6 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++ \
             -DCMAKE_OSX_SYSROOT=$SDKROOT \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DOSQUERY_VERSION="5.9.1" \
             ..
             
