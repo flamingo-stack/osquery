@@ -32,142 +32,142 @@ env:
 # =============================================================================
 
 jobs:
-  build_macos:
-    name: "Build C Client (${{ matrix.os }})"
-    runs-on: ${{ matrix.os }}
-    if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: "macOS x86-64"
-            os: macos-13
-            os_arch: x86-64
-            cmake_arch: x86_64
-            artifact_name: osquery-macos-x64
-          - name: "macOS ARM64"
-            os: macos-latest
-            os_arch: arm64
-            cmake_arch: arm64
-            artifact_name: osquery-macos-arm64
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-#      - name: Fix zlib fdopen macro conflict on macOS
-#        run: |
-#          # TEMPORARY Comment out the problematic fdopen macro definition on macOS
-#          if [[ "$RUNNER_OS" == "macOS" ]]; then
-#            sed -i '' 's/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/\/\/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/ \/\* Disabled for macOS \*\//' \
-#            libraries/cmake/source/zlib/src/zutil.h
-#          fi
-
-      - name: Install Xcode Command Line Tools
-        shell: bash
-        run: |
-          # Install Xcode if not already installed
-          if ! xcode-select -p >/dev/null 2>&1; then
-            echo "Installing Xcode Command Line Tools..."
-            xcode-select --install
-            # Wait for installation to complete
-            while ! xcode-select -p >/dev/null 2>&1; do
-              echo "Waiting for Xcode Command Line Tools installation..."
-              sleep 10
-            done
-          fi
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-            /opt/homebrew
-          key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('.github/workflows/*.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-homebrew-
-
-      - name: Install macOS Dependencies
-        run: brew install ccache git git-lfs cmake python clang-format flex bison cppcheck
-        shell: bash
-      
-      - name: Cache CMake Build for faster rebuilds
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/
-            ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-
-
-      - name: Setup Build Environment
-        run: |
-          echo "Setting up build environment for ${{ matrix.os_arch }}..."
-          export SDKROOT=$(xcrun --show-sdk-path)
-          export CFLAGS="-isysroot $SDKROOT"
-          export CXXFLAGS="-isysroot $SDKROOT"
-          
-          echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
-          echo "CFLAGS=-isysroot $SDKROOT" >> $GITHUB_ENV
-          echo "CXXFLAGS=-isysroot $SDKROOT" >> $GITHUB_ENV
-          
-      - name: Configure CMake
-        run: |
-          echo "Creating build directory and configuring..."
-          mkdir -p build && cd build
-          
-          cmake \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ env.CMAKE_OSX_DEPLOYMENT_TARGET }} \
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_OSX_SYSROOT=$SDKROOT \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DOSQUERY_VERSION="5.9.1" \
-            ..
-            
-          echo "CMake configuration completed"
-
-      # Build the project
-      - name: Build Project
-        run: |
-          echo "Starting build for ${{ matrix.os_arch }}..."
-          cd build
-          
-          CPU_COUNT=$(sysctl -n hw.ncpu)
-          echo "Building with $CPU_COUNT parallel jobs"
-          time cmake --build . -j $CPU_COUNT
-          
-          echo "Build completed successfully"
-
-#      - name: Build OSQuery for macOS ${{ matrix.os_arch }}
-#        run: |
-#          echo "Building OSQuery for macOS ${{ matrix.os_arch }}"
-#          make macos ARCHID=${{ matrix.archid }}
-
-      - name: Prepare Artifacts
-        run: |
-          mkdir -p artifacts
-          cp build/osquery/osqueryd "artifacts/${{ matrix.artifact_name }}"
-
-      - name: Upload client artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            artifacts/
-          if-no-files-found: warn
-          retention-days: 30
-          compression-level: 9
+##  build_macos:
+##    name: "Build C Client (${{ matrix.os }})"
+##    runs-on: ${{ matrix.os }}
+##    if: |
+##      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+##    defaults:
+##      run:
+##        shell: bash
+##    strategy:
+##      fail-fast: false
+##      matrix:
+##        include:
+##          - name: "macOS x86-64"
+##            os: macos-13
+##            os_arch: x86-64
+##            cmake_arch: x86_64
+##            artifact_name: osquery-macos-x64
+##          - name: "macOS ARM64"
+##            os: macos-latest
+##            os_arch: arm64
+##            cmake_arch: arm64
+##            artifact_name: osquery-macos-arm64
+##
+##    steps:
+##      - name: Checkout
+##        uses: actions/checkout@v4
+##        with:
+##          fetch-depth: 1
+##
+###      - name: Fix zlib fdopen macro conflict on macOS
+###        run: |
+###          # TEMPORARY Comment out the problematic fdopen macro definition on macOS
+###          if [[ "$RUNNER_OS" == "macOS" ]]; then
+###            sed -i '' 's/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/\/\/#        define fdopen(fd,mode) NULL \/\* No fdopen() \*\/ \/\* Disabled for macOS \*\//' \
+###            libraries/cmake/source/zlib/src/zutil.h
+###          fi
+##
+##      - name: Install Xcode Command Line Tools
+##        shell: bash
+##        run: |
+##          # Install Xcode if not already installed
+##          if ! xcode-select -p >/dev/null 2>&1; then
+##            echo "Installing Xcode Command Line Tools..."
+##            xcode-select --install
+##            # Wait for installation to complete
+##            while ! xcode-select -p >/dev/null 2>&1; do
+##              echo "Waiting for Xcode Command Line Tools installation..."
+##              sleep 10
+##            done
+##          fi
+##
+##      - name: Cache Homebrew
+##        uses: actions/cache@v4
+##        with:
+##          path: |
+##            ~/Library/Caches/Homebrew
+##            /usr/local/Homebrew
+##            /opt/homebrew
+##          key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('.github/workflows/*.yml') }}
+##          restore-keys: |
+##            ${{ runner.os }}-${{ runner.arch }}-homebrew-
+##
+##      - name: Install macOS Dependencies
+##        run: brew install ccache git git-lfs cmake python clang-format flex bison cppcheck
+##        shell: bash
+##      
+##      - name: Cache CMake Build for faster rebuilds
+##        uses: actions/cache@v4
+##        with:
+##          path: |
+##            build/
+##            ~/.ccache
+##          key: ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.sha }}
+##          restore-keys: |
+##            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+##            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-
+##
+##      - name: Setup Build Environment
+##        run: |
+##          echo "Setting up build environment for ${{ matrix.os_arch }}..."
+##          export SDKROOT=$(xcrun --show-sdk-path)
+##          export CFLAGS="-isysroot $SDKROOT"
+##          export CXXFLAGS="-isysroot $SDKROOT"
+##          
+##          echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
+##          echo "CFLAGS=-isysroot $SDKROOT" >> $GITHUB_ENV
+##          echo "CXXFLAGS=-isysroot $SDKROOT" >> $GITHUB_ENV
+##          
+##      - name: Configure CMake
+##        run: |
+##          echo "Creating build directory and configuring..."
+##          mkdir -p build && cd build
+##          
+##          cmake \
+##            -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ env.CMAKE_OSX_DEPLOYMENT_TARGET }} \
+##            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+##            -DCMAKE_C_COMPILER=clang \
+##            -DCMAKE_CXX_COMPILER=clang++ \
+##            -DCMAKE_OSX_SYSROOT=$SDKROOT \
+##            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
+##            -DOSQUERY_VERSION="5.9.1" \
+##            ..
+##            
+##          echo "CMake configuration completed"
+##
+##      # Build the project
+##      - name: Build Project
+##        run: |
+##          echo "Starting build for ${{ matrix.os_arch }}..."
+##          cd build
+##          
+##          CPU_COUNT=$(sysctl -n hw.ncpu)
+##          echo "Building with $CPU_COUNT parallel jobs"
+##          time cmake --build . -j $CPU_COUNT
+##          
+##          echo "Build completed successfully"
+##
+###      - name: Build OSQuery for macOS ${{ matrix.os_arch }}
+###        run: |
+###          echo "Building OSQuery for macOS ${{ matrix.os_arch }}"
+###          make macos ARCHID=${{ matrix.archid }}
+##
+##      - name: Prepare Artifacts
+##        run: |
+##          mkdir -p artifacts
+##          cp build/osquery/osqueryd "artifacts/${{ matrix.artifact_name }}"
+##
+##      - name: Upload client artifact
+##        uses: actions/upload-artifact@v4
+##        with:
+##          name: ${{ matrix.artifact_name }}
+##          path: |
+##            artifacts/
+##          if-no-files-found: warn
+##          retention-days: 30
+##          compression-level: 9
 
   create_universal_macos:
     name: "Create Universal macOS Binary"
@@ -228,5 +228,67 @@ jobs:
         with:
           name: osquery-macos-universal
           path: artifacts/
+          retention-days: 30
+          compression-level: 9
+
+  build_windows:
+    name: "Build C Client for (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    if: |
+      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        shell: cmd
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Windows x64"
+            os: windows-latest
+            os_arch: x64
+            artifact_name: osquery-windows-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+      
+      - name: Setup Visual Studio Build Tools
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.os_arch }}      
+      
+      - name: Configure CMake for ${{ matrix.os }}
+        run: |
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 17 2022" -A ${{ matrix.os_arch }} ..
+
+      - name: Build OSQuery for Windows ${{ matrix.os_arch }} with MSBuild
+        run: |
+          cd build
+          cmake --build . --config RelWithDebInfo -j10
+
+      - name: Prepare Windows Artifacts
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          find ./ type f -name "osqueryd*"
+          cp build/osquery/osqueryd* artifacts/          
+          # List what we're uploading
+          ls -la artifacts/
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            artifacts/
+          if-no-files-found: warn
           retention-days: 30
           compression-level: 9
