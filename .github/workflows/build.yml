@@ -283,12 +283,12 @@ jobs:
           # List what we're uploading
           ls -la artifacts/
 
-      - name: Upload client artifact
+      - name: Upload Windows OSQuery artifact
+        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            artifacts/
+          path: "build/osquery/RelWithDebInfo/osqueryd${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
