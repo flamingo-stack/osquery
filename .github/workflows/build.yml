@@ -168,68 +168,68 @@ jobs:
 ##          if-no-files-found: warn
 ##          retention-days: 30
 ##          compression-level: 9
-
-  create_universal_macos:
-    name: "Create Universal macOS Binary"
-    needs: [build_macos]
-    runs-on: macos-latest
-    if: |
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      !failure() && !cancelled()
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Download macOS x86-64 Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: osquery-macos-x64
-          path: x64-artifacts/
-
-      - name: Download macOS ARM64 Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: osquery-macos-arm64
-          path: arm64-artifacts/
-
-      - name: Create Universal Binary
-        run: |
-          echo "Creating universal macOS binary..."
-          X64_BINARY="x64-artifacts/osquery-macos-x64"
-          ARM64_BINARY="arm64-artifacts/osquery-macos-arm64"
-          
-          echo "Creating universal binary with lipo..."
-          mkdir -p artifacts
-          lipo -create "$X64_BINARY" "$ARM64_BINARY" -output ./artifacts/osquery-macos-universal
-          
-          # Verify universal binary
-          echo "Universal binary info:"
-          lipo -info ./artifacts/osquery-macos-universal
-          file ./artifacts/osquery-macos-universal
-          
-      - name: Sign MacOS package
-        uses: ./.github/steps/sign-macos-package
-        with:
-          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
-          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
-          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
-          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: osquery-macos-universal
-          app_name: OSQuery
-
-
-      - name: Upload Universal Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: osquery-macos-universal
-          path: artifacts/
-          retention-days: 30
-          compression-level: 9
+##
+##  create_universal_macos:
+##    name: "Create Universal macOS Binary"
+##    needs: [build_macos]
+##    runs-on: macos-latest
+##    if: |
+##      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+##      !failure() && !cancelled()
+##    
+##    steps:
+##      - name: Checkout
+##        uses: actions/checkout@v4
+##        with:
+##          fetch-depth: 1
+##
+##      - name: Download macOS x86-64 Binary
+##        uses: actions/download-artifact@v4
+##        with:
+##          name: osquery-macos-x64
+##          path: x64-artifacts/
+##
+##      - name: Download macOS ARM64 Binary
+##        uses: actions/download-artifact@v4
+##        with:
+##          name: osquery-macos-arm64
+##          path: arm64-artifacts/
+##
+##      - name: Create Universal Binary
+##        run: |
+##          echo "Creating universal macOS binary..."
+##          X64_BINARY="x64-artifacts/osquery-macos-x64"
+##          ARM64_BINARY="arm64-artifacts/osquery-macos-arm64"
+##          
+##          echo "Creating universal binary with lipo..."
+##          mkdir -p artifacts
+##          lipo -create "$X64_BINARY" "$ARM64_BINARY" -output ./artifacts/osquery-macos-universal
+##          
+##          # Verify universal binary
+##          echo "Universal binary info:"
+##          lipo -info ./artifacts/osquery-macos-universal
+##          file ./artifacts/osquery-macos-universal
+##          
+##      - name: Sign MacOS package
+##        uses: ./.github/steps/sign-macos-package
+##        with:
+##          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+##          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+##          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+##          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+##          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+##          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+##          binary_name: osquery-macos-universal
+##          app_name: OSQuery
+##
+##
+##      - name: Upload Universal Binary
+##        uses: actions/upload-artifact@v4
+##        with:
+##          name: osquery-macos-universal
+##          path: artifacts/
+##          retention-days: 30
+##          compression-level: 9
 
   build_windows:
     name: "Build C Client for (${{ matrix.os }})"
