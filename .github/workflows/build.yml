@@ -232,7 +232,7 @@ jobs:
 ##          compression-level: 9
 
   build_windows:
-    name: "Build C Client for (${{ matrix.os }})"
+    name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
     if: |
       github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -266,7 +266,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G "Visual Studio 17 2022" -A ${{ matrix.os_arch }} ..
+          cmake -G "Visual Studio 17 2022" -A ${{ matrix.os_arch }} -DOSQUERY_VERSION="5.9.1" ..
 
       - name: Build OSQuery for Windows ${{ matrix.os_arch }} with MSBuild
         run: |
