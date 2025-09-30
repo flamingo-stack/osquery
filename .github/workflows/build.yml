@@ -146,7 +146,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build/osquery/$BINARY_NAME
+          path: build/osquery/${{ env.BINARY_NAME }}
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
@@ -180,17 +180,17 @@ jobs:
       - name: Create Universal Binary
         run: |
           echo "Creating universal macOS binary..."
-          X64_BINARY="x64-artifacts/$BINARY_NAME"
-          ARM64_BINARY="arm64-artifacts/$BINARY_NAME"
+          X64_BINARY="x64-artifacts/${{ env.BINARY_NAME }}"
+          ARM64_BINARY="arm64-artifacts/${{ env.BINARY_NAME }}"
           
           echo "Creating universal binary with lipo..."
           mkdir -p artifacts
-          lipo -create "$X64_BINARY" "$ARM64_BINARY" -output ./artifacts/$BINARY_NAME
+          lipo -create "$X64_BINARY" "$ARM64_BINARY" -output ./artifacts/${{ env.BINARY_NAME }}
           
           # Verify universal binary
           echo "Universal binary info:"
-          lipo -info ./artifacts/$BINARY_NAME
-          file ./artifacts/$BINARY_NAME
+          lipo -info ./artifacts/${{ env.BINARY_NAME }}
+          file ./artifacts/${{ env.BINARY_NAME }}
           
       - name: Sign MacOS package
         uses: ./.github/steps/sign-macos-package
@@ -201,7 +201,7 @@ jobs:
           apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: $BINARY_NAME
+          binary_name: ${{ env.BINARY_NAME }}
 
       - name: Upload Universal Binary
         uses: actions/upload-artifact@v4
@@ -258,7 +258,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: "build/osquery/RelWithDebInfo/$BINARY_NAME${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          path: "build/osquery/RelWithDebInfo/${{ env.BINARY_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
