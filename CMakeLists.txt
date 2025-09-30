@@ -46,6 +46,12 @@ function(main)
       (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang"))
       message(STATUS "Warning: the selected C or C++ compiler is not clang/clang++. Compilation may fail")
     endif()
+
+    # Fix for macOS zlib fdopen macro conflict
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_UNISTD_H=1 -DHAVE_FDOPEN=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_UNISTD_H=1 -DHAVE_FDOPEN=1")
+    add_definitions(-D_DARWIN_C_SOURCE=1)
+
   elseif(NOT DEFINED PLATFORM_WINDOWS)
     if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR
       NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
