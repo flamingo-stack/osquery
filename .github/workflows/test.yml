@@ -1,4 +1,4 @@
-name: OSQuery Build and Push Latest
+name: OSQuery Integration Tests
 
 permissions:
   contents: write
