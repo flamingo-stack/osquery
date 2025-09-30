@@ -9,16 +9,15 @@ permissions:
   id-token: write
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [master]
     paths-ignore:
       - "**/*.md"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to release (e.g., v1.2.3)"
-        required: true
-        type: string
+
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: "ghcr.io"
@@ -36,8 +35,7 @@ jobs:
   build_macos:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
-    if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     defaults:
       run:
         shell: bash
@@ -55,7 +53,6 @@ jobs:
             os_arch: arm64
             cmake_arch: arm64
             artifact_name: osquery-macos-arm64
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,80 +138,10 @@ jobs:
           
           echo "Build completed successfully"
 
-      - name: Upload client artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: build/osquery/$BINARY_NAME
-          if-no-files-found: warn
-          retention-days: 30
-          compression-level: 9
-
-  create_universal_macos:
-    name: "Create Universal macOS Binary"
-    needs: [build_macos]
-    runs-on: macos-latest
-    if: |
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      !failure() && !cancelled()
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Download macOS x86-64 Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: osquery-macos-x64
-          path: x64-artifacts/
-
-      - name: Download macOS ARM64 Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: osquery-macos-arm64
-          path: arm64-artifacts/
-
-      - name: Create Universal Binary
-        run: |
-          echo "Creating universal macOS binary..."
-          X64_BINARY="x64-artifacts/$BINARY_NAME"
-          ARM64_BINARY="arm64-artifacts/$BINARY_NAME"
-          
-          echo "Creating universal binary with lipo..."
-          mkdir -p artifacts
-          lipo -create "$X64_BINARY" "$ARM64_BINARY" -output ./artifacts/$BINARY_NAME
-          
-          # Verify universal binary
-          echo "Universal binary info:"
-          lipo -info ./artifacts/$BINARY_NAME
-          file ./artifacts/$BINARY_NAME
-          
-      - name: Sign MacOS package
-        uses: ./.github/steps/sign-macos-package
-        with:
-          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
-          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
-          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
-          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: $BINARY_NAME
-
-      - name: Upload Universal Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: osquery-macos-universal
-          path: artifacts/
-          retention-days: 30
-          compression-level: 9
-
   build_windows:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
-    if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     defaults:
       run:
         shell: cmd
@@ -226,7 +153,6 @@ jobs:
             os: windows-latest
             os_arch: x64
             artifact_name: osquery-windows-x64
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -251,13 +177,3 @@ jobs:
         run: |
           cd build
           cmake --build . --config RelWithDebInfo -j10
-
-      - name: Upload Windows OSQuery artifact
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: "build/osquery/RelWithDebInfo/$BINARY_NAME${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
-          if-no-files-found: warn
-          retention-days: 30
-          compression-level: 9
