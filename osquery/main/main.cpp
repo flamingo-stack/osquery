@@ -4,7 +4,7 @@
  * This source code is licensed as defined by the LICENSE file found in the
  * root directory of this source tree.
  *
- * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only
  */
 
 #ifdef WIN32
