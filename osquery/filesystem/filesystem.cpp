@@ -612,7 +612,8 @@ bool safePermissions(const fs::path& dir,
     result = fd.isExecutable();
 
     // Otherwise, require matching or root file ownership.
-    if (executable && (result.getCode() > 0 || !fd.hasSafePermissions().ok())) {
+    // TODO: Remove permissions check skip after openframe agent will support setting safe permissions.
+    if (executable && (result.getCode() > 0 || (!FLAGS_openframe_mode && !fd.hasSafePermissions().ok()))) {
       // Require executable, implies by the owner.
       return false;
     }
