@@ -39,7 +39,7 @@ namespace osquery {
 SHELL_FLAG(int32,
            profile,
            0,
-           "Enable profile mode when non-0, set number of iterations");
+           "Enable profile mode when non-0, set number of iterationss");
 
 HIDDEN_FLAG(int32,
             profile_delay,
