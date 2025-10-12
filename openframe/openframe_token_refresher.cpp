@@ -64,7 +64,7 @@ void OpenframeTokenRefresher::process() {
             auth_manager.updateToken(new_token);
             LOG(INFO) << "Token successfully updated";
         } else {
-            LOG(INFO) << "Token is up to date, no update needed";
+            VLOG(1) << "Token is up to date, no update needed";
         }
     } catch (const std::exception& e) {
         LOG(ERROR) << "Error during token refresh: " << e.what();
