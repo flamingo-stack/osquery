@@ -58,7 +58,7 @@ class TLSRequestHelper : private boost::noncopyable {
     
     // Add the prefix "/tools/agent/fleetmdm-server" to all requests only if openframe mode is enabled
     if (FLAGS_openframe_mode) {
-      LOG(INFO) << "Adding /tools/agent/fleetmdm-server to URI for openframe mode";
+      VLOG(1) << "Adding /tools/agent/fleetmdm-server to URI for openframe mode";
       uri += "/tools/agent/fleetmdm-server";
     }
     
