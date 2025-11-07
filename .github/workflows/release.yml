@@ -38,7 +38,8 @@ jobs:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
     if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: bash
@@ -215,7 +216,8 @@ jobs:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
     if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: cmd
