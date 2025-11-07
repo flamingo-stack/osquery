@@ -1,4 +1,4 @@
-name: OSQuery Integration Tests
+name: OSQuery Test
 
 permissions:
   contents: write
