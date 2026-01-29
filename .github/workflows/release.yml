@@ -47,7 +47,7 @@ jobs:
       matrix:
         include:
           - name: "macOS x86-64"
-            os: macos-13
+            os: macos-15-intel
             os_arch: x86-64
             cmake_arch: x86_64
             artifact_name: osquery-macos-x64
@@ -255,6 +255,17 @@ jobs:
         run: |
           cd build
           cmake --build . --config RelWithDebInfo -j10
+
+      - name: Sign Windows package
+        uses: ./.github/steps/sign-windows-package
+        with:
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          binary_path: build/osquery/RelWithDebInfo/${{ env.BINARY_NAME }}.exe
 
       - name: Upload Windows OSQuery artifact
         if: runner.os == 'Windows'
