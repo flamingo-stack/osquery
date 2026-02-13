@@ -24,7 +24,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+  CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
   CMAKE_BUILD_TYPE: Release
   BINARY_NAME: osqueryd
 
