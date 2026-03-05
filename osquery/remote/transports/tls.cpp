@@ -102,8 +102,6 @@ void TLSTransport::decorateRequest(http::Request& r) {
     std::string token = auth_manager.getToken();
     if (!token.empty()) {
       r << http::Request::Header("Authorization", "Bearer " + token);
-    } else {
-      LOG(ERROR) << "No token found in memory";
     }
   }
 }
