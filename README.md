@@ -1,150 +1,209 @@
-# osquery
+<div align="center">
+  <picture>
+    <!-- Dark theme -->
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/flamingo-stack/openframe-oss-tenant/blob/d82f21ba18735dac29eb0f3be5d3edf661bb0060/docs/assets/logo-openframe-full-dark-bg.png">
+    <!-- Light theme -->
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/flamingo-stack/openframe-oss-tenant/blob/d82f21ba18735dac29eb0f3be5d3edf661bb0060/docs/assets/logo-openframe-full-light-bg.png">
+    <!-- Default / fallback -->
+    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-light-bg.png" width="400">
+  </picture>
 
-<p align="center">
-<img alt="osquery logo" width="200"
-src="https://github.com/osquery/osquery/raw/master/docs/img/logo-2x-dark.png" />
-</p>
+  <h1>Osquery</h1>
 
-<p align="center">
-osquery is a SQL powered operating system instrumentation, monitoring, and analytics framework.
-<br>
-Available for Linux, macOS, and Windows.
-</p>
+  <p><b>Cross-platform endpoint visibility and telemetry engine, integrated with OpenFrame — SQL-powered queries for Windows, macOS, and Linux.</b></p>
 
-## Information and resources
+  <p>
+    <a href="LICENSE.md">
+      <img alt="License"
+           src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+    <a href="https://www.flamingo.run/knowledge-base">
+      <img alt="Docs"
+           src="https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+    <a href="https://www.openmsp.ai/">
+      <img alt="Community"
+           src="https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+  </p>
+</div>
 
-- Homepage: [osquery.io](https://osquery.io)
-- Downloads: [osquery.io/downloads](https://osquery.io/downloads)
-- Documentation: [ReadTheDocs](https://osquery.readthedocs.org)
-- Stack Overflow: [Stack Overflow questions](https://stackoverflow.com/questions/tagged/osquery)
-- Table Schema: [osquery.io/schema](https://osquery.io/schema)
-- Query Packs: [osquery.io/packs](https://github.com/osquery/osquery/tree/master/packs)
-- Slack: [Browse the archives](https://chat.osquery.io/c/general) or [Join the conversation](https://join.slack.com/t/osquery/shared_invite/zt-1wipcuc04-DBXmo51zYJKBu3_EP3xZPA)
-- Build Status: [![GitHub Actions Build x86 Status](https://github.com/osquery/osquery/actions/workflows/hosted_runners.yml/badge.svg?branch=master)](https://github.com/osquery/osquery/actions/workflows/hosted_runners.yml) [![GitHub Actions Build AArch64 Status](https://github.com/osquery/osquery/actions/workflows/self_hosted_runners.yml/badge.svg?branch=master)](https://github.com/osquery/osquery/actions/workflows/self_hosted_runners.yml) [![Documentation Status](https://readthedocs.org/projects/osquery/badge/?version=latest)](https://osquery.readthedocs.io/en/latest/?badge=latest)
-- CII Best Practices: [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3125/badge)](https://bestpractices.coreinfrastructure.org/projects/3125)
+---
 
-## What is osquery?
+## Quick Links
+- [Overview](#overview)  
+- [Quick Start](#quick-start)  
+- [Architecture](#architecture)  
+- [Security](#security)  
+- [Contributing](#contributing)
 
-osquery exposes an operating system as a high-performance relational database.  This allows you to
-write SQL-based queries to explore operating system data.  With osquery, SQL tables represent
-abstract concepts such as running processes, loaded kernel modules, open network connections,
-browser plugins, hardware events or file hashes.
+---
 
-SQL tables are implemented via a simple plugin and extensions API. A variety of tables already exist
-and more are being written: [https://osquery.io/schema](https://osquery.io/schema/). To best
-understand the expressiveness that is afforded to you by osquery, consider the following SQL
-queries:
+## Overview
 
-List the [`users`](https://osquery.io/schema/current#users):
+**Osquery** is an open-source endpoint visibility and monitoring tool created by Facebook (Meta). It allows you to query operating system information using SQL queries, making it powerful for security monitoring, incident response, compliance, and infrastructure inventory.
 
-```sql
-SELECT * FROM users;
+With Osquery, you can:
+- Query system details like processes, users, network connections, file systems, and registry keys
+- Monitor system changes in real-time
+- Detect security threats and anomalies
+- Ensure compliance with security policies
+- Perform forensic investigations
+
+In OpenFrame, Osquery is integrated with the **Fleet agent**, providing centralized management and query execution across all your endpoints from a single interface.
+
+**Official Documentation:** [osquery.io/docs](https://osquery.io/docs)  
+**GitHub Repository:** [github.com/osquery/osquery](https://github.com/osquery/osquery)
+
+---
+
+## Highlights
+
+- Unified endpoint visibility across Windows, macOS, Linux  
+- Query the system state using SQL (processes, users, network, registry, etc.)  
+- Lightweight daemon with minimal performance overhead  
+- Extensible with custom tables and plugins  
+- Integrates with OpenFrame Gateway, Stream (Kafka), and Analytics (Pinot)  
+- Useful for inventory, compliance, incident response, and threat hunting  
+- **Automatic installation** with Fleet agent - no separate setup required
+
+---
+
+## Architecture
+
+Osquery runs as an agent on endpoints, collecting data and exposing it via SQL. Integrated with OpenFrame, results flow into Gateway → Stream → Analytics.
+
+```mermaid
+flowchart LR
+    subgraph OpenFrame Frontend
+        OUI[Openframe UI / AI agent]
+    end
+    
+    OUI -- osquery --> G[OpenFrame Gateway]
+    
+    subgraph OpenFrame Backend
+        G -- osquery from Openframe UI / AI agent --> API[(Fleet Service API)]
+        API --> DB[(DB)]
+        DB --> S[Stream]
+        S --> K[(Kafka)]
+        K --> C[(Cassandra)]
+        K --> P[(Pinot Analytics)]
+        API <-- run osquery --> G
+    end
+    
+    G <-- osquery --> FA[Fleet Agent]
+    
+
+    style OUI fill:#FFC109,stroke:#1A1A1A,color:#FAFAFA
+    style G fill:#666666,stroke:#1A1A1A,color:#FAFAFA
 ```
 
-Check the [`processes`](https://osquery.io/schema/current#processes) that have a deleted executable:
+---
 
-```sql
-SELECT * FROM processes WHERE on_disk = 0;
-```
+## Quick Start
 
-Get the process name, port, and PID, for processes listening on all interfaces:
+### Prerequisites
 
-```sql
-SELECT DISTINCT processes.name, listening_ports.port, processes.pid
-  FROM listening_ports JOIN processes USING (pid)
-  WHERE listening_ports.address = '0.0.0.0';
-```
+**No additional installation required!** Osquery is automatically installed and configured when you deploy the Fleet agent on your endpoints.
 
-Find every macOS LaunchDaemon that launches an executable and keeps it running:
+Requirements:
+- OpenFrame instance running with Fleet service enabled
+- Access to OpenFrame UI
+- Supported operating system on target endpoints:
+  - **Linux:** Ubuntu, Debian, CentOS, RHEL, Amazon Linux
+  - **macOS:** 10.14+ (Mojave and later)
+  - **Windows:** Windows 10, Windows Server 2016+
 
-```sql
-SELECT name, program || program_arguments AS executable
-  FROM launchd
-  WHERE (run_at_load = 1 AND keep_alive = 1)
-  AND (program != '' OR program_arguments != '');
-```
+### Installation
 
-Check for ARP anomalies from the host's perspective:
+1. **Log in to OpenFrame UI**
 
-```sql
-SELECT address, mac, COUNT(mac) AS mac_count
-  FROM arp_cache GROUP BY mac
-  HAVING count(mac) > 1;
-```
+2. **Navigate to the Devices tab**
+   - Click on **"Devices"** in the left sidebar
+   - Click **"Add Device"** or **"Enroll New Device"** button
 
-Alternatively, you could also use a SQL sub-query to accomplish the same result:
+3. **Get the installation link**
+   - OpenFrame will generate a unique enrollment link/script for your device
+   - This link contains:
+     - Fleet agent installer
+     - Osquery binaries (automatically bundled)
+     - Your OpenFrame server configuration
+     - Enrollment secrets for secure authentication
 
-```sql
-SELECT address, mac, mac_count
-  FROM
-    (SELECT address, mac, COUNT(mac) AS mac_count FROM arp_cache GROUP BY mac)
-  WHERE mac_count > 1;
-```
+4. **Run the installation on your endpoint**
+   
+   **For Linux/macOS:**
+   ```bash
+   # The UI will provide a command similar to:
+   curl -sSL https://your-openframe-instance.com/api/v1/fleet/enroll?token=xxx | sudo bash
+   ```
 
-These queries can be:
+   **For Windows (PowerShell as Administrator):**
+   ```powershell
+   # The UI will provide a command similar to:
+   Invoke-WebRequest -Uri "https://your-openframe-instance.com/api/v1/fleet/enroll?token=xxx" -UseBasicParsing | Invoke-Expression
+   ```
 
-- performed on an ad-hoc basis to explore operating system state using the
-  [osqueryi](https://osquery.readthedocs.org/en/latest/introduction/using-osqueryi/) shell
-- executed via a [scheduler](https://osquery.readthedocs.org/en/latest/introduction/using-osqueryd/)
-  to monitor operating system state across a set of hosts
-- launched from custom applications using osquery Thrift APIs
+5. **Verify installation**
+   - Return to the **Devices** tab in OpenFrame UI
+   - Your newly enrolled device should appear within 30-60 seconds
+   - Status should show as **"Online"**
+   - Osquery will be ready to accept queries immediately
 
-## Download & Install
+### Running Your First Query
 
-To download the latest stable builds and for repository information
-and installation instructions visit
-[https://osquery.io/downloads](https://osquery.io/downloads/).
+Once your device is enrolled:
 
-We use a simple numbered versioning scheme `X.Y.Z`, where X is a major version, Y is a minor, and Z is a patch.
-We plan minor releases roughly every two months. These releases are tracked on our [Milestones](https://github.com/osquery/osquery/milestones) page. A patch release is used when there are unforeseen bugs with our minor release and we need to quickly patch.
-A rare 'revision' release might be used if we need to change build configurations.
+1. **Navigate to your device** in the OpenFrame UI
+2. **Go to the "Query" tab** or use the **AI Agent** interface
+3. **Try a simple query:**
+   ```sql
+   SELECT * FROM system_info;
+   ```
+4. **View real-time results** directly in the UI
 
-Major, minor, and patch releases are tagged on GitHub and can be viewed on the [Releases](https://github.com/osquery/osquery/releases) page.
-We open a new [Release Checklist](https://github.com/osquery/osquery/blob/master/.github/ISSUE_TEMPLATE/New_Release.md) issue when we prepare a minor release. If you are interested in the status of a release, please find the corresponding checklist issue, and note that the issue will be marked closed when we are finished the checklist.
-We consider a release 'in testing' during the period of hosting new downloads on our website and adding them to our hosted repositories.
-We will mark the release as 'stable' on GitHub when enough testing has occurred, this usually takes two weeks.
+For more query examples and table schemas, visit the [Osquery Schema Documentation](https://osquery.io/schema/).
 
-## Build from source
+---
 
-Building osquery from source is encouraged! Check out our [build
-guide](https://osquery.readthedocs.io/en/latest/development/building/). Also
-check out our [contributing guide](CONTRIBUTING.md) and join the
-community on [Slack](https://join.slack.com/t/osquery/shared_invite/zt-1wipcuc04-DBXmo51zYJKBu3_EP3xZPA).
+## Security
 
-## Osquery fleet managers
+- TLS 1.2 enforced for all communication  
+- JWT / enrollment secrets via OpenFrame Gateway  
+- Minimal privileges required on endpoints
 
-There are many osquery fleet managers out there. The osquery project does not endorse, recommend, or test these. They are provided as a starting point
+Found a vulnerability? Email **security@flamingo.run** instead of opening a public issue.  
 
-| Project                                                 | License     |
-| ------------------------------------------------------- | ----------- |
-| [Fleet](https://github.com/fleetdm/fleet)               | Open Core   |
-| [Kolide](https://www.kolide.com)                        | Commercial    |
-| [OSCTRL](https://github.com/jmpsec/osctrl)              | Open Source |
-| [Zentral](https://github.com/zentralopensource/zentral) | Open Source |
+---
+
+## Contributing
+
+We welcome PRs! Please follow these guidelines:  
+- Use branching strategy: `feature/...`, `bugfix/...`  
+- Add descriptions to the **CHANGELOG**  
+- Run `make test` before submitting  
+- Keep documentation updated in `docs/`  
+
+---
 
 ## License
 
-By contributing to osquery you agree that your contributions will be
-licensed as defined on the LICENSE file.
+This project is licensed under the **Flamingo Unified License v1.0** ([LICENSE.md](LICENSE.md)).
 
-## Vulnerabilities
+---
 
-We keep track of security announcements in our tagged version release
-notes on GitHub. We aggregate these into [SECURITY.md](SECURITY.md)
-too.
-
-## Learn more
-
-The osquery documentation is available
-[online](https://osquery.readthedocs.org). Documentation for older
-releases can be found by version number, [as
-well](https://readthedocs.org/projects/osquery/).
-
-If you're interested in learning more about osquery read the [launch
-blog
-post](https://code.facebook.com/posts/844436395567983/introducing-osquery/)
-for background on the project, visit the [users
-guide](https://osquery.readthedocs.org/).
-
-Development and usage discussion is happening in the osquery Slack, grab an invite
-[here](https://join.slack.com/t/osquery/shared_invite/zt-1wipcuc04-DBXmo51zYJKBu3_EP3xZPA)!
+<div align="center">
+  <table border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
+      </td>
+      <td align="center">
+        <a href="https://www.flamingo.run">Website</a> • 
+        <a href="https://www.flamingo.run/knowledge-base">Knowledge Base</a> • 
+        <a href="https://www.linkedin.com/showcase/openframemsp/about/">LinkedIn</a> • 
+        <a href="https://www.openmsp.ai/">Community</a>
+      </td>
+    </tr>
+  </table>
+</div>

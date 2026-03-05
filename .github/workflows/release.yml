@@ -1,4 +1,4 @@
-name: OSQuery Build and Push Latest
+name: OSQuery Release
 
 permissions:
   contents: write
@@ -13,11 +13,10 @@ on:
     branches: [master]
     paths-ignore:
       - "**/*.md"
-      - '.github/**'
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to release (e.g., v1.2.3)"
+      version:
+        description: "Version to Release (e.g., v1.2.3)"
         required: true
         type: string
 
@@ -25,7 +24,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+  CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
   CMAKE_BUILD_TYPE: Release
   BINARY_NAME: osqueryd
 
@@ -38,7 +37,8 @@ jobs:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
     if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: bash
@@ -47,7 +47,7 @@ jobs:
       matrix:
         include:
           - name: "macOS x86-64"
-            os: macos-13
+            os: macos-15-intel
             os_arch: x86-64
             cmake_arch: x86_64
             artifact_name: osquery-macos-x64
@@ -151,6 +151,7 @@ jobs:
           retention-days: 30
           compression-level: 9
 
+
   create_universal_macos:
     name: "Create Universal macOS Binary"
     needs: [build_macos]
@@ -206,16 +207,18 @@ jobs:
       - name: Upload Universal Binary
         uses: actions/upload-artifact@v4
         with:
-          name: osquery-macos-universal
+          name: osquery-mac-universal
           path: artifacts/
           retention-days: 30
           compression-level: 9
+
 
   build_windows:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
     if: |
-      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: cmd
@@ -226,7 +229,7 @@ jobs:
           - name: "Windows x64"
             os: windows-latest
             os_arch: x64
-            artifact_name: osquery-windows-x64
+            artifact_name: osquery-windows-amd64
 
     steps:
       - name: Checkout
@@ -253,6 +256,17 @@ jobs:
           cd build
           cmake --build . --config RelWithDebInfo -j10
 
+      - name: Sign Windows package
+        uses: ./.github/steps/sign-windows-package
+        with:
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          binary_path: build/osquery/RelWithDebInfo/${{ env.BINARY_NAME }}.exe
+
       - name: Upload Windows OSQuery artifact
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
@@ -262,3 +276,59 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
+
+
+  release:
+    name: "Create Release"
+    needs: [build_macos, create_universal_macos, build_windows]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      inputs.version != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
+
+      - name: Prepare release artifacts
+        run: |
+          set -e
+          mkdir -p final-artifacts/clients
+
+          # macOS
+          if [ -d "release-artifacts/osquery-mac-universal" ]; then
+            tar -czf "final-artifacts/clients/osquery-macos-universal.tar.gz" \
+              -C "release-artifacts/osquery-mac-universal" ${{ env.BINARY_NAME }}
+          fi
+          # Windows
+          if [ -d "release-artifacts/osquery-windows-amd64" ]; then
+            (cd "release-artifacts/osquery-windows-amd64" && \
+              zip "${GITHUB_WORKSPACE}/final-artifacts/clients/osquery-windows-amd64.zip" ${{ env.BINARY_NAME }}.exe)
+          fi
+
+          ls -lh final-artifacts/clients/
+
+      - name: Generate release header
+        run: |
+          cat > RELEASE_HEADER.md <<EOF
+          ## OSQuery Clients
+          - **macOS** (Universal): \`osquery-macos-universal.tar.gz\`
+          - **Windows** (amd64): \`osquery-windows-amd64.zip\`
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "🦩 ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body_path: RELEASE_HEADER.md
+          files: |
+            final-artifacts/clients/*

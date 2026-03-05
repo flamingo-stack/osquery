@@ -46,6 +46,8 @@ FLAG(uint64, read_max, 50 * 1024 * 1024, "Maximum file read size");
 /// See reference #1382 for reasons why someone would allow unsafe.
 HIDDEN_FLAG(bool, allow_unsafe, false, "Allow unsafe executable permissions");
 
+DECLARE_bool(openframe_mode);
+
 namespace {
 const size_t kMaxRecursiveGlobs = 64;
 
@@ -612,7 +614,8 @@ bool safePermissions(const fs::path& dir,
     result = fd.isExecutable();
 
     // Otherwise, require matching or root file ownership.
-    if (executable && (result.getCode() > 0 || !fd.hasSafePermissions().ok())) {
+    // TODO: Remove permissions check skip after openframe agent will support setting safe permissions.
+    if (executable && (result.getCode() > 0 || (!FLAGS_openframe_mode && !fd.hasSafePermissions().ok()))) {
       // Require executable, implies by the owner.
       return false;
     }
