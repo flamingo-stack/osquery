@@ -10,6 +10,7 @@
 #include "tls.h"
 #include "openframe/openframe_authorization_manager.h"
 #include "openframe/openframe_authorization_manager_provider.h"
+#include "openframe/openframe_machine_id_provider.h"
 
 #include <chrono>
 #include <osquery/core/core.h>
@@ -96,7 +97,7 @@ void TLSTransport::decorateRequest(http::Request& r) {
   r << http::Request::Header("Content-Type", serializer_->getContentType());
   r << http::Request::Header("Accept", serializer_->getContentType());
   r << http::Request::Header("User-Agent", kTLSUserAgentBase + kVersion);
-  
+
   if (FLAGS_openframe_mode) {
     LOG(INFO) << "Adding Authorization header with Bearer token for openframe mode";
     auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
@@ -106,6 +107,14 @@ void TLSTransport::decorateRequest(http::Request& r) {
       LOG(INFO) << "Token added to request";
     } else {
       LOG(ERROR) << "No token found in memory";
+    }
+
+    // Add x-machine-id header for rate limiting
+    auto& machine_id_provider = OpenframeMachineIdProvider::getInstance();
+    std::string machine_id = machine_id_provider.getMachineId();
+    if (!machine_id.empty()) {
+      r << http::Request::Header("x-machine-id", machine_id);
+      VLOG(1) << "x-machine-id header added to request";
     }
   }
 }
