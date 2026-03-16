@@ -218,18 +218,15 @@ void initOpenFrame() {
   }
 
   try {
-    // Create encryption service
+    // Create openframe token services
     auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
-    
-    // Create token extractor with encryption service
     auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
     
-    // Get initial token and set it in authorization manager
     auto initial_token = token_extractor->extractToken();
     if (!initial_token.empty()) {
       auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
       auth_manager.updateToken(initial_token);
-      VLOG(1) << "Initial OpenFrame token set from token file";
+      LOG(INFO) << "OpenFrame token extracted successfully";
     } else {
       LOG(ERROR) << "Failed to get initial token from token file";
     }
@@ -237,7 +234,6 @@ void initOpenFrame() {
     // Create and start token refresher
     static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
     token_refresher->start();
-    VLOG(1) << "OpenFrame token refresher started";
   } catch (const std::exception& e) {
     LOG(ERROR) << "Failed to initialize OpenFrame components: " << e.what();
   }

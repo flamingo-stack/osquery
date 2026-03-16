@@ -99,14 +99,10 @@ void TLSTransport::decorateRequest(http::Request& r) {
   r << http::Request::Header("User-Agent", kTLSUserAgentBase + kVersion);
 
   if (FLAGS_openframe_mode) {
-    LOG(INFO) << "Adding Authorization header with Bearer token for openframe mode";
     auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
     std::string token = auth_manager.getToken();
     if (!token.empty()) {
       r << http::Request::Header("Authorization", "Bearer " + token);
-      LOG(INFO) << "Token added to request";
-    } else {
-      LOG(ERROR) << "No token found in memory";
     }
 
     // Add x-machine-id header for rate limiting
@@ -125,7 +121,6 @@ http::Client::Options TLSTransport::getOptions() {
   options.follow_redirects(true).timeout(16);
 
   if (FLAGS_openframe_mode) {
-    LOG(INFO) << "Disable SSL verification for openframe mode";
     options.always_verify_peer(false);
     return options;
   } 
