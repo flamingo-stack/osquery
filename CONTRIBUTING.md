@@ -1,243 +1,368 @@
-# Contributing to osquery
+# Contributing to osquery — OpenFrame Edition
 
-We want to make contributing to osquery as simple and transparent as
-possible. These guidelines explain the basics of the osquery
-development process and how you can contribute. Please read these
-guidelines before submitting your code as they are designed to save
-you time later on when your code is under review.
+Thank you for contributing to osquery with OpenFrame! This guide covers everything you need to get started: code style, branching conventions, commit format, testing requirements, and the pull request process.
 
-## Contributing 101
+---
 
-All contributions are submitted via pull requests (PRs) open against
-the osquery's [master](https://github.com/osquery/osquery/tree/master)
-branch on GitHub. After being reviewed by the _core team_ and tested
-by CI, if all is well, they will be pushed to master and the
-corresponding PR closed.
+## Community First
 
-You can see who the _core team_ is by viewing the [team
-page](https://github.com/orgs/osquery/teams) on the osquery GitHub
-organization.
+All collaboration happens on the **OpenMSP Slack community** — not GitHub Issues or GitHub Discussions.
 
-If you need help, both the core team and community members are on the osquery [Slack](https://osquery.slack.com).
-Feel free to register using the following [shared invite](https://join.slack.com/t/osquery/shared_invite/zt-1wipcuc04-DBXmo51zYJKBu3_EP3xZPA).
-The `#code-review` Slack channel has been set up to handle urgent review needs as well as questions about your PR.
-Note: prefer to keep discussion about code changes in the GitHub pull request thread.
+| Resource | Link |
+|---|---|
+| 💬 OpenMSP Community Slack | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
+| 🌐 OpenMSP Website | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
 
-The osquery team also hosts regular office hours where the community
-is invited to discuss osquery development with the core team. You are
-welcome to join. Office hours are announced on our Slack on the
-`#officehours` channel.
+Before starting significant work, please discuss your changes in Slack to align with the team's roadmap.
 
-## Development Process Guidelines
+---
 
-For documentation on building, testing, and formatting code, please
-review the ReadTheDocs article on [building
-osquery](https://osquery.readthedocs.io/en/latest/development/building/).
-This CONTRIBUTING guide focuses more on concepts and high level
-workflow.
+## Development Setup
 
-### Blueprints
+### Hardware Requirements
 
-If you plan to submit a change to the osquery core, a new big feature,
-or in general a change that merits discussion, start by opening a
-[Blueprint](https://github.com/osquery/osquery/issues/new?template=Blueprint.md)
-issue.
+| Tier | RAM | CPU Cores | Disk |
+|---|---|---|---|
+| **Minimum** | 24 GB | 6 cores | 50 GB |
+| **Recommended** | 32 GB | 12 cores | 100 GB |
 
-A blueprint issue is a standard GitHub issue, tagged with the label
-[#blueprint](https://github.com/osquery/osquery/labels/blueprint),
-which describes your idea, the problem you are solving and how you
-plan to implement your solution. The goal of the blueprint is to allow
-both the core team and the community to discuss whether a certain
-change is desirable and will be accepted, and identify possible
-problems with the implementation before it even starts.
+### Required Tools
 
-There aren't strict guidelines on when a blueprint is needed or not,
-so you should use your best judgement or just ping the osquery team on
-our `#core` channel on Slack. Here are some examples of changes which
-**would** benefit from a blueprint:
+| Tool | Minimum Version | Purpose |
+|---|---|---|
+| CMake | 3.21+ | Build system generator |
+| Python | 3.8+ | Code generation scripts |
+| Git | 2.x | Source control |
+| C++ Compiler | GCC 9+ / Clang 10+ / MSVC 2019+ | C++17 compilation |
+| Ninja | 1.10+ | Fast parallel builds |
+| OpenSSL | 1.1.1+ | TLS + AES-256-GCM (OpenFrame layer) |
+| clang-format | — | Code formatting (CI enforced) |
 
-* Change the basic functioning of the query scheduler
-* Alter the thrift interfaces
-* Reimplement the logger interface
-* Add a new plugin type
+### Quick Setup
 
-There isn't either a strict format for the blueprints, but make sure
-to include what problem you are trying to solve and how you plan to
-solve it. We can go from that and ask more information if
-necessary. If you have code already, even if it is only a
-proof-of-concept that will be dropped later, please submit it as a PR
-and associate it with the blueprint by mentioning the blueprint issue
-on the pull request.
+```bash
+# Clone
+git clone https://github.com/flamingo-stack/osquery.git
+cd osquery
 
-Please remember that blueprints are mostly designed to save **you**
-time by preventing you from implementing code which won't be accepted
-or will need to be extensively modified later on. Please use the right
-[template](https://github.com/osquery/osquery/issues/new?template=Blueprint.md)
-for the issue. Feel free to advertise your blueprint and ask for
-feedback on Slack.
+# Configure (Debug build for development)
+cmake -S . -B build \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DOSQUERY_BUILD_TESTS=ON
 
-### Pull requests
+# Build
+cmake --build build --parallel $(nproc)
 
-**Do not submit multiple unrelated changes on the same PR.** A pull
-request must represent a single body of work. If your work requires a
-bug-fix, submit that first on a separate PR, the same goes for
-refactors. If you can split your work into multiple smaller PRs please
-also do so. This is of utmost importance to allow fast reviews and to
-simplify regression tracking, reverts and references.
+# Run
+./build/osquery/osqueryi
+```
 
-Start by developing your feature on a [feature
-branch](https://guides.github.com/introduction/flow/), possibly
-formatting your code before each commit, and when ready submit a pull
-request against the osquery master branch.  The initial PR should
-preferably **contain a single commit**.  If you are unfamiliar with
-GitHub or how pull requests work, GitHub has a very easy to follow
-guide that teaches you [how to fork the project and submit your first
-PR] (https://guides.github.com/activities/forking/).
+For full environment setup instructions see the [Development Documentation](./docs/development/README.md).
 
-It is helpful if you tag the GitHub issues you are addressing on the
-body of your PR description. If your PR is intended to close an issue
-keywords (like `fixes` or `closes`) as defined on [GitHub
-Help](https://help.github.com/articles/closing-issues-using-keywords/).
+---
 
-Once you submit your PR, a formatting check and continuous integration
-tests will be triggered on the CI systems for the multiple platforms
-we support. If all the required checks and tests are successful the
-core team will review your PR.  If the tests fail or the reviewer
-requests changes, please submit those changes by **appending new
-commits** to your feature branch. **Avoid amending old commits** as
-that makes it harder for the reviewer to track your updates. If you
-need to keep your PR up-to-date with master the preferred way is to
-[rebase your
-branch](https://help.github.com/en/articles/about-git-rebase) on
-`master` and `git push` with the `--force` option. Finally, the core
-team might help you with getting your PR accepted by pushing directly
-to your branch when that makes sense.
+## Code Style and Conventions
 
-Once both the core team and CI are happy with the PR (remember tests
-need to pass for all of the supported platforms) the PR will be
-squashed into a single commit and pushed to the master branch.  Only
-the core team can merge pull requests and therefore at least one core
-team member will always review your PR, however reviews from the
-community are highly encouraged and desirable.
+### C++ Standards
 
-Finally, we try to keep only active PRs open, and we like to merge PRs as quickly as possible.
-If your PR is stale we will close it, however if you want to get back to it at a certain point feel free to re-open, or comment on it.
+- Use **C++17** features where appropriate
+- Follow the existing code style in each file you modify
+- All new code must pass `clang-format` with the repository's `.clang-format` config
 
-### A note about labels
+### Formatting
 
-The core team uses labels to tag each and every pull request. If you
-care about their meaning take a look at
-[labels](https://github.com/osquery/osquery/labels) on
-GitHub. However, only the core team can label issues and PRs, so you
-don't need to care too much about this.
+osquery enforces `clang-format`. Run it before every commit:
 
-### Milestones and release versions
+```bash
+# Format a single file
+clang-format -i path/to/your/file.cpp
 
-We currently do not use a strict release schedule and we tag new minor versions ideally every two months.
-Otherwise, we may tag a release if it makes sense according to the new features implemented or if critical bug-fixes where merged.
-We keep several near-future milestones open and try to tag PRs with the milestone when appropriate.
+# Format all changed files (compared to main branch)
+git diff --name-only main | grep -E '\.(cpp|h)$' | xargs clang-format -i
 
-[Milestones](https://github.com/osquery/osquery/milestones) are used for the planned minor releases.
-If your PR is tagged with the next milestone you can expect it to be merged as soon as it is ready.
-We may keep PRs open and wait for a major release milestone if the code changes features that are not backwards-compatible.
+# Check without modifying
+clang-format --dry-run --Werror path/to/your/file.cpp
+```
 
-### Branches and tags
+### Naming Conventions
 
-The osquery repo contains only the
-[master](https://github.com/osquery/osquery/tree/master) branch which
-we do our best to keep stable. We don't keep feature or release
-branches. The master branch will always keep a linear history and no
-merge commits are allowed. All our releases are tagged.
+| Item | Convention | Example |
+|---|---|---|
+| Classes | `PascalCase` | `EventSubscriberPlugin` |
+| Methods | `camelCase` | `generateRows()` |
+| Member variables | `snake_case_` (trailing underscore) | `running_` |
+| Constants | `kPascalCase` | `kSQLOpcodes` |
+| Macros | `UPPER_SNAKE_CASE` | `DECLARE_FLAG` |
+| Namespaces | `snake_case` | `osquery` |
+| Files | `snake_case.cpp` / `snake_case.h` | `event_subscriber.cpp` |
 
-## Bug reports and feature requests
+### Include Order
 
-Developing code is not the only way to contribute to
-osquery. Submitting bug reports and new ideas is also valuable and
-appreciated.
+Follow this include order with blank lines between groups:
 
-We use GitHub issues to track bugs and feature requests. To submit a
-bug report follow the [Bug
-Report](https://github.com/osquery/osquery/issues/new?template=Bug_Report.md)
-template, to submit a feature request use the [Feature
-Request](https://github.com/osquery/osquery/issues/new?template=Feature_Request.md)
-template.
+```cpp
+// 1. Standard library
+#include <memory>
+#include <string>
+#include <vector>
 
-**Please only use issues for bug reports or feature requests**. If you
-have deployment questions or issues or a general question about
-osquery use our Slack instead as you will have better support
-there. For the fastest result, you should search the available
-channels and choose the most appropriate one for your question. You
-should post in the general channel as a last resort.
+// 2. Third-party libraries
+#include <boost/noncopyable.hpp>
+#include <gtest/gtest.h>
 
-**If you are using a vendor product please use the appropriate channel
-as we won't be able to support vendor deployments on the non-vendor
-channels.**
+// 3. osquery headers
+#include "osquery/core/core.h"
+#include "osquery/sql/sql.h"
 
-## Guidelines for contributing features to osquery core
+// 4. Local headers (same directory)
+#include "my_local_header.h"
+```
 
-The software housed in this repo is known as osquery core. While there
-are occasional exceptions, contributions to core should abide by the
-following osquery guiding principles in order to be accepted:
+### Code Organization
 
-1. osquery does not change the state of the system
-2. osquery does not create network traffic to third parties
-3. osquery binaries have a light memory footprint
-4. osquery minimizes system overhead & maximizes performance
-5. osquery does not 'shell out' to other binaries for data collection
-6. The query schema for osquery seeks uniformity between operating systems
+- Keep headers (`*.h`) minimal — forward declare where possible
+- Use the `osquery` namespace for all production code
+- Place tests in `tests/` subdirectories alongside the source
+- New virtual tables go in `osquery/tables/<category>/`
 
-For new features that do not align with the mission principles of
-core, you may build outside of osquery core in separate integrated
-processes called extensions:
-https://osquery.readthedocs.io/en/stable/development/osquery-sdk/.
+---
 
-### Does my contribution belong in Core or in an Extension?
+## Branch Naming
 
-Belongs in Core:
+Always branch from the latest `main`:
 
-* Observes guiding principles
-* Has been shared with and approved by osquery project maintainers
-* Meets osquery's testing and quality standards
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/my-new-feature
+```
 
-Belongs in an extension:
+| Type | Pattern | Example |
+|---|---|---|
+| Feature | `feature/<short-description>` | `feature/bpf-socket-events` |
+| Bug fix | `fix/<short-description>` | `fix/config-refresh-race` |
+| OpenFrame integration | `openframe/<short-description>` | `openframe/token-refresh-retry` |
+| Documentation | `docs/<short-description>` | `docs/virtual-table-guide` |
+| Refactor | `refactor/<short-description>` | `refactor/sql-authorizer` |
+| Test | `test/<short-description>` | `test/events-integration` |
+| Release | `release/v<version>` | `release/v5.13.0` |
 
-* Might not observe the osquery core guiding principles
-* Expands the scope of use for osquery beyond endpoint monitoring
-* Integrates with a proprietary or esoteric tool that is not widely applicable
+---
 
-## Contributor License Agreement
+## Commit Message Format
 
-You must submit a Contributor License Agreement (CLA) before we can
-accept any of your pull requests. You only need to submit one CLA for
-any of osquery's open source projects.
+```text
+<type>(<scope>): <short summary>
 
-This is managed through the Linux Foundations's EasyCLA. It will
-comment appropriately on your PR.
+<optional body>
 
-## Technical Steering Committee
+<optional footer>
+```
 
-As defined by the [the osquery
-charter](https://github.com/osquery/foundation/blob/master/CHARTER.md),
-the Technical Steering Committee (or TSC for short) is responsible for
-oversight of the osquery project.
+### Types
 
-The [GitHub
-Team](https://github.com/orgs/osquery/teams/technical-steering-committee)
-is the authoritative source, though we maintain the list here as well.
+| Type | When to Use |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `docs` | Documentation changes only |
+| `style` | Code formatting, no logic change |
+| `refactor` | Code refactoring without behavior change |
+| `test` | Adding or fixing tests |
+| `perf` | Performance improvement |
+| `chore` | Build, CI, tooling changes |
+| `openframe` | OpenFrame platform-specific changes |
 
-Current Members (in alphabetical order):
+### Scopes
 
-* Alessandro -- [@alessandrogario](https://github.com/alessandrogario)
-* Nick -- [@muffins](https://github.com/muffins)
-* seph -- [@directionless](https://github.com/directionless)
-* Sharvil -- [@sharvilshah](https://github.com/sharvilshah)
-* Teddy -- [@theopolis](https://github.com/theopolis)
-* Victor -- [@groob](https://github.com/groob)
-* Zach -- [@zwass](https://github.com/zwass)
+| Scope | Area |
+|---|---|
+| `core` | Core init and runtime |
+| `sql` | SQL engine and virtual tables |
+| `config` | Configuration and packs |
+| `events` | Eventing framework |
+| `logger` | Logging and observability |
+| `db` | Database and storage |
+| `distributed` | Distributed querying |
+| `extensions` | Extension IPC |
+| `http` | Remote HTTP client |
+| `openframe` | OpenFrame auth layer |
+| `tables` | Virtual table implementations |
 
-The Technical Steering Commit is chaired by seph. 
+### Examples
 
-## License
+```text
+feat(events): add BPF socket event publisher for Linux
 
-By contributing to osquery you agree that your contributions will be licensed
-in accordance with the terms specified in the [LICENSE](LICENSE) file.
+Implements a new BPF-based publisher that captures socket connect/accept
+events and exposes them via the bpf_socket_events virtual table.
+```
+
+```text
+fix(openframe): handle token refresh failure with exponential backoff
+
+When OpenframeTokenRefresher encounters a network error, it now retries
+with exponential backoff instead of immediately stopping the refresh loop.
+```
+
+```text
+test(config): add pack discovery query unit tests
+```
+
+---
+
+## Testing
+
+Tests use **Google Test** and **Google Mock**. Always build with `-DOSQUERY_BUILD_TESTS=ON`:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOSQUERY_BUILD_TESTS=ON
+cmake --build build --parallel $(nproc)
+
+# Run all tests
+cd build && ctest --output-on-failure
+
+# Run in parallel
+cd build && ctest --output-on-failure --parallel $(nproc)
+
+# Run a specific suite
+cd build && ctest -R "osquery_sql_tests" --output-on-failure
+```
+
+### Test Categories
+
+| Category | Location | Description |
+|---|---|---|
+| Unit Tests | `osquery/*/tests/` | Fast, isolated, no OS dependencies |
+| Integration Tests | `tests/integration/tables/` | Live table queries against the real OS |
+| Extension Tests | `osquery/extensions/tests/` | IPC and Thrift round-trips |
+| Plugin Tests | `plugins/*/tests/` | Logger, config, and database plugins |
+
+When contributing a new virtual table, a corresponding integration test in `tests/integration/tables/` is expected.
+
+---
+
+## Pull Request Process
+
+### Before Submitting
+
+- [ ] Branch is up-to-date with `main`
+- [ ] All tests pass: `cd build && ctest --output-on-failure`
+- [ ] Code is formatted: `clang-format --dry-run --Werror`
+- [ ] Copyright headers are present on new files
+- [ ] New virtual tables have integration tests in `tests/integration/tables/`
+- [ ] OpenFrame-specific changes include updated documentation
+- [ ] Discussed in OpenMSP Slack (for significant changes)
+
+### PR Title Format
+
+Use the same format as commit messages:
+
+```text
+feat(sql): add query result caching for repeated virtual table scans
+```
+
+### PR Description Template
+
+```markdown
+## Summary
+<!-- What does this PR do? Why is it needed? -->
+
+## Changes
+<!-- Bullet list of changes -->
+
+## Testing
+<!-- How was this tested? Which test commands were run? -->
+
+## Platform Support
+<!-- Does this affect Linux/macOS/Windows differently? -->
+
+## Checklist
+- [ ] Tests pass (ctest)
+- [ ] clang-format applied
+- [ ] Documentation updated (if applicable)
+- [ ] Discussed in OpenMSP Slack (if significant change)
+```
+
+---
+
+## Copyright Headers
+
+All new source files must include a copyright header:
+
+```cpp
+/**
+ * Copyright (c) 2014-present, The osquery authors
+ *
+ * This source code is licensed in accordance with the terms specified in
+ * the LICENSE file found in the root directory of this source tree.
+ */
+```
+
+The CI script `tools/ci/scripts/check_copyright_headers.py` enforces this on all pull requests.
+
+---
+
+## Adding a New Virtual Table
+
+1. Define the table schema in `osquery/tables/<category>/<table_name>.table`
+2. Run the code generator:
+
+```bash
+python3 tools/codegen/gentable.py osquery/tables/<category>/<table_name>.table
+```
+
+3. Implement the `generate()` method in `<table_name>.cpp`
+4. Register in the CMakefile for your category
+5. Add an integration test in `tests/integration/tables/<table_name>.cpp`
+6. Test locally:
+
+```bash
+cmake --build build --target osqueryi
+./build/osquery/osqueryi
+osquery> SELECT * FROM <table_name>;
+```
+
+---
+
+## Security Guidelines
+
+- **Never** hardcode secrets, credentials, or tokens in source code
+- **Never** log JWT token values, even at debug level
+- SQL inputs must pass through the SQLite authorizer — do not bypass it
+- AES-GCM nonces must be generated freshly (never reused for the same key)
+- TLS peer verification must **not** be disabled in production code
+- New config keys must include size/depth validation
+- Thread-shared state must use proper synchronization primitives
+
+Report security vulnerabilities directly to the Flamingo team via the **OpenMSP Slack community** — do not open public GitHub Issues for security issues.
+
+---
+
+## Reviewer Checklist
+
+When reviewing a PR:
+
+- [ ] Logic is correct and all error paths are handled
+- [ ] No secrets or credentials in source
+- [ ] SQL inputs are validated through the authorizer
+- [ ] Thread safety considered for shared state
+- [ ] Platform-specific code is properly guarded with `#ifdef`
+- [ ] Tests added for new functionality
+- [ ] No debug/temporary code left in
+- [ ] Commit messages follow format convention
+- [ ] Performance impact considered for hot paths (scheduler, SQL engine)
+
+---
+
+## Code of Conduct
+
+Be respectful, collaborative, and constructive. All contributors are expected to maintain a professional and welcoming environment in both Slack and code reviews.
+
+---
+
+<div align="center">
+  Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
+</div>

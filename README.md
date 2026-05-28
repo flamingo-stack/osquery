@@ -1,209 +1,258 @@
 <div align="center">
   <picture>
-    <!-- Dark theme -->
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/flamingo-stack/openframe-oss-tenant/blob/d82f21ba18735dac29eb0f3be5d3edf661bb0060/docs/assets/logo-openframe-full-dark-bg.png">
-    <!-- Light theme -->
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/flamingo-stack/openframe-oss-tenant/blob/d82f21ba18735dac29eb0f3be5d3edf661bb0060/docs/assets/logo-openframe-full-light-bg.png">
-    <!-- Default / fallback -->
-    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-light-bg.png" width="400">
+    <source media="(prefers-color-scheme: dark)" srcset="https://shdrojejslhgnojzkzak.supabase.co/storage/v1/object/public/public/doc-orchestrator/logos/b8bdd6f0-ae91-46e8-9c4e-bca279875ef1/dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://shdrojejslhgnojzkzak.supabase.co/storage/v1/object/public/public/doc-orchestrator/logos/49885d70-2d19-4457-97b3-be14f08fef3c/light.png">
+    <img alt="Project Logo" src="https://shdrojejslhgnojzkzak.supabase.co/storage/v1/object/public/public/doc-orchestrator/logos/49885d70-2d19-4457-97b3-be14f08fef3c/light.png" width="400">
   </picture>
-
-  <h1>Osquery</h1>
-
-  <p><b>Cross-platform endpoint visibility and telemetry engine, integrated with OpenFrame — SQL-powered queries for Windows, macOS, and Linux.</b></p>
-
-  <p>
-    <a href="LICENSE.md">
-      <img alt="License"
-           src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-    <a href="https://www.flamingo.run/knowledge-base">
-      <img alt="Docs"
-           src="https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-    <a href="https://www.openmsp.ai/">
-      <img alt="Community"
-           src="https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-  </p>
 </div>
 
----
+<p align="center">
+  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white"></a>
+</p>
 
-## Quick Links
-- [Overview](#overview)  
-- [Quick Start](#quick-start)  
-- [Architecture](#architecture)  
-- [Security](#security)  
-- [Contributing](#contributing)
+# osquery — OpenFrame Edition
 
----
+**osquery** is a cross-platform operating system instrumentation framework that exposes live system state and activity as relational data — enabling you to query your operating system using SQL.
 
-## Overview
+Built and extended by the [Flamingo / OpenFrame](https://openframe.ai) platform, this distribution integrates osquery's powerful SQL telemetry engine with OpenFrame's AI-driven MSP automation infrastructure. Every host becomes a **SQL-queryable telemetry node** — no proprietary log parsers, no fragile scripts, just standard SQL.
 
-**Osquery** is an open-source endpoint visibility and monitoring tool created by Facebook (Meta). It allows you to query operating system information using SQL queries, making it powerful for security monitoring, incident response, compliance, and infrastructure inventory.
+```sql
+-- Which processes are listening on ports?
+SELECT pid, name, port, protocol FROM listening_ports JOIN processes USING (pid);
 
-With Osquery, you can:
-- Query system details like processes, users, network connections, file systems, and registry keys
-- Monitor system changes in real-time
-- Detect security threats and anomalies
-- Ensure compliance with security policies
-- Perform forensic investigations
-
-In OpenFrame, Osquery is integrated with the **Fleet agent**, providing centralized management and query execution across all your endpoints from a single interface.
-
-**Official Documentation:** [osquery.io/docs](https://osquery.io/docs)  
-**GitHub Repository:** [github.com/osquery/osquery](https://github.com/osquery/osquery)
+-- What Chrome extensions are installed?
+SELECT u.username, e.name, e.version, e.permissions
+FROM users u, chrome_extensions e
+WHERE e.uid = u.uid;
+```
 
 ---
 
-## Highlights
+## Watch: osquery in Action
 
-- Unified endpoint visibility across Windows, macOS, Linux  
-- Query the system state using SQL (processes, users, network, registry, etc.)  
-- Lightweight daemon with minimal performance overhead  
-- Extensible with custom tables and plugins  
-- Integrates with OpenFrame Gateway, Stream (Kafka), and Analytics (Pinot)  
-- Useful for inventory, compliance, incident response, and threat hunting  
-- **Automatic installation** with Fleet agent - no separate setup required
+[![osquery Overview](https://img.youtube.com/vi/1UcWGiHbLVo/hqdefault.jpg)](https://www.youtube.com/watch?v=1UcWGiHbLVo)
+
+---
+
+## Features
+
+- **SQL Querying** — Query live OS data with standard SQL via an embedded, hardened SQLite engine
+- **300+ Virtual Tables** — Platform-specific tables across Linux, macOS, and Windows covering processes, sockets, packages, users, registry, hardware, and more
+- **Event Monitoring** — inotify, BPF, FSEvents, ETW, and OpenBSM events exposed as queryable tables
+- **Scheduled Query Packs** — Configuration-driven query scheduling with differential result tracking (only changed rows are logged)
+- **Distributed Fleet Queries** — Remote SQL orchestration across entire fleets via TLS
+- **Extension System** — Runtime plugin model via Apache Thrift IPC — add custom tables, loggers, and config plugins as external processes
+- **OpenFrame Auth Layer** — AES-256-GCM encrypted JWT token management (`OpenframeAuthorizationManager`, `OpenframeEncryptionService`, `OpenframeTokenRefresher`) for seamless integration with the Flamingo/OpenFrame MSP platform
+- **Cross-Platform** — Linux (x86\_64, aarch64), macOS (Intel + Apple Silicon), and Windows x86\_64
+- **Security-First** — SQLite authorizer allowlists only safe opcodes, Watcher/Worker process isolation, peer-verified TLS everywhere
 
 ---
 
 ## Architecture
 
-Osquery runs as an agent on endpoints, collecting data and exposing it via SQL. Integrated with OpenFrame, results flow into Gateway → Stream → Analytics.
-
 ```mermaid
-flowchart LR
-    subgraph OpenFrame Frontend
-        OUI[Openframe UI / AI agent]
-    end
-    
-    OUI -- osquery --> G[OpenFrame Gateway]
-    
-    subgraph OpenFrame Backend
-        G -- osquery from Openframe UI / AI agent --> API[(Fleet Service API)]
-        API --> DB[(DB)]
-        DB --> S[Stream]
-        S --> K[(Kafka)]
-        K --> C[(Cassandra)]
-        K --> P[(Pinot Analytics)]
-        API <-- run osquery --> G
-    end
-    
-    G <-- osquery --> FA[Fleet Agent]
-    
-
-    style OUI fill:#FFC109,stroke:#1A1A1A,color:#FAFAFA
-    style G fill:#666666,stroke:#1A1A1A,color:#FAFAFA
+graph TD
+    CLI["osqueryi / osqueryd"] --> Core["Core Init And Runtime"]
+    Core --> Config["Configuration And Packs"]
+    Core --> SQL["SQL Engine And Virtual Tables"]
+    Core --> Events["Eventing Framework"]
+    Core --> Logging["Logging And Observability"]
+    Core --> DB["Database And Storage Plugins"]
+    Core --> Dist["Distributed Querying"]
+    Core --> Ext["Extensions And IPC"]
+    Core --> HTTP["Remote HTTP Client"]
+    Core --> OF["OpenFrame Auth Layer"]
+    Config --> SQL
+    Config --> Events
+    SQL --> Logging
+    Events --> DB
+    Dist --> SQL
+    Dist --> HTTP
+    Ext --> SQL
+    Ext --> DB
+    OF --> HTTP
 ```
+
+| Module | Location | Responsibility |
+|---|---|---|
+| Core Init And Runtime | `osquery/core/` | Process lifecycle, flags, watcher/worker model |
+| SQL Engine And Virtual Tables | `osquery/sql/` | SQLite engine, authorizer, virtual table binding |
+| Configuration And Packs | `osquery/config/` | Scheduled queries, packs, decorators |
+| Eventing Framework | `osquery/events/` | Publisher/subscriber event system |
+| Logging And Observability | `osquery/logger/` | Differential logging, JSON serialization |
+| Database And Storage Plugins | `osquery/database/` | RocksDB persistent + ephemeral in-memory stores |
+| Distributed Querying | `osquery/distributed/` | Remote fleet orchestration |
+| Extensions And IPC | `osquery/extensions/` | Apache Thrift-based runtime extensions |
+| Remote HTTP Client | `osquery/remote/` | Boost.Asio/Beast HTTPS with strict TLS |
+| OpenFrame Auth Layer | `openframe/` | JWT token management + AES-256-GCM encryption |
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Language | C++17 |
+| Build System | CMake 3.21+ with Ninja |
+| SQL Engine | SQLite (embedded, in-memory) |
+| IPC | Apache Thrift (UNIX sockets / named pipes) |
+| Encryption | OpenSSL (AES-256-GCM) |
+| Networking | Boost.Asio + Boost.Beast |
+| Event Systems | inotify, BPF, FSEvents, ETW, OpenBSM |
+| Database | RocksDB (persistent), ephemeral in-memory |
+| Testing | Google Test + Google Mock |
+
+---
+
+## Hardware Requirements
+
+| Tier | RAM | CPU Cores | Disk |
+|---|---|---|---|
+| **Minimum** | 24 GB | 6 cores | 50 GB |
+| **Recommended** | 32 GB | 12 cores | 100 GB |
+
+> Building from source is resource-intensive. The recommended configuration significantly reduces build times and prevents out-of-memory failures during compilation.
+
+---
+
+## Supported Platforms
+
+| Platform | Architecture | Notes |
+|---|---|---|
+| Linux | x86\_64, aarch64 | Ubuntu 20.04+, RHEL 8+, Debian 11+ |
+| macOS | x86\_64, aarch64 | macOS 12+ (Intel + Apple Silicon) |
+| Windows | x86\_64 | Windows 10/11, Server 2019+ |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
+### 1. Install Prerequisites
 
-**No additional installation required!** Osquery is automatically installed and configured when you deploy the Fleet agent on your endpoints.
+**Linux (Debian/Ubuntu):**
 
-Requirements:
-- OpenFrame instance running with Fleet service enabled
-- Access to OpenFrame UI
-- Supported operating system on target endpoints:
-  - **Linux:** Ubuntu, Debian, CentOS, RHEL, Amazon Linux
-  - **macOS:** 10.14+ (Mojave and later)
-  - **Windows:** Windows 10, Windows Server 2016+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  build-essential cmake ninja-build python3 python3-pip \
+  git openssl libssl-dev clang-format ccache
+```
 
-### Installation
+**macOS:**
 
-1. **Log in to OpenFrame UI**
+```bash
+xcode-select --install
+brew install cmake ninja python3 openssl git ccache
+```
 
-2. **Navigate to the Devices tab**
-   - Click on **"Devices"** in the left sidebar
-   - Click **"Add Device"** or **"Enroll New Device"** button
+**Windows:**
 
-3. **Get the installation link**
-   - OpenFrame will generate a unique enrollment link/script for your device
-   - This link contains:
-     - Fleet agent installer
-     - Osquery binaries (automatically bundled)
-     - Your OpenFrame server configuration
-     - Enrollment secrets for secure authentication
+1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/) with the **Desktop development with C++** workload
+2. Install [CMake 3.21+](https://cmake.org/download/), [Git](https://git-scm.com/download/win), [Python 3.8+](https://www.python.org/downloads/windows/)
+3. Download the CLI binary directly: [openframe-cli\_windows\_amd64.zip](https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_windows_amd64.zip)
 
-4. **Run the installation on your endpoint**
-   
-   **For Linux/macOS:**
-   ```bash
-   # The UI will provide a command similar to:
-   curl -sSL https://your-openframe-instance.com/api/v1/fleet/enroll?token=xxx | sudo bash
-   ```
+### 2. Clone and Build
 
-   **For Windows (PowerShell as Administrator):**
-   ```powershell
-   # The UI will provide a command similar to:
-   Invoke-WebRequest -Uri "https://your-openframe-instance.com/api/v1/fleet/enroll?token=xxx" -UseBasicParsing | Invoke-Expression
-   ```
+```bash
+# Clone
+git clone https://github.com/flamingo-stack/osquery.git
+cd osquery
 
-5. **Verify installation**
-   - Return to the **Devices** tab in OpenFrame UI
-   - Your newly enrolled device should appear within 30-60 seconds
-   - Status should show as **"Online"**
-   - Osquery will be ready to accept queries immediately
+# Configure (Linux/macOS)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -G Ninja
 
-### Running Your First Query
+# Configure (Windows)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 17 2022"
 
-Once your device is enrolled:
+# Build — uses all available CPU cores
+cmake --build build --parallel $(nproc)
+```
 
-1. **Navigate to your device** in the OpenFrame UI
-2. **Go to the "Query" tab** or use the **AI Agent** interface
-3. **Try a simple query:**
-   ```sql
-   SELECT * FROM system_info;
-   ```
-4. **View real-time results** directly in the UI
+### 3. Run Your First Query
 
-For more query examples and table schemas, visit the [Osquery Schema Documentation](https://osquery.io/schema/).
+```bash
+./build/osquery/osqueryi
+```
+
+```text
+Using a virtual database. Need help, type '.help'
+osquery>
+```
+
+```sql
+osquery> SELECT hostname, cpu_brand, physical_memory FROM system_info;
+osquery> SELECT pid, name, port, protocol FROM listening_ports LIMIT 10;
+osquery> SELECT uid, username, shell FROM users;
+osquery> .tables
+```
+
+### 4. Run as a Daemon
+
+```bash
+sudo mkdir -p /etc/osquery
+sudo tee /etc/osquery/osquery.conf <<'EOF'
+{
+  "options": {
+    "logger_plugin": "filesystem",
+    "schedule_splay_percent": 10
+  },
+  "schedule": {
+    "system_info": {
+      "query": "SELECT hostname, cpu_brand, physical_memory FROM system_info;",
+      "interval": 3600
+    }
+  }
+}
+EOF
+
+sudo ./build/osquery/osqueryd --config_path=/etc/osquery/osquery.conf
+```
 
 ---
 
-## Security
+## OpenFrame Integration
 
-- TLS 1.2 enforced for all communication  
-- JWT / enrollment secrets via OpenFrame Gateway  
-- Minimal privileges required on endpoints
+This distribution extends osquery with a secure authentication and encryption layer for the [OpenFrame platform](https://www.flamingo.run/openframe):
 
-Found a vulnerability? Email **security@flamingo.run** instead of opening a public issue.  
+| Component | Description |
+|---|---|
+| `OpenframeAuthorizationManager` | Lifecycle-controlled JWT token singleton (non-copyable) |
+| `OpenframeAuthorizationManagerProvider` | Sole factory and owner of the token manager |
+| `OpenframeEncryptionService` | AES-256-GCM symmetric encryption via OpenSSL |
+| `OpenframeTokenExtractor` | Token acquisition from OpenFrame services |
+| `OpenframeTokenRefresher` | Background thread for seamless token renewal |
 
----
-
-## Contributing
-
-We welcome PRs! Please follow these guidelines:  
-- Use branching strategy: `feature/...`, `bugfix/...`  
-- Add descriptions to the **CHANGELOG**  
-- Run `make test` before submitting  
-- Keep documentation updated in `docs/`  
+Obtain your OpenFrame credentials from your platform administrator. Token lifecycle is fully automated once configured. Refer to your environment configuration for connection details.
 
 ---
 
-## License
+## Documentation
 
-This project is licensed under the **Flamingo Unified License v1.0** ([LICENSE.md](LICENSE.md)).
+📚 See the [Documentation](./docs/README.md) for comprehensive guides.
+
+- [Introduction](./docs/getting-started/introduction.md) — What is osquery + OpenFrame?
+- [Prerequisites](./docs/getting-started/prerequisites.md) — System and software requirements
+- [Quick Start](./docs/getting-started/quick-start.md) — Clone, build, and run
+- [First Steps](./docs/getting-started/first-steps.md) — Explore tables, packs, FIM, extensions
+- [Architecture Overview](./docs/development/architecture/README.md) — Module deep-dives
+- [Local Development](./docs/development/setup/local-development.md) — Build configurations and debugging
+- [Contributing Guidelines](./docs/development/contributing/guidelines.md) — Code style and PR process
+
+---
+
+## Community and Support
+
+> We do **not** use GitHub Issues or GitHub Discussions. All support and collaboration happens on the **OpenMSP Slack community**.
+
+| Resource | Link |
+|---|---|
+| 💬 OpenMSP Community Slack | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
+| 🌐 OpenMSP Website | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
+| 🚀 OpenFrame Platform | [https://openframe.ai](https://openframe.ai) |
+| 🦩 Flamingo | [https://flamingo.run](https://flamingo.run) |
 
 ---
 
 <div align="center">
-  <table border="0" cellspacing="0" cellpadding="0">
-    <tr>
-      <td align="center">
-        Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
-      </td>
-      <td align="center">
-        <a href="https://www.flamingo.run">Website</a> • 
-        <a href="https://www.flamingo.run/knowledge-base">Knowledge Base</a> • 
-        <a href="https://www.linkedin.com/showcase/openframemsp/about/">LinkedIn</a> • 
-        <a href="https://www.openmsp.ai/">Community</a>
-      </td>
-    </tr>
-  </table>
+  Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
 </div>
