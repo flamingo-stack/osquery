@@ -1,0 +1,22 @@
+flowchart TD
+    CLI["osqueryi / osqueryd"] --> Core["Core Init And Runtime"]
+
+    Core --> Config["Configuration And Packs"]
+    Core --> SQL["SQL Engine And Virtual Tables"]
+    Core --> Events["Eventing Framework"]
+    Core --> Logging["Logging And Observability"]
+    Core --> DB["Database And Storage Plugins"]
+    Core --> Distributed["Distributed Querying"]
+    Core --> Extensions["Extensions And IPC"]
+    Core --> HTTP["Remote HTTP Client"]
+    Core --> FS["Filesystem And Path Utilities"]
+
+    Config --> SQL
+    Config --> Events
+    SQL --> Logging
+    Events --> DB
+    Distributed --> SQL
+    Distributed --> HTTP
+    Logging --> DB
+    Extensions --> SQL
+    Extensions --> DB

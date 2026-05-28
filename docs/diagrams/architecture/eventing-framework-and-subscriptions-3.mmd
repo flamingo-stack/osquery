@@ -1,0 +1,7 @@
+flowchart TD
+    Delay["delay()"] --> ThreadSpawn["spawn thread per publisher"]
+    ThreadSpawn --> RunLoop["run(type_id)"]
+    RunLoop --> PublisherRun["publisher->run()"]
+    PublisherRun --> Pause["pause(200ms)"]
+    Pause --> RunLoop
+    RunLoop -->|"isEnding()"| TearDown["tearDown()"]

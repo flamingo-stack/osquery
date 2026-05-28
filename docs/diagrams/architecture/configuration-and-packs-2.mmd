@@ -1,0 +1,6 @@
+flowchart TD
+    Start["ConfigRefreshRunner Start"] --> Wait["Sleep refresh_sec"]
+    Wait --> Check["Interrupted?"]
+    Check -->|No| Refresh["Config.refresh()"]
+    Refresh --> Wait
+    Check -->|Yes| End["End"]

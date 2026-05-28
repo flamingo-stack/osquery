@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller
+    participant Client
+    participant Resolver
+    participant Server
+
+    Caller->>Client: get(Request)
+    Client->>Resolver: async_resolve()
+    Resolver-->>Client: endpoints
+    Client->>Server: async_connect()
+    Client->>Server: async_write(request)
+    Server-->>Client: HTTP response
+    Client->>Server: async_read()
+    Client-->>Caller: Response

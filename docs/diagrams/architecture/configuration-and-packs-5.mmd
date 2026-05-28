@@ -1,0 +1,11 @@
+flowchart TD
+    Source["Config Source"] --> GenConfig["genConfig()"]
+    GenConfig --> Update["Config.update()"]
+    Update --> Purge["Purge Stale State"]
+    Purge --> UpdateSource["updateSource()"]
+    UpdateSource --> ParseJSON["Validate And Parse JSON"]
+    ParseJSON --> BuildSchedule["Create Packs And Schedule"]
+    BuildSchedule --> ApplyParsers["Apply ConfigParserPlugins"]
+    ApplyParsers --> Reconfigure["Registry.configure()"]
+    Reconfigure --> EventNotify["EventFactory.configUpdate()"]
+    EventNotify --> Ready["Runtime Updated"]

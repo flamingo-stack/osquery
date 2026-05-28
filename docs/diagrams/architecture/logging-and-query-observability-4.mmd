@@ -1,0 +1,4 @@
+flowchart TD
+    Diff["DiffResults"] --> Serialize["serializeDiffResults()"]
+    Serialize --> JSONDoc["JSON Document"]
+    JSONDoc --> Logger["LoggerPlugin"]

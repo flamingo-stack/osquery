@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant SQLite
+    participant Module as "sqlite3_module"
+    participant Table as "TablePlugin"
+
+    SQLite->>Module: xBestIndex
+    Module->>SQLite: Constraint plan
+
+    SQLite->>Module: xFilter
+    Module->>Table: generate(context)
+    Table-->>Module: Row set
+    Module-->>SQLite: Rows

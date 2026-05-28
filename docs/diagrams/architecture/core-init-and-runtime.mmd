@@ -1,0 +1,16 @@
+flowchart TD
+    Main["Main Entry Point"] --> Initializer["Initializer"]
+
+    Initializer --> Flags["Flag System"]
+    Initializer --> Registry["Registry And Plugins"]
+    Initializer --> Database["Database Initialization"]
+    Initializer --> ExtensionManager["Extension Manager"]
+    Initializer --> Events["Event Factory"]
+    Initializer --> Watchdog["Watcher / Worker Model"]
+
+    Watchdog --> Worker["Worker Process"]
+    Watchdog --> Extensions["Extension Processes"]
+
+    Worker --> Tables["Virtual Tables"]
+    Worker --> Scheduler["Query Scheduler"]
+    Worker --> Logger["Logger Plugins"]

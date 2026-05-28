@@ -1,0 +1,5 @@
+flowchart LR
+    Old["Previous Results"] --> DiffEngine["diff()"]
+    New["Current Results"] --> DiffEngine
+    DiffEngine --> Added["Added Rows"]
+    DiffEngine --> Removed["Removed Rows"]

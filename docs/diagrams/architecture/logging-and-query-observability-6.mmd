@@ -1,0 +1,9 @@
+flowchart TD
+    Config["ScheduledQuery"] --> Exec["SQL Execution"]
+    Exec --> Results["QueryDataTyped"]
+    Results --> QueryState["Query.addNewResults()"]
+    QueryState --> Diff["DiffResults"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Serialize["JSON Serialization"]
+    Serialize --> Logger["LoggerPlugin"]
+    Logger --> Sink["External Log System"]

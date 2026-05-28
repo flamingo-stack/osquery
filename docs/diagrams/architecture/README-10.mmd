@@ -1,0 +1,4 @@
+flowchart TD
+    Caller["Module"] --> Client["HTTP Client"]
+    Client --> TLS["TLS Handshake"]
+    TLS --> Remote["Remote Server"]

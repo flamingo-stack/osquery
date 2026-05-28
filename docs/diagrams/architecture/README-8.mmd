@@ -1,0 +1,7 @@
+flowchart TD
+    Server["Central Server"] --> TLS["TLS Distributed Plugin"]
+    TLS --> Core["Distributed Core"]
+    Core --> SQL["SQL Engine"]
+    SQL --> Results["Results"]
+    Results --> TLS
+    TLS --> Server
