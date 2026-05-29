@@ -26,14 +26,6 @@ FROM users u, chrome_extensions e
 WHERE e.uid = u.uid;
 ```
 
----
-
-## Watch: osquery in Action
-
-[![osquery Overview](https://img.youtube.com/vi/1UcWGiHbLVo/hqdefault.jpg)](https://www.youtube.com/watch?v=1UcWGiHbLVo)
-
----
-
 ## Features
 
 - **SQL Querying** — Query live OS data with standard SQL via an embedded, hardened SQLite engine
