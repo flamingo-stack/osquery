@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Config
+    participant Factory as EventFactory
+    participant Pub as EventPublisher
+    participant Sub as EventSubscriber
+    participant DB as Database
+    participant SQL
+
+    Config->>Factory: configUpdate()
+    Factory->>Sub: setMinExpiry()
+    Factory->>Pub: spawn run loop
+    Pub->>Sub: fire event (callback)
+    Sub->>DB: addBatch()
+    SQL->>Sub: SELECT from event table
+    Sub->>DB: generateRows()
+    Sub->>SQL: yield rows

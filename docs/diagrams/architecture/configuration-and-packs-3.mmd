@@ -1,0 +1,7 @@
+flowchart TD
+    ConfigUpdate["Config Update"] --> BuildPacks["Create Pack Objects"]
+    BuildPacks --> DiscoveryCheck["Discovery Queries"]
+    DiscoveryCheck --> ActivePack["Active Pack"]
+    ActivePack --> Scheduler["ScheduledQuery Execution"]
+    Scheduler --> Performance["Query Performance Recording"]
+    Scheduler --> Denylist["Denylist On Failure"]

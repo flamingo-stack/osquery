@@ -1,0 +1,5 @@
+flowchart TD
+    ResetCall["resetDatabase()"] --> LockWrite["Acquire Write Lock"]
+    LockWrite --> TearDown["Plugin tearDown()"]
+    TearDown --> SetUp["Plugin setUp()"]
+    SetUp --> Unlock["Release Lock"]

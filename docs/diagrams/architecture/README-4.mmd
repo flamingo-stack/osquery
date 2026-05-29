@@ -1,0 +1,6 @@
+flowchart TD
+    Source["Config Source (File / TLS / Extension)"] --> ConfigCore["Config Singleton"]
+    ConfigCore --> Parsers["ConfigParserPlugins"]
+    Parsers --> Schedule["Scheduled Queries"]
+    Schedule --> Scheduler["Query Scheduler"]
+    Scheduler --> SQL["SQL Engine"]

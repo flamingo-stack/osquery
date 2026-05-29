@@ -1,0 +1,6 @@
+flowchart TD
+    ReadVersion["Read results_version"] --> Compare["Compare with target version"]
+    Compare -->|"Older"| RunMigration["Execute migrateVxVy()"]
+    RunMigration --> UpdateVersion["Persist new version"]
+    UpdateVersion --> Compare
+    Compare -->|"Match"| Done["Migration Complete"]

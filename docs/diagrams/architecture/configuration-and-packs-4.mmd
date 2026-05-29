@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigLoad["Config Load"] --> RunLoad["Run Load Decorators"]
+    QueryExec["Query Execution"] --> RunAlways["Run Always Decorators"]
+    IntervalTick["Interval Timer"] --> RunInterval["Run Interval Decorators"]
+    RunLoad --> Decorations[("Decoration Store")]
+    RunAlways --> Decorations
+    RunInterval --> Decorations
+    Decorations --> Logger["Status And Query Logs"]

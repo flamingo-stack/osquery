@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Query Submitted"] --> Prepare["sqlite3_prepare_v2"]
+    Prepare --> Execute["sqlite3_step Loop"]
+    Execute -->|Virtual Table Access| VTab
+    VTab --> xBestIndex
+    xBestIndex --> xFilter
+    xFilter --> Generate["TablePlugin.generate()"]
+    Generate --> Rows["Return Rows"]
+    Rows --> Finalize["sqlite3_finalize"]
+    Finalize --> End["Results Returned"]

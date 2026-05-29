@@ -1,0 +1,7 @@
+flowchart LR
+    FactoryLock["factory_lock_"] --> ProtectPub["event_pubs_"]
+    FactoryLock --> ProtectSub["event_subs_"]
+
+    SubscriberLock1["event_id_lock_"] --> IDGen["EventID generation"]
+    SubscriberLock2["event_record_lock_"] --> RecordWrite["record time bins"]
+    SubscriberLock3["event_query_record_"] --> QueryTracking["query usage tracking"]

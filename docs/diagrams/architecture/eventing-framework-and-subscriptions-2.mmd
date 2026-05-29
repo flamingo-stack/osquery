@@ -1,0 +1,7 @@
+flowchart TD
+    RegisterSub["registerEventSubscriber()"] --> SetupSub["setUp()"]
+    SetupSub --> InitSub["init()"]
+    InitSub --> RunningSub["EVENT_RUNNING"]
+
+    RegisterPub["registerEventPublisher()"] --> SetupPub["setUp()"]
+    SetupPub --> ReadyPub["EVENT_SETUP"]

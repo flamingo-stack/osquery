@@ -1,0 +1,4 @@
+flowchart TD
+    Proc["/proc"] --> Enumerate["procEnumerateProcesses()"]
+    Enumerate --> FDEnum["procEnumerateProcessDescriptors()"]
+    FDEnum --> SocketMap["SocketInodeToProcessInfoMap"]

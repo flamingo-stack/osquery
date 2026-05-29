@@ -1,0 +1,4 @@
+flowchart TD
+    Caller["Subsystem"] --> FS["Filesystem API"]
+    FS --> POSIX["POSIX Implementation"]
+    FS --> Windows["Windows Implementation"]

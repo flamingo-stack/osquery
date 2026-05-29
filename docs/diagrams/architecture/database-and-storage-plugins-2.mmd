@@ -1,0 +1,4 @@
+flowchart TD
+    DB["EphemeralDatabasePlugin"] --> Map["std::map<domain, map<key, value>>"]
+    Map --> DomainMap["Domain Map"]
+    DomainMap --> KeyValue["boost::variant<int, string>"]

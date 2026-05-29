@@ -1,0 +1,5 @@
+flowchart TD
+    SQ["ScheduledQuery snapshot=true"] --> Exec["Execute Query"]
+    Exec --> Full["Full Result Set"]
+    Full --> LogItem["QueryLogItem isSnapshot=true"]
+    LogItem --> Logger["logSnapshot()"]

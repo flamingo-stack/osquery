@@ -1,36 +1,97 @@
-# Security Vulnerability Disclosure
+# Flamingo AI Privacy Policy
 
-This document contains a reference history of osquery's remediated security vulnerabilities. If you find a
-vulnerability, please see CONTRIBUTING.md#how_to_report_vulnerabilities for how to submit a vulnerability report.
+**Effective Date: 2025**  
+**Applies to: All Flamingo AI products, including OpenFrame, OpenMSP, and the Flamingo Website**
 
-## Security Issues
 
-This document aggregates security issues (weaknesses and vulnerabilities) affecting osquery. It tracks issues in the format:
+## 1. Definitions
 
-```text
-#PRNumber Title - (Optional CVE) - Fixed in Version - Optional Reporter
-```
+**“Flamingo Software”** means all software products developed and released by Flamingo AI, Inc., including but not limited to OpenFrame, OpenMSP, related agents, integrations, orchestration layers, user interfaces, binaries, and documentation.  
 
-There are several types of issues that do not include a CVE or reporter.
-If you find a security issue and believe a CVE should be assigned, please contact a [member of the TSC](https://github.com/osquery/osquery/blob/master/CONTRIBUTING.md#technical-steering-committee) in the osquery [Slack](https://osquery.slack.com), we are happy to submit the request and provide attribution to you.
-Specifically, we will use the GitHub Security Advisory features for CVE requests.
-The project maintainers will tag related issues and pull requests with the [`hardening`](https://github.com/osquery/osquery/issues?q=is%3Aissue+is%3Aopen+label%3Ahardening) label. There may be changes with this label that are not directly security issues.
+**“OpenFrame”** refers to the self-hosted remote monitoring and management (RMM) platform released by Flamingo AI.  
 
-If you are editing this document please feel encouraged to change this format to provide more details. This is intended to be a helpful resource so please keep content valuable and concise.
+**“OpenMSP”** refers to the community knowledge base, documentation, and related collaborative content contributed by users and curated by Flamingo AI.  
 
-- #6197 osquery does not validate TLS SNI hostname - CVE-2020-1887 - 4.2.0 - Timothy Britton of Apple
-- #3786 Migrate from `boost::regex` to `re2` - unresolved - Ruslan Habalov and Felix Wilhelm of the Google Security Team
-- #3785 `ie_extensions` susceptible to SQL injection - CVE-2017-15026 - 2.9.0 - Ruslan Habalov and Felix Wilhelm of the Google Security Team
-- #3783/#3782 `safari_extensions` should not use parent paths for privilege dropping - CVE-2017-15027 - 2.9.0 - Ruslan Habalov and Felix Wilhelm of the Google Security Team
-- #3781 `known_hosts` should drop privileges - CVE-2017-15028 - 2.9.0 - Ruslan Habalov and Felix Wilhelm of the Google Security Team
-- #3770/#3775 `libxml2` (v2.9.5) and `libarchive` (v3.3.2) updated - 2.9.0
-- #3767 `augeas` (v1.8.1) mitigates CVE-2017-7555 - 2.9.0 - Ruslan Habalov and Felix Wilhelm of the Google Security Team
-- #3133 Bad output size for TLS compression - 2.4.0 - Facebook Whitehat
-- #2447 Multiple fixes to macOS `crashes` - 2.0.0 - Facebook Whitehat and zzuf
-- #2330 Add size checks to `package_bom` - 2.0.0 - Facebook Whitehat
-- #1598 `readFile` TOCTOU error - 1.6.0 - NCC Group
-- #1596 Uncaught exception in config JSON parsing - 1.6.0 - NCC Group
-- #1585 Various comparisons of integers of different signs - 1.6.0 - NCC Group
-- #993 Add restricted permissions to RocksDB - 1.4.5 - Anonymous security review
-- #740 Add hardening compile flags and `-fPIE` - 1.4.1 - Anonymous security review
-- #300 Add restricted permissions to osqueryd logging - 1.0.4
+**“Flamingo Website”** refers to flamingo.cx and related domains controlled by Flamingo AI.  
+
+
+## 2. Scope
+
+This Privacy Policy explains how Flamingo AI, Inc. (“Flamingo AI”) collects, uses, and protects personal data in connection with Flamingo Software, including OpenFrame, OpenMSP, and the Flamingo Website.  
+
+
+## 3. Data Collection
+
+- **Self-Hosted Deployments (OpenFrame):** Flamingo AI does not access or collect customer data. All data remains fully under customer control.  
+- **OpenMSP (Community):** Flamingo AI collects account registration details (username, email), and any content you voluntarily submit (posts, documentation, comments). Metadata (such as IP addresses and logs) may be collected for security, fraud prevention, and moderation.  
+- **Website:** Limited analytics (IP addresses, device/browser data, cookies) are collected for performance, security, and improvements.  
+- **Support Engagements:** Customers may voluntarily provide logs or diagnostic data for troubleshooting. Such data is deleted promptly after resolution.  
+
+
+## 4. Legal Basis for Processing (GDPR)
+
+Flamingo AI processes personal data only when:  
+- You have given consent (e.g., submitting community contributions to OpenMSP, website cookies).  
+- Processing is necessary for the performance of a contract (e.g., account creation, support requests).  
+- Processing is required by law.  
+- Processing is necessary for legitimate interests (e.g., community moderation, improving security and services).  
+
+
+## 5. Data Subject Rights
+
+Depending on your location (EU/UK under GDPR, California under CCPA, or similar laws), you may have the right to:  
+- Access your personal data.  
+- Rectify inaccurate data.  
+- Request deletion (“right to be forgotten”).  
+- Restrict or object to processing.  
+- Request portability of your data.  
+- Withdraw consent at any time.  
+- Opt out of sale or sharing of personal data (CCPA).  
+- Lodge a complaint with a supervisory authority (for EU/UK residents).  
+
+Requests can be submitted to **privacy@flamingo.so**.  
+
+
+## 6. Data Transfers
+
+- Flamingo AI does not transfer customer data from self-hosted deployments.  
+- If personal data must cross borders (e.g., for support or OpenMSP account services), Flamingo AI uses safeguards such as Standard Contractual Clauses.  
+
+
+## 7. Data Retention
+
+- Customer-controlled data in OpenFrame remains under customer control.  
+- Support data is retained only for resolution, typically deleted within 24 hours.  
+- Website analytics are retained no longer than necessary for stated purposes.  
+- OpenMSP contributions remain public unless removed by you or as part of community moderation. Account data may be deleted upon request.  
+
+
+## 8. Children’s Privacy
+
+Flamingo AI products are not directed to children under 16 in the EU/UK or under 13 in the US. Flamingo AI does not knowingly collect data from minors.  
+
+
+## 9. Security
+
+Flamingo AI implements reasonable technical and organizational safeguards, but **customers remain fully responsible for the security of their own infrastructure**.  
+
+
+## 10. Responsibility Disclaimer
+
+Use of Flamingo AI products is entirely at your own risk. Customers are solely responsible for compliance with applicable data protection laws when deploying Flamingo AI software or participating in OpenMSP.  
+
+
+## 11. Text Messaging Opt-In Data
+
+Text messaging originator opt-in data and consent will not be shared with any third parties, excluding aggregators and providers of the Text Message services.
+
+
+## 12. Contact Information
+
+**Privacy Inquiries:** privacy@flamingo.so  
+**General Information:** info@flamingo.so  
+
+---
+
+*By using Flamingo AI products, you acknowledge and agree to this Privacy Policy.*  
+

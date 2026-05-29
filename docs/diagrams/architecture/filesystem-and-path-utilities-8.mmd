@@ -1,0 +1,9 @@
+flowchart TD
+    File["Candidate File"] --> Exists["Exists?"]
+    Exists -->|No| Reject["Reject"]
+    Exists --> Owner["Owner Root or Current User?"]
+    Owner -->|No| Reject
+    Owner --> Writable["World Writable?"]
+    Writable -->|Yes| Reject
+    Writable --> Exec["Executable Required?"]
+    Exec --> Accept["Safe"]

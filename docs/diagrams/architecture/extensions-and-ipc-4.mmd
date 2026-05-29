@@ -1,0 +1,4 @@
+flowchart LR
+    SQL["SQL Engine"] --> ExternalSQL["ExternalSQLPlugin"]
+    ExternalSQL --> ManagerClient["ExtensionManagerClient"]
+    ManagerClient --> Extension["Extension Process"]

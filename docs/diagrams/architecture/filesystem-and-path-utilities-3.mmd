@@ -1,0 +1,4 @@
+flowchart LR
+    Path["File Path"] --> StatCall["platformStat()"]
+    StatCall -->|POSIX| POSIXStat["struct stat"]
+    StatCall -->|Windows| WinStat["WINDOWS_STAT"]

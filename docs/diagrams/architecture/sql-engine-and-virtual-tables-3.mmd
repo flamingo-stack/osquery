@@ -1,0 +1,4 @@
+flowchart TD
+    Prepare["sqlite3_prepare_v2"] --> Authorizer["sqliteAuthorizer"]
+    Authorizer -->|Allowed| Continue["Execute Statement"]
+    Authorizer -->|Denied| Reject["SQLITE_DENY"]

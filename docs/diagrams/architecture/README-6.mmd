@@ -1,0 +1,6 @@
+flowchart TD
+    Exec["Query Execution"] --> Diff["DiffResults"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Serialize["JSON Serialization"]
+    Serialize --> Logger["LoggerPlugin"]
+    Logger --> Sink["External Backend"]

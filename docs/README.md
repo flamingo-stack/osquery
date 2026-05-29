@@ -1,38 +1,119 @@
-## ReadTheDocs Wiki
+# osquery — OpenFrame Edition Documentation
 
-The ReadTheDocs wiki (https://osquery.readthedocs.org/en/stable) is generated using a RTD-configured osquery project and associated GitHub Service. This Service is documented by RTD and more-or-less setup automatically with the project. RTD generates documentation for every version (git tag). It calls the most recent tag 'stable', the most recent commit to master 'devel', and includes links to every past version. The project settings and sidebar for RTD is kept in the root as [mkdocs.yml](https://github.com/osquery/osquery/blob/master/mkdocs.yml).
+Welcome to the documentation for **osquery with OpenFrame** — the cross-platform OS instrumentation framework extended with AI-driven MSP automation by [Flamingo](https://flamingo.run) and [OpenFrame](https://openframe.ai).
 
-### Adding a new page
+---
 
-New wiki pages should be organized into one of the following categories:
+## 📚 Table of Contents
 
-- **Introduction**: Overview of the project or a tool.
-- **Installation**: Deep dives into OS-specifics, packaging, and switches that control starting tools.
-- **Deployment**: Tool concepts and all the wonderful goodies of making osquery useful.
-- **Development**: Help and guides for starting with osquery development and build.
+- [Getting Started](#-getting-started)
+- [Development](#-development)
+- [Reference Architecture](#-reference-architecture)
+- [Architecture Diagrams](#-architecture-diagrams)
+- [Quick Links](#-quick-links)
+- [Community](#-community)
 
-Make a new "filename.md" within the category folder within `/docs/wiki/CATEGORY/`. Then add the friendly page title and path to [mkdocs.yml](https://github.com/osquery/osquery/blob/master/mkdocs.yml), in the order the page should appear within the wiki sidebar.
+---
 
-### Wiki style tips
+## 🚀 Getting Started
 
-- Inline code highlighting (`$ echo 'this is inline'`) does not look the best in RTD, try to have as little inline syntax highlighting as possible.
-- **osqueryd**, **osqueryi** and other tool names should be in bold. Use `inline highlight` when a tool or script is mentioned for the first time.
-- Filesystem paths and non-clickable URI examples should also be bold.
-- Flag names are usually in quotes, `inline highlight` when introduced for the first time or used as an example.
+New to osquery? Start here.
 
-## Doxygen
+| Guide | Description |
+|---|---|
+| [Introduction](./getting-started/introduction.md) | What is osquery with OpenFrame? Features and target audience |
+| [Prerequisites](./getting-started/prerequisites.md) | System requirements, supported platforms, required software |
+| [Quick Start](./getting-started/quick-start.md) | Clone, build, and run osquery in under 10 minutes |
+| [First Steps](./getting-started/first-steps.md) | Explore virtual tables, scheduled packs, FIM, extensions, and OpenFrame |
 
-The Doxygen documentation is not hosted anywhere, each developer must build and view-locally. To build the docs use `make docs`.
+**Recommended reading order:** Introduction → Prerequisites → Quick Start → First Steps
 
-The output HTML documentation is written to `./build/docs/html/`. Use `index.html` to begin exploring.
+---
 
-## Tables and Packs
+## 🛠 Development
 
-Table schema, the osquery user API, is created using the Python-based ".spec" files in [`./specs`](https://github.com/osquery/osquery/tree/master/specs). More documentation on how specs work can be found in the [Creating New Tables](http://osquery.readthedocs.org/en/stable/development/creating-tables/) developer documentation. These files are used to build osquery, but can be parsed to create JSON-based API schema. This JSON is published to the homepage at [https://osquery.io/schema/].
+Guides for contributors and developers building on or extending osquery.
 
-Use: `./tools/codegen/genapi.py` to generate the amalgamated schema. To generate a "change log" between tags, use the same script but use `--diff` and supply the two JSON inputs.
+### Setup
 
-```python
-./tools/codegen/genapi.py > ./build/docs/CURRENT.json
-./tools/codegen/genapi.py --diff ./build/docs/OLD.json ./build/docs/CURRENT.json
+| Guide | Description |
+|---|---|
+| [Environment Setup](./development/setup/environment.md) | IDE recommendations, clangd, ccache, editor extensions |
+| [Local Development](./development/setup/local-development.md) | Build configurations, debug flags, GDB/LLDB, VS Code debugging |
+
+### Architecture
+
+| Guide | Description |
+|---|---|
+| [Architecture Overview](./development/architecture/README.md) | High-level module breakdown, runtime lifecycle, design decisions |
+
+### Quality
+
+| Guide | Description |
+|---|---|
+| [Testing Guide](./development/testing/README.md) | GTest/GMock structure, running tests, writing unit and integration tests |
+| [Security Best Practices](./development/security/README.md) | Auth patterns, AES-256-GCM, SQL authorizer, TLS, secrets management |
+
+### Contributing
+
+| Guide | Description |
+|---|---|
+| [Contributing Guidelines](./development/contributing/guidelines.md) | Code style, branch naming, commit format, PR process, virtual table creation |
+
+---
+
+## 📖 Reference Architecture
+
+Deep technical documentation for each core subsystem — generated directly from source code analysis.
+
+| Module | Description |
+|---|---|
+| [Core Init And Runtime](./reference/architecture/core-init-and-runtime/core-init-and-runtime.md) | Process bootstrap, flags, watcher/worker model, watchdog |
+| [SQL Engine And Virtual Tables](./reference/architecture/sql-engine-and-virtual-tables/sql-engine-and-virtual-tables.md) | SQLite engine, authorizer, virtual table binding, constraint pushdown |
+| [Configuration And Packs](./reference/architecture/configuration-and-packs/configuration-and-packs.md) | Config loading, packs, schedulers, decorators, change detection |
+| [Eventing Framework And Subscriptions](./reference/architecture/eventing-framework-and-subscriptions/eventing-framework-and-subscriptions.md) | Publisher/subscriber system, inotify, BPF, FSEvents, ETW |
+| [Extensions And IPC](./reference/architecture/extensions-and-ipc/extensions-and-ipc.md) | Apache Thrift IPC, runtime plugin model, UUID routing |
+| [Distributed Querying](./reference/architecture/distributed-querying/distributed-querying.md) | Remote SQL orchestration, TLS transport, fleet denylisting |
+| [Remote HTTP Client](./reference/architecture/remote-http-client/remote-http-client.md) | Boost.Asio/Beast HTTPS client, TLS handshake, peer verification |
+| [Logging And Query Observability](./reference/architecture/logging-and-query-observability/logging-and-query-observability.md) | Differential result tracking, JSON serialization, pluggable backends |
+| [Database And Storage Plugins](./reference/architecture/database-and-storage-plugins/database-and-storage-plugins.md) | RocksDB persistent backend, ephemeral in-memory store, key-value interface |
+| [Filesystem And Path Utilities](./reference/architecture/filesystem-and-path-utilities/filesystem-and-path-utilities.md) | Cross-platform file abstraction, glob resolution, permission enforcement |
+
+---
+
+## 🗺 Architecture Diagrams
+
+Visual Mermaid diagrams for each subsystem are available in:
+
+```text
+docs/diagrams/architecture/
 ```
+
+Diagrams cover all major subsystems including the SQL engine, eventing framework, configuration pipeline, distributed querying, OpenFrame auth layer, and more. Open any `.mmd` file in a Mermaid-compatible viewer.
+
+---
+
+## 🔗 Quick Links
+
+| Resource | Link |
+|---|---|
+| [Project README](../README.md) | Main project overview, quick start, and features |
+| [Contributing Guide](../CONTRIBUTING.md) | How to contribute code, docs, and virtual tables |
+| [License](../LICENSE.md) | License information |
+
+---
+
+## 💬 Community
+
+> We do **not** use GitHub Issues or GitHub Discussions. All support and collaboration happens on **OpenMSP Slack**.
+
+| Resource | Link |
+|---|---|
+| OpenMSP Community Slack | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
+| OpenMSP Website | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
+| OpenFrame Platform | [https://openframe.ai](https://openframe.ai) |
+| Flamingo | [https://flamingo.run](https://flamingo.run) |
+
+---
+
+*Documentation generated by [OpenFrame Doc Orchestrator](https://github.com/flamingo-stack/openframe-oss-tenant)*

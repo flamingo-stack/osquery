@@ -1,0 +1,19 @@
+flowchart TD
+    CoreModules["Core And Feature Modules"] --> DBInterface["IDatabaseInterface"]
+    DBInterface --> OsqueryDB["OsqueryDatabase"]
+    OsqueryDB --> RegistryLayer["Database Plugin Registry"]
+    RegistryLayer --> RocksDBPlugin["RocksDB Plugin (Persistent)"]
+    RegistryLayer --> EphemeralPlugin["Ephemeral Database Plugin (In-Memory)"]
+
+    subgraph storage_domains["Logical Storage Domains"]
+        PersistentSettings["configurations"]
+        Queries["queries"]
+        Events["events"]
+        Logs["logs"]
+        Carves["carves"]
+        Distributed["distributed"]
+        QueryPerformance["query_performance"]
+    end
+
+    RocksDBPlugin --> storage_domains
+    EphemeralPlugin --> storage_domains

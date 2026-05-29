@@ -1,0 +1,5 @@
+flowchart LR
+    Core["osquery Core"] --> Manager["Extension Manager"]
+    Extension["External Extension"] --> Manager
+    Manager --> Registry["RegistryFactory"]
+    Core --> Extension
