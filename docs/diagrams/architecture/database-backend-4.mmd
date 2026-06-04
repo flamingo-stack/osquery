@@ -1,0 +1,5 @@
+flowchart LR
+    Client["Component Using IDatabaseInterface"] --> Interface["IDatabaseInterface"]
+    Interface --> OsqueryDB["OsqueryDatabase"]
+    OsqueryDB --> GlobalHelpers["Global Database Helpers"]
+    GlobalHelpers --> ActivePlugin["Active DatabasePlugin"]

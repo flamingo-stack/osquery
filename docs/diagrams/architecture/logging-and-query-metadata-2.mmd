@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Scheduled Query Execution"] --> FetchOld["getPreviousQueryResults()"]
+    FetchOld --> Exec["Execute SQL"]
+    Exec --> Diff["diff(old, new)"]
+    Diff --> Store["saveQueryResults()"]
+    Store --> BuildLog["Construct QueryLogItem"]
+    BuildLog --> End["Emit Log"]

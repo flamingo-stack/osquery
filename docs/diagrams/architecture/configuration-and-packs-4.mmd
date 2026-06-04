@@ -1,0 +1,5 @@
+flowchart TD
+    Platform["Check Platform"] --> Version["Check Version"]
+    Version --> Shard["Check Shard"]
+    Shard --> Discovery["Run Discovery Queries"]
+    Discovery --> Active["Pack Active"]

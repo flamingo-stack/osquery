@@ -1,0 +1,5 @@
+flowchart LR
+    Ext["Extension Process"] -->|"registerExtension"| EM["ExtensionManagerInterface"]
+    EM --> UUID["Assign RouteUUID"]
+    EM --> Registry["RegistryFactory.addBroadcast"]
+    EM --> Store["Store ExtensionInfo"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Start setUp()"] --> ReadFlag["Read distributed_tls_read_endpoint"]
+    ReadFlag --> MakeReadURI["TLSRequestHelper makeURI()"]
+    MakeReadURI --> WriteFlag["Read distributed_tls_write_endpoint"]
+    WriteFlag --> MakeWriteURI["TLSRequestHelper makeURI()"]
+    MakeWriteURI --> StoreURIs["Store read_uri and write_uri"]
+    StoreURIs --> EndNode["END"]

@@ -1,0 +1,6 @@
+flowchart TD
+    ParseOptions["Parse options JSON"] --> Validate["Validate flag name"]
+    Validate -->|"invalid"| Warn["Log warning"]
+    Validate -->|"valid"| UpdateFlag["Flag::updateValue()"]
+    UpdateFlag --> CheckVerbose["Is verbosity option?"]
+    CheckVerbose -->|"yes"| Reconfigure["setVerboseLevel()"]

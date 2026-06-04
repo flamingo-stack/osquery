@@ -1,0 +1,7 @@
+flowchart TD
+    ShutdownStart["Initializer::shutdown()"] --> StartAlarm["Spawn AlarmRunnable"]
+    StartAlarm --> StopServices["Stop & Join Services"]
+    StopServices --> EndEvents["EventFactory::end()"]
+    EndEvents --> ShutdownDB["shutdownDatabase()"]
+    ShutdownDB --> CancelAlarm["Interrupt AlarmRunnable"]
+    CancelAlarm --> Exit["Return Exit Code"]

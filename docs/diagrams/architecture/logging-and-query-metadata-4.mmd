@@ -1,0 +1,12 @@
+flowchart TD
+    Config["Configuration And Packs"] --> SchedulerExec["Scheduled Query"]
+    SchedulerExec --> SQLEngine["SQL Engine"]
+    SQLEngine --> QueryState["Query"]
+    QueryState --> DiffLayer["DiffResults"]
+    QueryState --> Perf["QueryPerformance"]
+    DiffLayer --> LogItem["QueryLogItem"]
+    Perf --> LogItem
+    LogItem --> Serializer["JSON Serialization"]
+    Serializer --> Logger["LoggerPlugin"]
+    Logger --> Sink["External Sink"]
+    QueryState --> Database["Database Backend"]

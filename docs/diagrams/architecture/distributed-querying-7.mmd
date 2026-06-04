@@ -1,0 +1,11 @@
+flowchart TD
+    Server["Remote Server"] --> PluginPull["getQueries()"]
+    PluginPull --> Accept["acceptWork()"]
+    Accept --> Queue["Internal Queue"]
+    Queue --> Execute["runQueries()"]
+    Execute --> SQL["SQL Engine"]
+    SQL --> Results["DistributedQueryResult"]
+    Results --> Buffer["results_"]
+    Buffer --> Flush["flushCompleted()"]
+    Flush --> PluginPush["writeResults()"]
+    PluginPush --> Server

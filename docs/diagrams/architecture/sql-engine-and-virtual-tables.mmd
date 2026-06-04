@@ -1,0 +1,8 @@
+flowchart TD
+    Client["SQL Caller\nScheduler, Shell, API"] --> SQLPlugin["SQLiteSQLPlugin"]
+    SQLPlugin --> DBManager["SQLiteDBManager"]
+    DBManager --> DBInstance["SQLiteDBInstance"]
+    DBInstance --> SQLiteCore[("SQLite Engine")]
+    SQLiteCore --> VTableModule["sqlite3_module\nVirtual Table Layer"]
+    VTableModule --> TablePlugin["TablePlugin\nRegistry"]
+    TablePlugin --> DataSource["System Data Sources\nFilesystem, Processes, Network"]

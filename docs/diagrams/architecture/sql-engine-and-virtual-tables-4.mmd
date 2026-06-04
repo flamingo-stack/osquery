@@ -1,0 +1,9 @@
+flowchart TD
+    Create["xCreate or xConnect"] --> Declare["sqlite3_declare_vtab"]
+    Declare --> BestIndex["xBestIndex"]
+    BestIndex --> Filter["xFilter"]
+    Filter --> Next["xNext"]
+    Next --> Column["xColumn"]
+    Column --> Rowid["xRowid"]
+    Rowid --> Eof["xEof"]
+    Eof --> Close["xClose"]

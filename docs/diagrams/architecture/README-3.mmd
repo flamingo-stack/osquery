@@ -1,0 +1,6 @@
+flowchart TD
+    Publisher["Event Publisher Plugin"] --> Subscriber["EventSubscriberPlugin"]
+    Subscriber --> DB["Database Backend"]
+    Subscriber --> SQLTable["Event Virtual Table"]
+    SQLTable --> Query["SELECT From Event Table"]
+    Query --> Logging["Logging And Query Metadata"]

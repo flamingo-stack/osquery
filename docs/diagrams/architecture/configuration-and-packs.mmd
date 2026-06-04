@@ -1,0 +1,10 @@
+flowchart TD
+    ConfigPlugin["Config Plugin Registry"] -->|"genConfig"| ConfigCore["Config Singleton"]
+    ConfigCore -->|"updateSource"| JSONValidation["JSON Validation"]
+    JSONValidation --> Packs["Pack Objects"]
+    Packs --> Schedule["Schedule Manager"]
+    Schedule --> SQL["SQL Engine"]
+    Schedule --> Logger["Logger Plugins"]
+    ConfigCore --> Database["Database Backend"]
+    ConfigCore --> EventFactory["Event Factory"]
+    ConfigCore --> Registry["Plugin Registry"]

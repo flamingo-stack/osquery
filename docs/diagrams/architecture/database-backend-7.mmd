@@ -1,0 +1,7 @@
+flowchart TD
+    Start["upgradeDatabase(target)"] --> ReadVersion["Read results_version"]
+    ReadVersion --> Compare{"Current != Target?"}
+    Compare -->|"Yes"| Migrate["Run Migration Step"]
+    Migrate --> UpdateVersion["Persist New Version"]
+    UpdateVersion --> Compare
+    Compare -->|"No"| Done["Upgrade Complete"]

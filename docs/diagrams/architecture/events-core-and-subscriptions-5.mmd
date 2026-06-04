@@ -1,0 +1,4 @@
+flowchart TD
+    Publisher["EventPublisher"] --> Callback["EventCallback"]
+    Callback --> AddBatch["addBatch(rows)"]
+    AddBatch --> DBWrite["Database Backend"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Startup"] --> Register["Register Publishers & Subscribers"]
+    Register --> Config["Apply Config Enable/Disable"]
+    Config --> Delay["Spawn Publisher Threads"]
+    Delay --> Running["Event Loop Running"]
+    Running --> Query["SQL Query Execution"]
+    Query --> Expire["Expiration & Optimization"]
+    Expire --> Shutdown["EventFactory.end()"]

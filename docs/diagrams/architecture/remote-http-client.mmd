@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigPlugins["Config Plugins"] -->|"Fetch config"| RemoteHttpClient["Remote Http Client"]
+    DistributedTLS["Distributed TLS Plugin"] -->|"Send queries"| RemoteHttpClient
+    DistributedQuerying["Distributed Querying"] -->|"Submit results"| RemoteHttpClient
+
+    RemoteHttpClient -->|"TCP"| Asio["Boost Asio"]
+    RemoteHttpClient -->|"HTTP"| Beast["Boost Beast"]
+    RemoteHttpClient -->|"TLS"| OpenSSL["OpenSSL"]

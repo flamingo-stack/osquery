@@ -1,0 +1,13 @@
+flowchart TD
+    User["User Terminal"] --> Shell["Osquery Shell Devtooling"]
+    Shell --> Parser["Meta Command Parser"]
+    Shell --> Executor["SQL Executor"]
+
+    Executor --> SQLite["SQLite Engine"]
+    SQLite --> VTables["Virtual Tables"]
+    VTables --> Registry["Table Registry"]
+
+    Executor --> DBManager["SQLiteDBManager"]
+    Executor --> Extensions["Extension Manager Client"]
+
+    Extensions --> RemoteExt["Remote Extension Socket"]

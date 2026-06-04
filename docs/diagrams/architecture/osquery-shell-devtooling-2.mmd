@@ -1,0 +1,10 @@
+flowchart TD
+    A["Read Input Line"] --> B{"Starts With Dot?"}
+    B -->|"Yes"| C["Meta Command Handler"]
+    B -->|"No"| D["Accumulate SQL"]
+    D --> E{"Complete Statement?"}
+    E -->|"No"| A
+    E -->|"Yes"| F["Execute SQL"]
+    F --> G["shell_callback"]
+    G --> H["Render Output Mode"]
+    H --> A

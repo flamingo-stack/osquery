@@ -1,0 +1,4 @@
+flowchart LR
+    Sub["EventSubscriber"] -->|"creates"| Subscription
+    Subscription -->|"context + callback"| Publisher
+    Publisher -->|"fires"| Callback

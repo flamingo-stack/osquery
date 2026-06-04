@@ -1,0 +1,6 @@
+flowchart TD
+    Create["Create PlatformFile"] --> Open["Open Native Handle"]
+    Open --> Valid{"Valid Handle?"}
+    Valid -->|Yes| Operate["Read or Write or Seek"]
+    Valid -->|No| Error["Return Failure"]
+    Operate --> Close["Destructor Closes Handle"]

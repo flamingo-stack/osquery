@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Process Startup"] --> Init["initDatabasePlugin()"]
+    Init --> CheckDisable{"disable_database flag?"}
+    CheckDisable -->|"Yes"| UseEphemeral["Set Active Plugin: Ephemeral"]
+    CheckDisable -->|"No"| UseRocksDB["Set Active Plugin: RocksDB"]
+    UseEphemeral --> MarkInit["kDBInitialized = true"]
+    UseRocksDB --> MarkInit
+    MarkInit --> Ready["Database Ready"]

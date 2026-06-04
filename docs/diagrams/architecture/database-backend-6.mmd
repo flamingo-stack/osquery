@@ -1,0 +1,6 @@
+flowchart TD
+    ResetCall["resetDatabase()"] --> RegistryCall["Registry::call action=reset"]
+    RegistryCall --> WriteLock["Acquire Write Lock"]
+    WriteLock --> TearDown["Plugin tearDown()"]
+    TearDown --> SetUp["Plugin setUp()"]
+    SetUp --> Done["Database Reinitialized"]

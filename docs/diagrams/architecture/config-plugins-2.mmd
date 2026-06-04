@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Start genConfig()"] --> CheckFile["Check config_path exists"]
+    CheckFile -->|"valid"| LoadDir["Resolve config_path.d/*.conf"]
+    LoadDir --> SortFiles["Sort files"]
+    SortFiles --> Merge["Append main config"]
+    Merge --> Output["Return map of source to JSON"]
+    CheckFile -->|"invalid"| Fail["Return failure Status"]

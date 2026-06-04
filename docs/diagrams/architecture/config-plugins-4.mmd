@@ -1,0 +1,13 @@
+flowchart TD
+    ConfigUpdate["Config Update"] --> RemoveOld["Remove existing files for source"]
+    RemoveOld --> ParseFilePaths["Parse file_paths"]
+    RemoveOld --> ParseQuery["Parse file_paths_query"]
+    RemoveOld --> ParseAccess["Parse file_accesses"]
+    RemoveOld --> ParseExclude["Parse exclude_paths"]
+
+    ParseFilePaths --> Register["Config::addFile()"]
+    ParseQuery --> SQLExec["Execute SQL query"]
+    SQLExec --> Register
+
+    ParseAccess --> AccessMap["Build access map"]
+    ParseExclude --> MergeExclude["Merge exclude paths"]

@@ -1,0 +1,5 @@
+flowchart TD
+    SQLQuery["SELECT * FROM event_table"] --> GenTable["genTable()"]
+    GenTable --> GenerateRows["generateRows()"]
+    GenerateRows --> Filter["time window filtering"]
+    Filter --> Yield["RowYield callback"]

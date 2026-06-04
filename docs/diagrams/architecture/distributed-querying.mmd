@@ -1,0 +1,9 @@
+flowchart TD
+    RemoteService["Remote Service"] --> DistributedPlugin["Distributed Plugin"]
+    DistributedPlugin --> DistributedManager["Distributed"]
+    DistributedManager --> SQLExecutor["SQL Engine"]
+    SQLExecutor --> VirtualTables["Virtual Tables"]
+    DistributedManager --> DatabaseState["Database Backend"]
+    DistributedManager --> PerformanceTracker["Query Performance"]
+    DistributedManager --> ResultSerializer["Result Serialization"]
+    ResultSerializer --> DistributedPlugin

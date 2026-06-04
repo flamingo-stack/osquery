@@ -1,0 +1,5 @@
+flowchart TD
+    Scheduled["Scheduled Queries"] --> Scan["scan for event tables"]
+    Scan --> Compute["compute max interval + count"]
+    Compute --> SetExpiry["setMinExpiry()"]
+    SetExpiry --> ResetCount["resetQueryCount()"]

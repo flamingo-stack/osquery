@@ -1,0 +1,7 @@
+flowchart TD
+    Request["get() or getConnection()"] --> CheckPrimary{"Primary DB Exists?"}
+    CheckPrimary -->|"No"| Init["openOptimized()"]
+    CheckPrimary -->|"Yes"| Reuse["Reuse Primary"]
+    Init --> Attach["attachVirtualTables()"]
+    Reuse --> ReturnPrimary["Return Primary or Transient"]
+    Attach --> ReturnPrimary

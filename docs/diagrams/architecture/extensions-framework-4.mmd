@@ -1,0 +1,5 @@
+flowchart TD
+    Start["startExtensionManager"] --> Check["Check socketExists"]
+    Check --> Watcher["Start ExtensionManagerWatcher"]
+    Watcher --> Runner["Start ExtensionManagerRunner"]
+    Runner --> Ready["Manager Listening"]

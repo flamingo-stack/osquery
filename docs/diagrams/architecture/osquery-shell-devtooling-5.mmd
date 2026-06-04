@@ -1,0 +1,5 @@
+flowchart TD
+    Start["BEGIN_TIMER"] --> CaptureStart["Capture rusage + Wall Time"]
+    CaptureStart --> Execute["Run Query"]
+    Execute --> CaptureEnd["Capture End rusage"]
+    CaptureEnd --> Print["Print real, user, sys"]

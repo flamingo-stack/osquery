@@ -1,0 +1,5 @@
+flowchart LR
+    DistributedEngine["Distributed Query Engine"] -->|"getQueries()"| TLSPlugin["Distributed Tls Plugin"]
+    TLSPlugin -->|"HTTPS POST"| RemoteServer["Remote TLS Server"]
+    RemoteServer -->|"JSON Queries"| TLSPlugin
+    TLSPlugin -->|"writeResults()"| DistributedEngine

@@ -1,0 +1,7 @@
+flowchart TD
+    CoreCall["RegistryFactory.call"] --> Resolve["Resolve RouteUUID"]
+    Resolve --> IPC["callExtension()"]
+    IPC --> Socket["Thrift RPC"]
+    Socket --> ExtHandler["ExtensionHandler.call"]
+    ExtHandler --> Plugin["Local Plugin Execution"]
+    Plugin --> Response["Return PluginResponse"]

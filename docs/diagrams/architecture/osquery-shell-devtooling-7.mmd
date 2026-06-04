@@ -1,0 +1,5 @@
+flowchart TD
+    Input[".command args"] --> Tokenize["Tokenize Arguments"]
+    Tokenize --> Match["Command Switch"]
+    Match --> Execute["Meta Handler Function"]
+    Execute --> Output["Print To Shell"]

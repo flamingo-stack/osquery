@@ -1,0 +1,7 @@
+flowchart TD
+    Pattern["Input Pattern"] --> Normalize["Canonicalize Base Path"]
+    Normalize --> Expand["Apply Wildcards"]
+    Expand --> DetectLoop{"Symlink Loop?"}
+    DetectLoop -->|Yes| Stop["Stop Recursion"]
+    DetectLoop -->|No| Recurse["Continue Expansion"]
+    Recurse --> Filter["Apply Folder or File Filter"]

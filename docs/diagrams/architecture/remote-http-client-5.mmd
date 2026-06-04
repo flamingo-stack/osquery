@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Start Request"] --> Init["Initialize HTTP Request"]
+    Init --> Resolve["DNS Resolve"]
+    Resolve --> Connect["TCP Connect"]
+    Connect --> TLSCheck{{"TLS Enabled?"}}
+    TLSCheck -->|"Yes"| Handshake["SSL Handshake"]
+    TLSCheck -->|"No"| Write
+    Handshake --> Write["Async Write"]
+    Write --> Read["Async Read"]
+    Read --> Complete["Post Response Handler"]
+    Complete --> EndNode["END"]

@@ -1,0 +1,11 @@
+flowchart TD
+    CoreRuntime["Core Runtime and Lifecycle"] --> DatabaseBackend["Database Backend"]
+
+    DatabaseBackend --> Registry["Registry Factory"]
+    DatabaseBackend --> RocksDBPlugin["RocksDB Plugin"]
+    DatabaseBackend --> EphemeralPlugin["Ephemeral Database Plugin"]
+
+    DatabaseBackend --> ConfigModule["Configuration and Packs"]
+    DatabaseBackend --> LoggingModule["Logging and Query Metadata"]
+    DatabaseBackend --> DistributedModule["Distributed Querying"]
+    DatabaseBackend --> EventsModule["Events Core and Subscriptions"]

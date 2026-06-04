@@ -1,0 +1,9 @@
+flowchart TD
+    Scheduler["Configuration And Packs"] -->|"creates"| ScheduledQuery
+    ScheduledQuery -->|"executes"| SQLEngine["SQL Engine And Virtual Tables"]
+    SQLEngine -->|"returns rows"| QueryLayer["Query"]
+    QueryLayer -->|"computes diff"| DiffResultsNode["DiffResults"]
+    QueryLayer -->|"builds"| QueryLogItemNode["QueryLogItem"]
+    QueryLogItemNode -->|"serialize"| LoggerPluginNode["LoggerPlugin"]
+    LoggerPluginNode -->|"emits"| ExternalSystem["External Logging System"]
+    QueryLayer -->|"store previous"| DatabaseBackend["Database Backend"]

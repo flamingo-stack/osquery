@@ -1,0 +1,5 @@
+flowchart LR
+    Query["SQL Query"] --> Check{"Connect Flag Set?"}
+    Check -->|"No"| LocalExec["shell_exec Local"]
+    Check -->|"Yes"| RemoteExec["shell_exec_remote"]
+    RemoteExec --> ExtClient["ExtensionManagerClient"]

@@ -1,0 +1,7 @@
+flowchart TD
+    ParseViews["Parse views JSON"] --> LoadExisting["Scan database keys"]
+    LoadExisting --> Compare["Compare old vs new"]
+    Compare -->|"changed or new"| DropOld["DROP VIEW"]
+    DropOld --> CreateNew["CREATE VIEW AS query"]
+    CreateNew --> Persist["Store in database"]
+    Compare -->|"removed"| Remove["Delete database entry"]

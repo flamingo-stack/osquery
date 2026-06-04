@@ -1,0 +1,9 @@
+flowchart TD
+    Gen["Registry.call genConfig"] --> Update["Config.update()"]
+    Update --> Purge["Purge stale queries"]
+    Purge --> UpdateSource["updateSource(source)"]
+    UpdateSource --> Validate["Validate JSON"]
+    Validate --> Extract["Extract schedule and packs"]
+    Extract --> ApplyParsers["Apply config parsers"]
+    ApplyParsers --> Reconfigure["Reconfigure registries"]
+    Reconfigure --> Done["Config Valid"]

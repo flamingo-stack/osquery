@@ -1,0 +1,5 @@
+flowchart TD
+    Client["ExtensionClient"] --> Socket["UNIX Socket / Named Pipe"]
+    Socket --> ThriftServer["TThreadedServer"]
+    ThriftServer --> Handler["ExtensionHandler or ExtensionManagerHandler"]
+    Handler --> Interface["ExtensionInterface Logic"]

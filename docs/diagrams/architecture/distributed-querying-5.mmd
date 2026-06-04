@@ -1,0 +1,5 @@
+flowchart TD
+    RunQuery["Execute SQL"] --> Measure["Measure Duration"]
+    Measure --> CountRows["Count Result Rows"]
+    CountRows --> Record["recordQueryPerformance"]
+    Record --> Store["Performance Map"]

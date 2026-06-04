@@ -1,0 +1,7 @@
+flowchart TD
+    StartWrite["Start writeResults()"] --> ParseJSON["Parse input JSON"]
+    ParseJSON --> ValidCheck{{"Valid JSON?"}}
+    ValidCheck -->|"No"| ReturnError["Return error Status"]
+    ValidCheck -->|"Yes"| SendTLS["TLSRequestHelper go()"]
+    SendTLS --> IgnoreResp["Ignore server response"]
+    IgnoreResp --> EndWrite["END"]

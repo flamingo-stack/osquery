@@ -1,0 +1,11 @@
+flowchart TD
+    Initializer["Initializer"] --> Mode{{"ToolType"}}
+    Mode --> Shell["Shell Mode"]
+    Mode --> Daemon["Daemon Mode"]
+    Mode --> Extension["Extension Mode"]
+
+    Daemon --> Watchdog{{"Watchdog Enabled?"}}
+    Watchdog -->|"Yes"| Watcher["Watcher Process"]
+    Watchdog -->|"No"| DirectRun["Single Process Runtime"]
+
+    Watcher --> Worker["Worker Process"]

@@ -1,0 +1,26 @@
+flowchart TD
+    Core["Core Runtime And Lifecycle"] --> Config["Configuration And Packs"]
+    Core --> SQL["SQL Engine And Virtual Tables"]
+    Core --> DB["Database Backend"]
+    Core --> Logging["Logging And Query Metadata"]
+    Core --> Events["Events Core And Subscriptions"]
+    Core --> Extensions["Extensions Framework"]
+    Core --> Distributed["Distributed Querying"]
+
+    Config --> SQL
+    Config --> Events
+    Config --> Logging
+
+    SQL --> Logging
+    SQL --> DB
+
+    Events --> DB
+    Events --> Logging
+
+    Distributed --> SQL
+    Distributed --> DB
+    Distributed --> Logging
+
+    Extensions --> SQL
+    Extensions --> Config
+    Extensions --> Distributed

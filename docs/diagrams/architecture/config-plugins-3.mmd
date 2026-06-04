@@ -1,0 +1,14 @@
+flowchart TD
+    ConfigLoad["Config Updated"] --> ParseDecorators["Parse decorators JSON"]
+    ParseDecorators --> StoreQueries["Store queries by point"]
+    StoreQueries --> RunLoad["Run load decorators"]
+
+    Scheduler["Query Scheduler"] --> RunAlways["Run always decorators"]
+    Scheduler --> RunInterval["Run interval decorators"]
+
+    RunLoad --> SQLExec["Execute SQL"]
+    RunAlways --> SQLExec
+    RunInterval --> SQLExec
+
+    SQLExec --> DecorationStore["Store first row columns"]
+    DecorationStore --> Logger["Attach to logs"]

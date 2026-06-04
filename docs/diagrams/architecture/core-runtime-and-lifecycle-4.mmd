@@ -1,0 +1,6 @@
+flowchart TD
+    Signal["SIGTERM / SIGINT / SIGUSR1"] --> Handler["signalHandler()"]
+    Handler --> Request["requestShutdown()"]
+    Request --> Notify["Condition Variable Notify"]
+    Notify --> MainWait["waitForShutdown()"]
+    MainWait --> GracefulStop["Dispatcher::stopServices()"]

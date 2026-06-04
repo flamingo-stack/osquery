@@ -1,0 +1,7 @@
+flowchart TD
+    RegisterSub["registerEventSubscriber()"] --> Setup["setUp()"]
+    Setup --> Init["init()"]
+    Init --> Running["EVENT_RUNNING"]
+
+    RegisterPub["registerEventPublisher()"] --> PubSetup["publisher.setUp()"]
+    PubSetup --> Stored["stored in factory map"]

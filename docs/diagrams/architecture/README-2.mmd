@@ -1,0 +1,14 @@
+flowchart TD
+    Source["Scheduled Or Distributed Query"] --> Scheduler["Configuration And Packs"]
+    Scheduler --> SQLPlugin["SQLiteSQLPlugin"]
+    SQLPlugin --> SQLiteCore["SQLite Engine"]
+    SQLiteCore --> VTables["Virtual Tables"]
+    VTables --> TablePlugins["Table Plugins"]
+
+    SQLiteCore --> QueryState["Query State And Diff"]
+    QueryState --> DB["Database Backend"]
+    QueryState --> Diff["DiffResults"]
+
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Logger["Logger Plugin"]
+    Logger --> External["External Logging System"]

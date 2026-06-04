@@ -1,0 +1,4 @@
+flowchart LR
+    Logger["LoggerPlugin"] -->|"usesLogStatus()"| StatusHandling["Handle Glog Status"]
+    Logger -->|"usesLogEvent()"| EventHandling["Handle Event Forwarding"]
+    Logger -->|"logSnapshot()"| SnapshotHandling["Snapshot Optimization"]

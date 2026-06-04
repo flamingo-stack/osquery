@@ -1,0 +1,7 @@
+flowchart TD
+    StartRetry["Start TLS request"] --> Attempt["Attempt HTTPS call"]
+    Attempt --> SuccessCheck{{"Success?"}}
+    SuccessCheck -->|"Yes"| ReturnOK["Return Status OK"]
+    SuccessCheck -->|"No"| RetryCheck{{"Attempts left?"}}
+    RetryCheck -->|"Yes"| Attempt
+    RetryCheck -->|"No"| ReturnFail["Return Status Error"]

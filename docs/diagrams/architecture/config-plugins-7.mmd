@@ -1,0 +1,10 @@
+flowchart TD
+    Source["Filesystem or Remote Source"] --> ConfigPlugin["ConfigPlugin"]
+    ConfigPlugin --> ConfigCore["Config Core"]
+    ConfigCore --> ParserPlugins["ConfigParserPlugins"]
+    ParserPlugins --> RuntimeState["Runtime State"]
+
+    RuntimeState --> Scheduler["Query Scheduler"]
+    RuntimeState --> Logger
+    RuntimeState --> Events
+    RuntimeState --> SQL

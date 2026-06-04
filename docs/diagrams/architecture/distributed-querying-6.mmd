@@ -1,0 +1,6 @@
+flowchart TD
+    AddResult["addResult()"] --> Buffer["results_ Vector"]
+    Buffer --> FlushCall["flushCompleted()"]
+    FlushCall --> Serialize["serializeResults()"]
+    Serialize --> PluginWrite["DistributedPlugin.writeResults()"]
+    PluginWrite --> Clear["Clear results_"]

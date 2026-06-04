@@ -1,0 +1,4 @@
+flowchart TD
+    Update["Successful Update"] --> Backup["Backup Config Sources"]
+    Failure["Refresh Failure"] --> Restore["Restore From Database"]
+    Restore --> Update

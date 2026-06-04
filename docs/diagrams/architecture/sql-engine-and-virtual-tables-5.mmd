@@ -1,0 +1,6 @@
+flowchart TD
+    Query["User Query"] --> ExplainPlan["EXPLAIN QUERY PLAN"]
+    ExplainPlan --> Explain["EXPLAIN"]
+    Explain --> Parse["Parse Opcode Rows"]
+    Parse --> ApplyTypes["applyTypes()"]
+    ApplyTypes --> Columns["Typed Column Metadata"]

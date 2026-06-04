@@ -1,0 +1,24 @@
+flowchart TD
+    Entry["Process Entry Point"] --> Init["Initializer Constructor"]
+    Init --> ParseFlags["Parse Flags & CLI"]
+    ParseFlags --> SetupRegistry["Registry & Plugin Initialization"]
+    SetupRegistry --> ModeCheck{{"Shell / Daemon / Extension?"}}
+
+    ModeCheck -->|"Shell"| ShellInit["Shell Initialization"]
+    ModeCheck -->|"Daemon"| DaemonInit["Daemon Initialization"]
+    ModeCheck -->|"Extension"| ExtInit["Extension Initialization"]
+
+    ShellInit --> StartRuntime["Initializer.start()"]
+    DaemonInit --> StartRuntime
+    ExtInit --> StartRuntime
+
+    StartRuntime --> LoadConfig["Load Config Plugin"]
+    LoadConfig --> ActivateLogger["Activate Logger Plugin"]
+    ActivateLogger --> ActivateDistributed["Activate Distributed Plugin"]
+    ActivateDistributed --> AttachEvents["Attach Event Subscribers"]
+    AttachEvents --> Running["Runtime Active"]
+
+    Running -->|"Signal / Error"| ShutdownReq["requestShutdown()"]
+    ShutdownReq --> Graceful["Dispatcher Stop & Join"]
+    Graceful --> AlarmGuard["AlarmRunnable Guard"]
+    AlarmGuard --> Exit["Process Exit"]

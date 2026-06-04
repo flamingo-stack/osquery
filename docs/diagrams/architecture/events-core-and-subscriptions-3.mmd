@@ -1,0 +1,6 @@
+flowchart TD
+    Delay["EventFactory.delay()"] --> Spawn["spawn thread per publisher"]
+    Spawn --> RunLoop["EventFactory.run(type)"]
+    RunLoop --> Loop["publisher.run() loop"]
+    Loop --> Pause["pause 200ms"]
+    Loop -->|"error"| TearDown["tearDown()"]

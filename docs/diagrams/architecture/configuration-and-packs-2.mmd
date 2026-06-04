@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Thread Start"] --> Pause["Sleep refresh_sec"]
+    Pause --> Check["Interrupted?"]
+    Check -->|"Yes"| End["Stop"]
+    Check -->|"No"| Refresh["Config.refresh()"]
+    Refresh --> Pause

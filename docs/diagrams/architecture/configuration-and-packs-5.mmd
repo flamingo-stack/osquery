@@ -1,0 +1,6 @@
+flowchart TD
+    Failure["Query Failure"] --> Persist["Persist to Database"]
+    Persist --> Denylist["Add to Denylist"]
+    Denylist --> Skip["Skip During Scheduling"]
+    Skip --> Expire["Expiration Check"]
+    Expire -->|"Expired"| Reactivate["Allow Execution"]

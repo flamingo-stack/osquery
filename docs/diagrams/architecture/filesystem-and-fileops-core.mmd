@@ -1,0 +1,14 @@
+flowchart TD
+    HighLevel["High-Level Consumers"] --> FilesystemAPI["Filesystem API"]
+    FilesystemAPI --> PlatformFile["PlatformFile"]
+    FilesystemAPI --> GlobEngine["Glob and Pattern Resolver"]
+    FilesystemAPI --> PermissionChecks["Permission and Safety Checks"]
+
+    PlatformFile --> PosixImpl["POSIX Implementation"]
+    PlatformFile --> WindowsImpl["Windows Implementation"]
+
+    GlobEngine --> PosixGlob["POSIX glob()"]
+    GlobEngine --> WindowsGlob["Windows FindFirstFile"]
+
+    PermissionChecks --> PosixPerms["POSIX chmod and stat"]
+    PermissionChecks --> WindowsACL["Windows ACL and SID Logic"]

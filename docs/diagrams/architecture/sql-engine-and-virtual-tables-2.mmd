@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Query Request"] --> GetDB["SQLiteDBManager.get()"]
+    GetDB --> UseCache["Set Cache Mode"]
+    UseCache --> Prepare["sqlite3_prepare_v2"]
+    Prepare --> Step["sqlite3_step"]
+    Step --> Rows["readRows()"]
+    Rows --> Finalize["sqlite3_finalize"]
+    Finalize --> Clear["Clear Affected Tables"]
+    Clear --> End["Return Status + Results"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Launch With Pack Flag"] --> LoadConfig["Load Packs From Config"]
+    LoadConfig --> Iterate["Iterate Scheduled Queries"]
+    Iterate --> Run["runQuery"]
+    Run --> Output["Formatted Results"]

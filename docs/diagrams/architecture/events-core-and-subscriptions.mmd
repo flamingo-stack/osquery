@@ -1,0 +1,20 @@
+flowchart TD
+    Config["Configuration And Packs"] -->|"scheduled queries"| EventFactory["EventFactory"]
+
+    subgraph publishers["Event Publishers"]
+        Pub1["EventPublisherPlugin"]
+    end
+
+    subgraph subscribers["Event Subscribers"]
+        Sub1["EventSubscriberPlugin"]
+    end
+
+    EventFactory -->|"register"| Pub1
+    EventFactory -->|"register"| Sub1
+
+    Sub1 -->|"create"| Subscription["Subscription"]
+    Subscription -->|"attach"| Pub1
+
+    Pub1 -->|"fires events"| Sub1
+    Sub1 -->|"persist rows"| DB["Database Backend"]
+    Sub1 -->|"expose table"| SQL["SQL Engine And Virtual Tables"]

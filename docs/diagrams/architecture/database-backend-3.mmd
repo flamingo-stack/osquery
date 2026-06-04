@@ -1,0 +1,5 @@
+flowchart TD
+    Caller["Higher Level Module"] --> Helper["getDatabaseValue()"]
+    Helper --> Lock["Acquire Read Lock"]
+    Lock --> Plugin["Active DatabasePlugin"]
+    Plugin --> Result["Return Status and Value"]

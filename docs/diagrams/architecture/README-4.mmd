@@ -1,0 +1,7 @@
+flowchart TD
+    Server["Remote Server"] --> TLSPlugin["Distributed TLS Plugin"]
+    TLSPlugin --> DistributedEngine["Distributed Querying"]
+    DistributedEngine --> SQL["SQL Engine"]
+    SQL --> Results["DistributedQueryResult"]
+    Results --> TLSPlugin
+    TLSPlugin --> Server

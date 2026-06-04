@@ -1,0 +1,7 @@
+flowchart TD
+    Caller["Caller"] --> PF["PlatformFile"]
+    PF --> OSCheck{"Operating System"}
+    OSCheck -->|POSIX| POSIXIO["open read write lseek"]
+    OSCheck -->|Windows| WINIO["CreateFile ReadFile WriteFile"]
+    POSIXIO --> Result["Normalized Result"]
+    WINIO --> Result

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Engine
+    participant TLSPlugin
+    participant TLSTransport
+    participant Remote
+    Engine->>TLSPlugin: getQueries()
+    TLSPlugin->>TLSTransport: go(JSONSerializer)
+    TLSTransport->>Remote: HTTPS POST read_uri
+    Remote-->>TLSTransport: JSON query payload
+    TLSTransport-->>TLSPlugin: Serialized JSON
+    TLSPlugin-->>Engine: Query JSON

@@ -1,0 +1,12 @@
+flowchart TD
+    Core["osquery Core"] --> Manager["Extension Manager"]
+    Manager --> Registry["RegistryFactory"]
+
+    ExtensionA["Extension Process A"] -->|"registerExtension()"| Manager
+    ExtensionB["Extension Process B"] -->|"registerExtension()"| Manager
+
+    Core -->|"callExtension()"| ExtensionA
+    Core -->|"callExtension()"| ExtensionB
+
+    Manager -->|"health checks"| ExtensionA
+    Manager -->|"health checks"| ExtensionB

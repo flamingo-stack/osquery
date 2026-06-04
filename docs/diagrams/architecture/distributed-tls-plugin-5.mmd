@@ -1,0 +1,5 @@
+flowchart LR
+    Scheduler["Distributed Scheduler"] --> Request["DistributedQueryRequest"]
+    Request --> TLSPlugin["Distributed Tls Plugin"]
+    TLSPlugin --> Result["DistributedQueryResult"]
+    Result --> Scheduler

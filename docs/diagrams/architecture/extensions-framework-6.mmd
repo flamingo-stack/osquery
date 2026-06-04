@@ -1,0 +1,4 @@
+flowchart LR
+    ManagerWatcher["ExtensionManagerWatcher"] --> PingExt["Ping Extension"]
+    PingExt -->|"Success"| Healthy["Keep Registered"]
+    PingExt -->|"Failure x2"| Remove["removeBroadcast(uuid)"]

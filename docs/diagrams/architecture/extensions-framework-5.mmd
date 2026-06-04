@@ -1,0 +1,6 @@
+flowchart TD
+    ExtStart["Extension startExtension"] --> Wait["extensionPathActive"]
+    Wait --> Register["registerExtension"]
+    Register --> UUID["Receive RouteUUID"]
+    UUID --> Watcher["Start ExtensionWatcher"]
+    Watcher --> Runner["Start ExtensionRunner"]

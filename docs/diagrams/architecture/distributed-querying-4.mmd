@@ -1,0 +1,7 @@
+flowchart TD
+    Execute["runQueries()"] --> CheckRun["checkAndSetAsRunning"]
+    CheckRun -->|"Already Running"| WithinWindow["Within Denylist Duration?"]
+    WithinWindow -->|"Yes"| Skip["Skip Execution"]
+    WithinWindow -->|"No"| ExecuteQuery["Execute Query"]
+    CheckRun -->|"Not Running"| ExecuteQuery
+    ExecuteQuery --> Complete["setAsNotRunning"]

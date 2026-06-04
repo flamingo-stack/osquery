@@ -1,0 +1,7 @@
+flowchart TD
+    ReceiveWork["acceptWork()"] --> HasDiscovery["Has Discovery Query?"]
+    HasDiscovery -->|"No"| Enqueue["Enqueue Query"]
+    HasDiscovery -->|"Yes"| RunDiscovery["Execute Discovery"]
+    RunDiscovery --> DiscoveryResult["Rows Returned?"]
+    DiscoveryResult -->|"Yes"| Enqueue
+    DiscoveryResult -->|"No"| Skip["Skip Query"]

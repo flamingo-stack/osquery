@@ -1,0 +1,5 @@
+flowchart LR
+    Define["FLAG Macro"] --> Create["Flag::create()"]
+    Create --> Registry["Flag Internal Map"]
+    Registry --> Query["getValue() / getType()"]
+    Registry --> Print["printFlags()"]

@@ -1,0 +1,8 @@
+classDiagram
+    class prettyprint_data {
+        +QueryData results
+        +vector<string> columns
+        +map<string,size_t> lengths
+    }
+
+    callback_data --> prettyprint_data
