@@ -1,365 +1,348 @@
 # Contributing to osquery — OpenFrame Edition
 
-Thank you for contributing to osquery with OpenFrame! This guide covers everything you need to get started: code style, branching conventions, commit format, testing requirements, and the pull request process.
+Thank you for your interest in contributing to osquery with the OpenFrame integration! This document covers everything you need: code style, branching conventions, commit messages, pull requests, and the review process.
 
 ---
 
-## Community First
+## 💬 Community First
 
-All collaboration happens on the **OpenMSP Slack community** — not GitHub Issues or GitHub Discussions.
+All discussion, questions, bug reports, and feature requests are handled via the **OpenMSP Slack** community. We do not use GitHub Issues or GitHub Discussions.
 
-| Resource | Link |
-|---|---|
-| 💬 OpenMSP Community Slack | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
-| 🌐 OpenMSP Website | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
+- **Slack:** [Join OpenMSP](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Community site:** [openmsp.ai](https://www.openmsp.ai/)
 
-Before starting significant work, please discuss your changes in Slack to align with the team's roadmap.
+**Before opening a pull request**, please discuss the change in Slack to ensure it aligns with the project roadmap.
 
 ---
 
-## Development Setup
+## 🛠️ Development Setup
 
 ### Hardware Requirements
 
-| Tier | RAM | CPU Cores | Disk |
-|---|---|---|---|
+| Tier | RAM | CPU Cores | Disk Space |
+|------|-----|-----------|------------|
 | **Minimum** | 24 GB | 6 cores | 50 GB |
 | **Recommended** | 32 GB | 12 cores | 100 GB |
 
-### Required Tools
-
-| Tool | Minimum Version | Purpose |
-|---|---|---|
-| CMake | 3.21+ | Build system generator |
-| Python | 3.8+ | Code generation scripts |
-| Git | 2.x | Source control |
-| C++ Compiler | GCC 9+ / Clang 10+ / MSVC 2019+ | C++17 compilation |
-| Ninja | 1.10+ | Fast parallel builds |
-| OpenSSL | 1.1.1+ | TLS + AES-256-GCM (OpenFrame layer) |
-| clang-format | — | Code formatting (CI enforced) |
-
-### Quick Setup
+### Quick Developer Commands
 
 ```bash
-# Clone
+# Clone the repository
 git clone https://github.com/flamingo-stack/osquery.git
 cd osquery
+git submodule update --init --recursive
 
-# Configure (Debug build for development)
+# Configure build (Debug mode with tests)
 cmake -S . -B build \
-  -G Ninja \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DOSQUERY_BUILD_TESTS=ON
+  -DOSQUERY_BUILD_TESTS=ON \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-# Build
-cmake --build build --parallel $(nproc)
+# Build everything
+cmake --build build -j$(nproc)
 
-# Run
-./build/osquery/osqueryi
+# Run tests
+cd build && ctest --output-on-failure
+
+# Format code
+cmake --build build --target clang-format
 ```
 
-For full environment setup instructions see the [Development Documentation](./docs/development/README.md).
+See [Development Documentation](./docs/README.md) for full environment setup, local development, testing, and security guides.
 
 ---
 
-## Code Style and Conventions
+## ✏️ Code Style and Conventions
 
-### C++ Standards
+The project follows the **Google C++ Style Guide** with osquery-specific modifications. `clang-format` enforces formatting — configuration is in `.clang-format` at the project root.
 
-- Use **C++17** features where appropriate
-- Follow the existing code style in each file you modify
-- All new code must pass `clang-format` with the repository's `.clang-format` config
-
-### Formatting
-
-osquery enforces `clang-format`. Run it before every commit:
+**Before every commit, format your changes:**
 
 ```bash
-# Format a single file
-clang-format -i path/to/your/file.cpp
+# Format all staged C++ files
+git diff --cached --name-only | grep -E '\.(cpp|h)$' | xargs clang-format -i
 
-# Format all changed files (compared to main branch)
-git diff --name-only main | grep -E '\.(cpp|h)$' | xargs clang-format -i
-
-# Check without modifying
-clang-format --dry-run --Werror path/to/your/file.cpp
+# Format all modified files
+git diff --name-only | grep -E '\.(cpp|h)$' | xargs clang-format -i
 ```
 
-### Naming Conventions
+### Key Conventions
 
-| Item | Convention | Example |
-|---|---|---|
-| Classes | `PascalCase` | `EventSubscriberPlugin` |
-| Methods | `camelCase` | `generateRows()` |
-| Member variables | `snake_case_` (trailing underscore) | `running_` |
-| Constants | `kPascalCase` | `kSQLOpcodes` |
-| Macros | `UPPER_SNAKE_CASE` | `DECLARE_FLAG` |
-| Namespaces | `snake_case` | `osquery` |
-| Files | `snake_case.cpp` / `snake_case.h` | `event_subscriber.cpp` |
+| Convention | Rule |
+|------------|------|
+| **Namespacing** | All code lives in the `osquery` namespace |
+| **File naming** | `snake_case.cpp` / `snake_case.h` |
+| **Class naming** | `PascalCase` |
+| **Function naming** | `camelCase` |
+| **Constant naming** | `kConstantName` prefix |
+| **Member variables** | Trailing underscore: `member_` |
+| **Include guards** | `#pragma once` (not `#ifndef` guards) |
+| **Smart pointers** | Prefer `std::shared_ptr` and `std::unique_ptr` over raw pointers |
+| **Error handling** | Use `osquery::Status` or `osquery::Expected<T, Error>` |
 
-### Include Order
-
-Follow this include order with blank lines between groups:
+### Example: Correct Style
 
 ```cpp
-// 1. Standard library
+#pragma once
+
 #include <memory>
 #include <string>
-#include <vector>
 
-// 2. Third-party libraries
-#include <boost/noncopyable.hpp>
-#include <gtest/gtest.h>
+namespace osquery {
 
-// 3. osquery headers
-#include "osquery/core/core.h"
-#include "osquery/sql/sql.h"
+/// Brief description of what this class does.
+class MyNewFeature {
+ public:
+  explicit MyNewFeature(std::shared_ptr<SomeDependency> dep);
+  ~MyNewFeature();
 
-// 4. Local headers (same directory)
-#include "my_local_header.h"
+  /// Returns the current feature value, or an error status.
+  Expected<std::string, MyError> getValue() const;
+
+ private:
+  std::shared_ptr<SomeDependency> dependency_;
+  std::string cached_value_;
+};
+
+} // namespace osquery
 ```
-
-### Code Organization
-
-- Keep headers (`*.h`) minimal — forward declare where possible
-- Use the `osquery` namespace for all production code
-- Place tests in `tests/` subdirectories alongside the source
-- New virtual tables go in `osquery/tables/<category>/`
 
 ---
 
-## Branch Naming
+## 🌿 Branch Naming
 
-Always branch from the latest `main`:
+| Branch Type | Pattern | Example |
+|-------------|---------|---------|
+| Feature | `feature/<description>` | `feature/openframe-token-rotation` |
+| Bug fix | `fix/<description>` | `fix/sql-authorizer-pragma-list` |
+| Documentation | `docs/<description>` | `docs/extension-api-guide` |
+| Refactor | `refactor/<description>` | `refactor/database-interface` |
+| Hotfix | `hotfix/<description>` | `hotfix/token-refresher-crash` |
 
 ```bash
+# Create a feature branch from main
 git checkout main
 git pull origin main
-git checkout -b feature/my-new-feature
+git checkout -b feature/my-new-virtual-table
 ```
-
-| Type | Pattern | Example |
-|---|---|---|
-| Feature | `feature/<short-description>` | `feature/bpf-socket-events` |
-| Bug fix | `fix/<short-description>` | `fix/config-refresh-race` |
-| OpenFrame integration | `openframe/<short-description>` | `openframe/token-refresh-retry` |
-| Documentation | `docs/<short-description>` | `docs/virtual-table-guide` |
-| Refactor | `refactor/<short-description>` | `refactor/sql-authorizer` |
-| Test | `test/<short-description>` | `test/events-integration` |
-| Release | `release/v<version>` | `release/v5.13.0` |
 
 ---
 
-## Commit Message Format
+## 📝 Commit Message Format
+
+Use the **Conventional Commits** specification:
 
 ```text
 <type>(<scope>): <short summary>
 
-<optional body>
+[Optional body — explain WHY, not WHAT]
 
-<optional footer>
+[Optional footer — breaking changes, references]
 ```
 
 ### Types
 
 | Type | When to Use |
-|---|---|
-| `feat` | New feature or capability |
+|------|-------------|
+| `feat` | New feature or virtual table |
 | `fix` | Bug fix |
 | `docs` | Documentation changes only |
-| `style` | Code formatting, no logic change |
-| `refactor` | Code refactoring without behavior change |
-| `test` | Adding or fixing tests |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `test` | Adding or modifying tests |
 | `perf` | Performance improvement |
-| `chore` | Build, CI, tooling changes |
-| `openframe` | OpenFrame platform-specific changes |
-
-### Scopes
-
-| Scope | Area |
-|---|---|
-| `core` | Core init and runtime |
-| `sql` | SQL engine and virtual tables |
-| `config` | Configuration and packs |
-| `events` | Eventing framework |
-| `logger` | Logging and observability |
-| `db` | Database and storage |
-| `distributed` | Distributed querying |
-| `extensions` | Extension IPC |
-| `http` | Remote HTTP client |
-| `openframe` | OpenFrame auth layer |
-| `tables` | Virtual table implementations |
+| `ci` | CI/CD configuration changes |
+| `chore` | Build system, dependency updates |
 
 ### Examples
 
 ```text
-feat(events): add BPF socket event publisher for Linux
-
-Implements a new BPF-based publisher that captures socket connect/accept
-events and exposes them via the bpf_socket_events virtual table.
+feat(sql): add constraint pushdown for inet_diag table
+fix(events): prevent duplicate subscription on config reload
+docs(openframe): add token rotation guide
+refactor(database): extract IDatabaseInterface for testability
+test(core): add flag override tests for daemon mode
+perf(events): use batch DB writes in EventSubscriberPlugin
 ```
 
-```text
-fix(openframe): handle token refresh failure with exponential backoff
-
-When OpenframeTokenRefresher encounters a network error, it now retries
-with exponential backoff instead of immediately stopping the refresh loop.
-```
+### Full Commit Example
 
 ```text
-test(config): add pack discovery query unit tests
+feat(openframe): add configurable token refresh interval
+
+Previously the token refresher used a hardcoded 5-minute interval.
+This change reads the interval from the --openframe_refresh_interval
+flag, allowing operators to tune refresh frequency based on their
+token expiry policies.
+
+Closes: FLAMINGO-1234
 ```
 
 ---
 
-## Testing
+## 🔄 Pull Request Process
 
-Tests use **Google Test** and **Google Mock**. Always build with `-DOSQUERY_BUILD_TESTS=ON`:
+### Before Opening a PR
+
+1. **Discuss in Slack** — confirm the change is wanted before investing time
+2. **Branch from `main`** — never commit directly to `main`
+3. **Run tests** — all tests must pass locally
+4. **Format code** — run `clang-format` on all changed files
+5. **Update docs** — if you add a new module or change behavior, update or add inline docs
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOSQUERY_BUILD_TESTS=ON
-cmake --build build --parallel $(nproc)
+# Full pre-PR checklist
+git checkout -b feature/my-change
+# ... make changes ...
 
-# Run all tests
+# 1. Format
+git diff --name-only | grep -E '\.(cpp|h)$' | xargs clang-format -i
+
+# 2. Build
+cmake --build build -j$(nproc)
+
+# 3. Test
 cd build && ctest --output-on-failure
 
-# Run in parallel
-cd build && ctest --output-on-failure --parallel $(nproc)
+# 4. Commit
+git add -A
+git commit -m "feat(sql): add my new virtual table"
 
-# Run a specific suite
-cd build && ctest -R "osquery_sql_tests" --output-on-failure
-```
-
-### Test Categories
-
-| Category | Location | Description |
-|---|---|---|
-| Unit Tests | `osquery/*/tests/` | Fast, isolated, no OS dependencies |
-| Integration Tests | `tests/integration/tables/` | Live table queries against the real OS |
-| Extension Tests | `osquery/extensions/tests/` | IPC and Thrift round-trips |
-| Plugin Tests | `plugins/*/tests/` | Logger, config, and database plugins |
-
-When contributing a new virtual table, a corresponding integration test in `tests/integration/tables/` is expected.
-
----
-
-## Pull Request Process
-
-### Before Submitting
-
-- [ ] Branch is up-to-date with `main`
-- [ ] All tests pass: `cd build && ctest --output-on-failure`
-- [ ] Code is formatted: `clang-format --dry-run --Werror`
-- [ ] Copyright headers are present on new files
-- [ ] New virtual tables have integration tests in `tests/integration/tables/`
-- [ ] OpenFrame-specific changes include updated documentation
-- [ ] Discussed in OpenMSP Slack (for significant changes)
-
-### PR Title Format
-
-Use the same format as commit messages:
-
-```text
-feat(sql): add query result caching for repeated virtual table scans
+# 5. Push
+git push origin feature/my-change
 ```
 
 ### PR Description Template
 
 ```markdown
 ## Summary
-<!-- What does this PR do? Why is it needed? -->
+Brief description of what this PR does and why.
 
 ## Changes
-<!-- Bullet list of changes -->
+- Added `MyNewTable` virtual table in `osquery/tables/system/`
+- Added unit tests in `tests/integration/tables/my_new_table.cpp`
+- Updated CMakeLists.txt to include new table
 
 ## Testing
-<!-- How was this tested? Which test commands were run? -->
+- [ ] All existing tests pass (`ctest --output-on-failure`)
+- [ ] New tests added for new functionality
+- [ ] Manually tested on Linux x86_64
+- [ ] Manually tested on macOS (if applicable)
 
-## Platform Support
-<!-- Does this affect Linux/macOS/Windows differently? -->
-
-## Checklist
-- [ ] Tests pass (ctest)
-- [ ] clang-format applied
-- [ ] Documentation updated (if applicable)
-- [ ] Discussed in OpenMSP Slack (if significant change)
+## Breaking Changes
+None / Describe any breaking changes here.
 ```
 
 ---
 
-## Copyright Headers
+## ✅ Code Review Checklist
 
-All new source files must include a copyright header:
+Reviewers should verify:
+
+### Correctness
+- [ ] Logic is correct and handles edge cases
+- [ ] Error paths return appropriate `Status` or `Expected<>` values
+- [ ] No resource leaks (file handles, DB connections, threads)
+
+### Security
+- [ ] No hardcoded secrets or credentials
+- [ ] Query constraints from `QueryContext` are validated before use
+- [ ] New network code uses the `Remote HTTP Client` module
+- [ ] Thread-shared state is properly synchronized
+
+### Style and Quality
+- [ ] Follows naming conventions (see above)
+- [ ] `clang-format` applied to all changed files
+- [ ] Public APIs have doc comments
+- [ ] No dead code or commented-out blocks
+
+### Tests
+- [ ] New functionality has tests
+- [ ] Tests are independent (use ephemeral DB, no shared state)
+- [ ] Tests cover both happy path and error paths
+
+### Documentation
+- [ ] Inline docs updated if behavior changes
+- [ ] New modules have doc comments on public API
+
+---
+
+## 🗃️ Adding a New Virtual Table
+
+Virtual tables are the most common contribution type. Follow this pattern:
+
+1. **Create the table spec** in `osquery/tables/` (appropriate subdirectory)
+2. **Implement `generate()`** — use `QueryContext` for constraint pushdown
+3. **Register the table** in the appropriate `CMakeLists.txt`
+4. **Add an integration test** in `tests/integration/tables/`
+5. **Test on all target platforms** where the table is supported
 
 ```cpp
-/**
- * Copyright (c) 2014-present, The osquery authors
- *
- * This source code is licensed in accordance with the terms specified in
- * the LICENSE file found in the root directory of this source tree.
- */
-```
+// osquery/tables/system/linux/my_new_table.cpp
+#include <osquery/core/tables.h>
+#include <osquery/logger/logger.h>
 
-The CI script `tools/ci/scripts/check_copyright_headers.py` enforces this on all pull requests.
+namespace osquery {
+namespace tables {
 
----
+TableRows genMyNewTable(QueryContext& context) {
+  TableRows results;
 
-## Adding a New Virtual Table
+  // Validate constraints before use
+  auto paths = context.constraints["path"].getAll(EQUALS);
+  for (const auto& path : paths) {
+    if (path.empty()) continue;
 
-1. Define the table schema in `osquery/tables/<category>/<table_name>.table`
-2. Run the code generator:
+    Row r;
+    r["path"] = path;
+    r["size"] = INTEGER(0); // populate from OS API
+    results.push_back(r);
+  }
 
-```bash
-python3 tools/codegen/gentable.py osquery/tables/<category>/<table_name>.table
-```
+  return results;
+}
 
-3. Implement the `generate()` method in `<table_name>.cpp`
-4. Register in the CMakefile for your category
-5. Add an integration test in `tests/integration/tables/<table_name>.cpp`
-6. Test locally:
-
-```bash
-cmake --build build --target osqueryi
-./build/osquery/osqueryi
-osquery> SELECT * FROM <table_name>;
+} // namespace tables
+} // namespace osquery
 ```
 
 ---
 
-## Security Guidelines
+## 🔒 Security Guidelines
 
-- **Never** hardcode secrets, credentials, or tokens in source code
-- **Never** log JWT token values, even at debug level
-- SQL inputs must pass through the SQLite authorizer — do not bypass it
-- AES-GCM nonces must be generated freshly (never reused for the same key)
-- TLS peer verification must **not** be disabled in production code
-- New config keys must include size/depth validation
-- Thread-shared state must use proper synchronization primitives
+Before submitting a pull request, verify:
 
-Report security vulnerabilities directly to the Flamingo team via the **OpenMSP Slack community** — do not open public GitHub Issues for security issues.
+- [ ] No secrets, tokens, or API keys in source code or test fixtures
+- [ ] New virtual tables sanitize all `QueryContext` constraints before use
+- [ ] New network-facing code uses the `Remote HTTP Client` module (not raw sockets)
+- [ ] All file paths received from queries are validated
+- [ ] New config parameters have documented size/depth limits if they accept user data
+- [ ] Thread-shared state uses appropriate synchronization primitives
 
----
-
-## Reviewer Checklist
-
-When reviewing a PR:
-
-- [ ] Logic is correct and all error paths are handled
-- [ ] No secrets or credentials in source
-- [ ] SQL inputs are validated through the authorizer
-- [ ] Thread safety considered for shared state
-- [ ] Platform-specific code is properly guarded with `#ifdef`
-- [ ] Tests added for new functionality
-- [ ] No debug/temporary code left in
-- [ ] Commit messages follow format convention
-- [ ] Performance impact considered for hot paths (scheduler, SQL engine)
+To report a security vulnerability, **do not open a GitHub Issue**. Contact the team via the [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA).
 
 ---
 
-## Code of Conduct
+## 🧪 CI Test Matrix
 
-Be respectful, collaborative, and constructive. All contributors are expected to maintain a professional and welcoming environment in both Slack and code reviews.
+Tests are run across the following configurations:
+
+| Platform | Compiler | Build Type |
+|----------|----------|------------|
+| Linux x86_64 | GCC 11 | Debug + Release |
+| Linux aarch64 | GCC 11 | Debug |
+| macOS x86_64 | AppleClang | Debug + Release |
+| macOS aarch64 | AppleClang | Debug + Release |
+| Windows x86_64 | MSVC 2022 | Debug + Release |
+
+---
+
+## 🆘 Getting Help
+
+Stuck on something? The community is here to help:
+
+- **Slack:** [OpenMSP Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Community:** [openmsp.ai](https://www.openmsp.ai/)
+- **Platform:** [flamingo.run](https://flamingo.run) | [openframe.ai](https://openframe.ai)
 
 ---
 
