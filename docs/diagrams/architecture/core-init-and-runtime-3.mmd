@@ -1,8 +1,0 @@
-flowchart LR
-    Macro["FLAG / CLI_FLAG Macros"] --> FlagCreate["Flag::create()"]
-    FlagCreate --> FlagRegistry["Internal Flag Map"]
-
-    CLI["Command Line"] --> Parse["ParseCommandLineFlags"]
-    Config["Config Options"] --> Update["Flag::updateValue()"]
-
-    FlagRegistry --> Runtime["Runtime Access"]

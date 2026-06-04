@@ -1,7 +1,0 @@
-flowchart TD
-    Init["System Initialization"] --> Buffer["Buffer Early Status Logs"]
-    Buffer --> LoadConfig["Load Configuration"]
-    LoadConfig --> Discover["Discover Logger Plugin"]
-    Discover --> InitLogger["LoggerPlugin.init()"]
-    InitLogger --> Flush["Flush Buffered StatusLogLine Entries"]
-    Flush --> Runtime["Runtime Logging"]

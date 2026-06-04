@@ -1,5 +1,0 @@
-flowchart TD
-    Pattern["Input Pattern"] --> Normalize["replaceGlobWildcards()"]
-    Normalize --> Expand["platformGlob()"]
-    Expand --> Filter["Apply GLOB_FILES / GLOB_FOLDERS"]
-    Filter --> Results["Resolved Paths"]

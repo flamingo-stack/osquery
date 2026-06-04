@@ -1,5 +1,0 @@
-flowchart TD
-    SQLQuery["SELECT * FROM example_events"] --> GenTable["genTable()"]
-    GenTable --> GenerateRows["generateRows()"]
-    GenerateRows --> FilterTime["apply start/stop window"]
-    FilterTime --> YieldRows["yield Row to SQL engine"]

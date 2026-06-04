@@ -1,9 +1,0 @@
-flowchart TD
-    Config["Configuration And Packs"] -->|"scheduled queries"| EventFactory["EventFactory"]
-    EventFactory -->|"registers"| Publisher["EventPublisherPlugin"]
-    EventFactory -->|"registers"| Subscriber["EventSubscriberPlugin"]
-    Subscriber -->|"creates"| SubscriptionObj["Subscription"]
-    Publisher -->|"dispatches"| Callback["EventCallback"]
-    Callback -->|"addBatch()"| Storage["Database And Storage Plugins"]
-    SQL["SQL Engine And Virtual Tables"] -->|"SELECT from _events tables"| Subscriber
-    Subscriber -->|"generateRows()"| SQL
