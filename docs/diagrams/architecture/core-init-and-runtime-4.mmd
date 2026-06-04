@@ -1,0 +1,5 @@
+flowchart TD
+    FlagCheck["openframe_mode Flag"] -->|"true"| Encryption["Encryption Service"]
+    Encryption --> Extractor["Token Extractor"]
+    Extractor --> AuthMgr["Authorization Manager"]
+    Extractor --> Refresher["Token Refresher Thread"]

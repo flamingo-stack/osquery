@@ -1,0 +1,8 @@
+flowchart TD
+    New["New Results"] --> DiffEngine["Diff Engine"]
+    Old["Previous Results"] --> DiffEngine
+    DiffEngine --> Added["Added Rows"]
+    DiffEngine --> Removed["Removed Rows"]
+    Added --> LogItem["QueryLogItem"]
+    Removed --> LogItem
+    LogItem --> Logger["Logger Plugins"]

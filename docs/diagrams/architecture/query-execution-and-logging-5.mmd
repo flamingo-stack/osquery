@@ -1,0 +1,5 @@
+flowchart LR
+    ConfigChange["Config Change"] --> EpochInc["Epoch Increment"]
+    EpochInc --> Fresh["Fresh Results"]
+    Fresh --> CounterReset["Counter Reset"]
+    NoChange["No Config Change"] --> CounterInc["Counter Increment"]

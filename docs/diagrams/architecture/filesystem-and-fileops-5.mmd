@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Module
+    participant FS as Filesystem And Fileops
+    participant OS
+
+    Module->>FS: platformStat(path)
+    FS->>OS: Native stat or Win API
+    OS-->>FS: Raw metadata
+    FS-->>Module: Normalized structure

@@ -1,0 +1,12 @@
+flowchart TD
+    UserQuery["SQL Query"] --> SQLInternal["SQLInternal"]
+    SQLInternal --> SQLiteSQLPlugin["SQLiteSQLPlugin"]
+    SQLiteSQLPlugin --> DBManager["SQLiteDBManager"]
+    DBManager --> SQLiteDB["sqlite3 Database"]
+
+    SQLiteDB --> VTableModule["sqlite3_module"]
+    VTableModule --> VirtualTable["VirtualTable"]
+    VirtualTable --> TablePlugin["TablePlugin"]
+
+    TablePlugin --> QueryContext["QueryContext"]
+    QueryContext --> ConstraintList["ConstraintList"]

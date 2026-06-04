@@ -1,0 +1,8 @@
+flowchart TD
+    AsyncOp["Async Network Operation"] --> Complete{"Completed?"}
+    Complete -->|"Yes"| CancelTimer["Cancel Timer"]
+    Complete -->|"No"| Timeout["Timer Fires"]
+    Timeout --> CancelSocket["Close Socket"]
+    CancelSocket --> Error["Set error_code"]
+    CancelTimer --> Return["Return Response or Error"]
+    Error --> Return

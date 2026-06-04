@@ -1,0 +1,26 @@
+flowchart TD
+    Config["Configuration & Schedule"] --> Factory["EventFactory"]
+
+    subgraph publishers["Event Publishers"]
+        PubA["EventPublisherPlugin A"]
+        PubB["EventPublisherPlugin B"]
+    end
+
+    subgraph subscribers["Event Subscribers"]
+        SubA["EventSubscriberPlugin A"]
+        SubB["EventSubscriberPlugin B"]
+    end
+
+    PubA -->|"fires events"| SubA
+    PubA -->|"fires events"| SubB
+    PubB -->|"fires events"| SubA
+
+    SubA -->|"addBatch(rows)"| Storage["Event Backing Store"]
+    SubB -->|"addBatch(rows)"| Storage
+
+    Storage -->|"time filtered rows"| SQL["Virtual Table Query"]
+
+    Factory --> PubA
+    Factory --> PubB
+    Factory --> SubA
+    Factory --> SubB

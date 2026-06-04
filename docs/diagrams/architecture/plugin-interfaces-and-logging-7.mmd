@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Process Start"] --> Flags["Parse Flags"]
+    Flags --> RegistryInit["Initialize Registry"]
+    RegistryInit --> ExtensionsLoad["Load Extensions"]
+    ExtensionsLoad --> ConfigLoad["Load Config"]
+    ConfigLoad --> LoggerInit["LoggerPlugin init"]
+    LoggerInit --> Runtime["Normal Operation"]

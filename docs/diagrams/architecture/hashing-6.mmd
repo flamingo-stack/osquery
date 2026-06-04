@@ -1,0 +1,5 @@
+flowchart TD
+    VirtualTable["Virtual Table"] --> FilePath["File Path"]
+    FilePath --> HashingModule["Hashing"]
+    HashingModule --> RowData["Row with Hash Columns"]
+    RowData --> SQLiteLayer["SQLite Engine"]

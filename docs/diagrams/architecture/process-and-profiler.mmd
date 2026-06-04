@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph process_layer["Process Management Layer"]
+        PlatformProcess["PlatformProcess"]
+        Signals["POSIX Signals"]
+        ForkExec["fork() / execve()"]
+        WaitPid["waitpid()"]
+    end
+
+    subgraph profiling_layer["Profiling Layer"]
+        CodeProfiler["CodeProfiler"]
+        Rusage["getrusage()"]
+        Timeval["timeval"]
+        Monitoring["Numeric Monitoring"]
+    end
+
+    PlatformProcess -->|"spawns"| ForkExec
+    PlatformProcess -->|"controls"| Signals
+    PlatformProcess -->|"monitors"| WaitPid
+
+    CodeProfiler -->|"captures"| Rusage
+    CodeProfiler -->|"converts"| Timeval
+    CodeProfiler -->|"records"| Monitoring

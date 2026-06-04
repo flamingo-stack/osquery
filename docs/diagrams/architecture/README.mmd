@@ -1,0 +1,18 @@
+flowchart TD
+    CLI["osqueryi or osqueryd"] --> Core["Core Init And Runtime"]
+    Core --> Config["Config And Packs"]
+    Core --> Registry["Plugin Registry"]
+    Core --> Database["Database Backends"]
+    Core --> SQL["SQL Core And Virtual Tables"]
+    Core --> Events["Events Core"]
+    Core --> Distributed["Distributed Querying"]
+    Core --> Logger["Plugin Interfaces And Logging"]
+    Core --> Extensions["Extensions Framework"]
+    Core --> HTTP["Remote Http Client"]
+
+    Config --> SQL
+    SQL --> QueryExec["Query Execution And Logging"]
+    QueryExec --> Logger
+    Events --> SQL
+    Distributed --> SQL
+    Distributed --> HTTP

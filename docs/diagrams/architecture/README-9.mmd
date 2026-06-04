@@ -1,0 +1,7 @@
+flowchart TD
+    Server["Control Plane"] --> TLS["TLS Plugin"]
+    TLS --> Engine["Distributed Engine"]
+    Engine --> SQL["Execute SQL"]
+    SQL --> Engine
+    Engine --> TLS
+    TLS --> Server

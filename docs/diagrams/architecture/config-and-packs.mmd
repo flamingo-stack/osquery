@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigPlugin["Config Plugin"] --> ConfigCore["Config And Packs"]
+    ConfigCore --> Schedule["Schedule & Packs"]
+    ConfigCore --> Parsers["Config Parser Plugins"]
+    Schedule --> SQLCore["SQL Core & Scheduled Queries"]
+    SQLCore --> Logging["Query Execution & Logging"]
+    ConfigCore --> Database["Database Backends"]
+    ConfigCore --> Events["Events Core"]

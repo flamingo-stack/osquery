@@ -1,0 +1,5 @@
+flowchart TD
+    Query["SQL Query"] --> Explain["EXPLAIN"]
+    Explain --> Opcodes["SQLite Opcodes"]
+    Opcodes --> TypeMap["Opcode to ColumnType Map"]
+    TypeMap --> Columns["Resolved TableColumns"]

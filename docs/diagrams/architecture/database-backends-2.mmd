@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller
+    participant API as "OsqueryDatabase"
+    participant Helper as "Global Functions"
+    participant Registry
+    participant Plugin
+
+    Caller->>API: setDatabaseValue(domain, key, value)
+    API->>Helper: setDatabaseValue(...)
+    Helper->>Registry: get active database plugin
+    Registry->>Plugin: putBatch(...)
+    Plugin-->>Caller: Status

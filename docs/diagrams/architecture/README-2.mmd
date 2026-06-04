@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Main Entry"] --> Flags["Parse Flags"]
+    Flags --> Mode["Determine Mode"]
+    Mode --> RegistryInit["Initialize Registry"]
+    RegistryInit --> DBInit["Initialize Database"]
+    DBInit --> ConfigLoad["Load Configuration"]
+    ConfigLoad --> Plugins["Activate Plugins"]
+    Plugins --> EventsAttach["Attach Events"]
+    EventsAttach --> Dispatcher["Run Dispatcher"]
+    Dispatcher --> Shutdown["Graceful Shutdown"]

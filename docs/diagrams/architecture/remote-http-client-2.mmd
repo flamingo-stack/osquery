@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Client"] --> Options["Client::Options"]
+    Client --> Resolver["TCP Resolver"]
+    Client --> Socket["TCP Socket"]
+    Client --> SSLStream["SSL Stream (optional)"]
+    Client --> Timer["Deadline Timer"]
+    Client --> IOContext["io_context"]

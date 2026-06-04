@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Core
+    participant Glog
+    participant Buffer
+    participant LoggerPlugin
+
+    Core->>Glog: Emit status message
+    Glog->>Buffer: Store StatusLogLine
+    Core->>LoggerPlugin: init(binaryName, bufferedLogs)
+    LoggerPlugin->>LoggerPlugin: Process buffered StatusLogLine entries

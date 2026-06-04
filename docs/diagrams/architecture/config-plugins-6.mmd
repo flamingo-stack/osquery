@@ -1,0 +1,7 @@
+flowchart TD
+    ConfigViews["views block"] --> ScanDB["Scan existing views"]
+    ScanDB --> Compare["Compare with new config"]
+    Compare --> CreateView["CREATE VIEW"]
+    Compare --> DropView["DROP VIEW"]
+    CreateView --> Persist["Store in database"]
+    DropView --> Persist

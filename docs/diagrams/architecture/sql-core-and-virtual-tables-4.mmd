@@ -1,0 +1,5 @@
+flowchart LR
+    OldResults["Old QueryData"] --> DiffFunc["diff()"]
+    NewResults["New QueryData"] --> DiffFunc
+    DiffFunc --> Added["Added Rows"]
+    DiffFunc --> Removed["Removed Rows"]

@@ -1,0 +1,6 @@
+flowchart TD
+    ExtensionMgr["Start Extension Manager"] --> ConfigPlugin["Activate Config Plugin"]
+    ConfigPlugin --> RegistrySetup["Registry::setUp()"]
+    RegistrySetup --> LoggerPlugin["Activate Logger Plugin"]
+    LoggerPlugin --> DistributedPlugin["Activate Distributed Plugin"]
+    DistributedPlugin --> Monitoring["Numeric Monitoring Plugin"]

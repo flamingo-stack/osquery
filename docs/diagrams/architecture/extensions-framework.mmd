@@ -1,0 +1,12 @@
+flowchart LR
+    Core["osquery Core"] --> Manager["Extension Manager"]
+    Manager --> Registry["Registry Factory"]
+    Manager --> SQLCore["SQL Engine"]
+
+    ExtensionA["Extension Process A"] -->|"registerExtension"| Manager
+    ExtensionB["Extension Process B"] -->|"registerExtension"| Manager
+
+    Core -->|"callExtension"| ExtensionA
+    Core -->|"callExtension"| ExtensionB
+
+    ExtensionA -->|"query"| SQLCore

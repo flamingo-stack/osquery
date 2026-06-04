@@ -1,0 +1,5 @@
+flowchart TD
+    Plugin["ConfigPlugin"] --> Validate["Validate JSON"]
+    Validate --> Packs["Build Packs"]
+    Packs --> Schedule["Update Schedule"]
+    Schedule --> SQL["Scheduled Execution"]

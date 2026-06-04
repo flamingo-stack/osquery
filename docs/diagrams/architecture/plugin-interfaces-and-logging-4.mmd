@@ -1,0 +1,8 @@
+flowchart TD
+    Core["Core Subsystem"] --> CheckStatus["Check usesLogStatus"]
+    CheckStatus -->|"true"| StatusHandler["logStatus"]
+    CheckStatus -->|"false"| Glog["Default Glog Handling"]
+
+    Core --> CheckEvent["Check usesLogEvent"]
+    CheckEvent -->|"true"| EventHandler["logEvent or logStringBatch"]
+    CheckEvent -->|"false"| Database["Event Stored In Database"]

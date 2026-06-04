@@ -1,0 +1,11 @@
+flowchart TD
+    Now["System Clock"] --> GetUnix["getUnixTime()"]
+    GetUnix --> Scheduler["Scheduled Queries"]
+    GetUnix --> Distributed["Distributed Expiration"]
+    GetUnix --> Events["Event Expiration"]
+
+    Scheduler --> ToAscii["toAsciiTime()"]
+    Distributed --> ToAscii
+    Events --> ToAscii
+
+    ToAscii --> Logs["Query and Status Logs"]

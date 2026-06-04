@@ -1,0 +1,17 @@
+flowchart TD
+    Start["File Input"] --> MaskCheck["Check Mask Bits"]
+    MaskCheck --> MD5Ctx["Initialize MD5 Context"]
+    MaskCheck --> SHA1Ctx["Initialize SHA1 Context"]
+    MaskCheck --> SHA256Ctx["Initialize SHA256 Context"]
+
+    MD5Ctx --> StreamData["Stream File Data"]
+    SHA1Ctx --> StreamData
+    SHA256Ctx --> StreamData
+
+    StreamData --> FinalMD5["Finalize MD5"]
+    StreamData --> FinalSHA1["Finalize SHA1"]
+    StreamData --> FinalSHA256["Finalize SHA256"]
+
+    FinalMD5 --> MultiResult["Populate MultiHashes"]
+    FinalSHA1 --> MultiResult
+    FinalSHA256 --> MultiResult

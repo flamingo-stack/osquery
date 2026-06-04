@@ -1,0 +1,4 @@
+flowchart LR
+    Create["Construct Hash"] --> Stream["update() Calls"]
+    Stream --> Finalize["digest()"]
+    Finalize --> Result["Encoded Digest String"]

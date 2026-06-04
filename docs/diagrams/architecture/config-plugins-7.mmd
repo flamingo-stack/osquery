@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Extension
+    participant Registry
+    participant CoreConfig
+
+    Extension->>Registry: Config::update()
+    Registry->>CoreConfig: Route update request
+    CoreConfig->>CoreConfig: Re-run parser pipeline

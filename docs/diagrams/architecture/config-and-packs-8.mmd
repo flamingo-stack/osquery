@@ -1,0 +1,6 @@
+flowchart TD
+    ConfigCore["Config And Packs"] --> DB["Persistent Database"]
+    DB --> Performance["Query Performance"]
+    DB --> Denylist["Failed Queries"]
+    DB --> Executing["Executing Query"]
+    DB --> Backup["Config Backup"]

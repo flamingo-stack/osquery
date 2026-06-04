@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Register Publisher"] --> Setup["setUp()"]
+    Setup --> Running["EVENT_RUNNING"]
+    Running --> Loop["run() loop"]
+    Loop -->|"isEnding()"| TearDown["tearDown()"]
+    TearDown --> EndState["EVENT_NONE"]

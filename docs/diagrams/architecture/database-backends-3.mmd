@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Read Current Version"] --> Check{"Version < Target?"}
+    Check -->|Yes| Migrate["Run Migration Step"]
+    Migrate --> Persist["Persist New Version"]
+    Persist --> Check
+    Check -->|No| End["Migration Complete"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Publisher
+    participant Subscriber
+    participant Database
+    participant SQL
+
+    Publisher->>Subscriber: EventContext
+    Subscriber->>Subscriber: Transform to Row
+    Subscriber->>Database: addBatch(rows)
+    SQL->>Subscriber: genTable(query context)
+    Subscriber->>Database: generateRows(time window)
+    Subscriber->>SQL: Yield rows

@@ -1,0 +1,10 @@
+flowchart TD
+    Signal["SIGTERM or SIGINT"] --> Request["requestShutdown()"]
+    Request --> FlagSet["requested = true"]
+    FlagSet --> Notify["Condition Notify"]
+    Notify --> MainThread["waitForShutdown() Unblocks"]
+    MainThread --> DispatcherStop["Stop Services"]
+    DispatcherStop --> Join["Join Threads"]
+    Join --> EndEvents["EventFactory::end()"]
+    EndEvents --> DBShutdown["shutdownDatabase()"]
+    DBShutdown --> Exit["Return Exit Code"]

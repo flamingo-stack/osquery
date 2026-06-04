@@ -1,0 +1,4 @@
+flowchart TD
+    Publisher --> Subscriber
+    Subscriber --> Storage["Event Backing Store"]
+    Storage --> SQL["Virtual Table"]

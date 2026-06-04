@@ -1,0 +1,7 @@
+flowchart TD
+    Query["Incoming SQL"] --> SQLite["SQLite Engine"]
+    SQLite --> VTable["Virtual Table Adapter"]
+    VTable --> TablePlugin["TablePlugin::generate"]
+    TablePlugin --> Rows["Row Results"]
+    Rows --> Diff["DiffResults"]
+    Diff --> Output["QueryDataTyped"]

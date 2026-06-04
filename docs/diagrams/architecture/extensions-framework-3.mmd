@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Ext as Extension Process
+    participant EM as Extension Manager
+    participant Reg as RegistryFactory
+
+    Ext->>EM: registerExtension(info, registry)
+    EM->>Reg: addBroadcast(uuid, registry)
+    EM-->>Ext: return uuid
+    Ext->>Ext: start Thrift server
+    EM->>Ext: ping()

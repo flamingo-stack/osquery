@@ -1,0 +1,4 @@
+flowchart TD
+    ExtensionBinary["Extension Process"] --> ExtensionManager["Extension Manager"]
+    ExtensionManager --> Registry["Plugin Registry"]
+    Registry --> LoggerPlugin

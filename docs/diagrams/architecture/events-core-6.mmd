@@ -1,0 +1,7 @@
+flowchart TD
+    Event["System Event"] --> Publisher
+    Publisher --> Subscriber
+    Subscriber --> Store["Persistent Backing Store"]
+    Store --> Query["SQL Query"]
+    Query --> ExpireCheck["Expiration Enforcement"]
+    ExpireCheck --> Result["Filtered Rows"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Step["Schedule::Step"] --> Check["pack.shouldPackExecute()"]
+    Check -->|"true"| Include["Included in Iteration"]
+    Check -->|"false"| Skip["Skipped"]

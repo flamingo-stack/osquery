@@ -1,0 +1,5 @@
+flowchart TD
+    ScheduledQuery["Scheduled Query"] --> CollectFile["Collect File Path"]
+    CollectFile --> ComputeHash["Compute SHA256"]
+    ComputeHash --> Compare["Compare With Previous Result"]
+    Compare --> Diff["Generate Diff Results"]

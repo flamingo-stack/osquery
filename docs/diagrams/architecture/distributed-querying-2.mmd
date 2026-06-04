@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Start Loop"] --> Pull["pullUpdates()"]
+    Pull --> Accept["acceptWork()"]
+    Accept --> Pending{{"Pending Queries?"}}
+    Pending -->|"Yes"| Run["runQueries()"]
+    Run --> Exec["Execute via SQL"]
+    Exec --> AddRes["addResult()"]
+    AddRes --> Flush["flushCompleted()"]
+    Flush --> Start
+    Pending -->|"No"| Start

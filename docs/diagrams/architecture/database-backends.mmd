@@ -1,0 +1,11 @@
+flowchart TD
+    CoreRuntime["Core Runtime"] --> DatabaseAPI["OsqueryDatabase"]
+    DatabaseAPI --> DBFunctions["Global Database Functions"]
+    DBFunctions --> Registry["Registry Factory"]
+    Registry --> ActivePlugin["Active Database Plugin"]
+
+    ActivePlugin --> RocksDBPlugin["RocksDB Plugin"]
+    ActivePlugin --> EphemeralPlugin["Ephemeral Database Plugin"]
+
+    RocksDBPlugin --> Disk[("Persistent Storage")]
+    EphemeralPlugin --> Memory[("In-Memory Map")]

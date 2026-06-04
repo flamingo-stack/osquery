@@ -1,0 +1,5 @@
+flowchart TD
+    Client["ExtensionClient"] --> Transport["TBufferedTransport"]
+    Transport --> Socket["UNIX Socket / Named Pipe"]
+    Socket --> Server["TThreadedServer"]
+    Server --> Handler["ExtensionHandler / ExtensionManagerHandler"]

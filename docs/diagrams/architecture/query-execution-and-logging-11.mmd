@@ -1,0 +1,10 @@
+flowchart TD
+    Config["Configuration"] --> Scheduler["Scheduler"]
+    Scheduler --> SQL["SQL Engine"]
+    SQL --> Raw["Raw Results"]
+    Raw --> QueryObj["Query"]
+    QueryObj --> Diff["DiffResults"]
+    QueryObj --> Persist["Persistent Storage"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> JSON["Serialization"]
+    JSON --> Logger["Logger Plugins"]

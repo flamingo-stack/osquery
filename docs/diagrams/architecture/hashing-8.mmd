@@ -1,0 +1,11 @@
+flowchart TD
+    subgraph CoreSystem["Core System"]
+        SQLModule["SQL Core and Virtual Tables"]
+        DistributedModule["Distributed Querying"]
+        QueryLogModule["Query Execution and Logging"]
+    end
+
+    FileModule["Filesystem and Fileops"] --> HashingModule["Hashing"]
+    HashingModule --> SQLModule
+    HashingModule --> DistributedModule
+    HashingModule --> QueryLogModule

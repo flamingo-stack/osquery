@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Caller"] --> Open["PlatformFile Constructor"]
+    Open --> Handle["PlatformHandle"]
+    Handle --> Read["read()"]
+    Handle --> Write["write()"]
+    Handle --> Seek["seek()"]
+    Handle --> Size["size()"]
+
+    Read --> AsyncCheck["hasPendingIo()"]

@@ -1,0 +1,15 @@
+flowchart TD
+    App["Higher Level Modules"] --> SQL["SQL Core And Virtual Tables"]
+    App --> DB["Database Backends"]
+    App --> EXT["Extensions Framework"]
+    App --> CFG["Config Plugins"]
+
+    SQL --> FS["Filesystem And Fileops"]
+    DB --> FS
+    EXT --> FS
+    CFG --> FS
+
+    FS --> PF["PlatformFile"]
+    FS --> STAT["platformStat and platformLstat"]
+    FS --> UTIL["Filesystem Utility Functions"]
+    FS --> ASYNC["AsyncEvent"]

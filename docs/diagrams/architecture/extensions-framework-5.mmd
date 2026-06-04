@@ -1,0 +1,5 @@
+flowchart TD
+    Call["callExtension(uuid, registry, item)"] --> Lookup["Resolve registry alias"]
+    Lookup --> Client["ExtensionClient.call()"]
+    Client --> ExtensionServer["ExtensionHandler.call()"]
+    ExtensionServer --> Registry["RegistryFactory.call()"]

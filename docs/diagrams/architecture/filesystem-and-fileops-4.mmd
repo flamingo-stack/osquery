@@ -1,0 +1,5 @@
+flowchart TD
+    ExtensionStartup["Extension Startup"] --> Check["socketExists(remove)"]
+    Check --> Exists["Socket Exists?"]
+    Exists -->|"Yes"| Remove["Attempt Removal"]
+    Exists -->|"No"| Continue["Create Socket"]

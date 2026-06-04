@@ -1,0 +1,8 @@
+flowchart TD
+    Request["hashFromFile()"] --> OpenFile["Open File"]
+    OpenFile --> ReadChunk["Read Chunk"]
+    ReadChunk --> UpdateHash["Hash.update()"]
+    UpdateHash --> MoreData{"More Data?"}
+    MoreData -->|"Yes"| ReadChunk
+    MoreData -->|"No"| Finalize["Hash.digest()"]
+    Finalize --> Return["Return HEX String"]

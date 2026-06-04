@@ -1,0 +1,5 @@
+flowchart TD
+    ConfigCore["Config And Packs"] --> Mutex1["Schedule Mutex"]
+    ConfigCore --> Mutex2["Files Mutex"]
+    ConfigCore --> Mutex3["Performance Mutex"]
+    ConfigCore --> Mutex4["Hash Mutex"]

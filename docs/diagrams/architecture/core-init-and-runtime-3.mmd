@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Initializer Constructor"] --> CheckBinary["Inspect argv[0]"]
+    CheckBinary -->|"osqueryd"| Daemon["Daemon Mode"]
+    CheckBinary -->|"osqueryi"| Shell["Shell Mode"]
+    Shell --> DisableEvents["Disable Events By Default"]
+    Daemon --> InitWorkDir["Init Work Directories"]

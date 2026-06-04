@@ -1,0 +1,8 @@
+flowchart TD
+    Start["CodeProfiler Constructor"] --> CaptureStart["call getrusage()"]
+    CaptureStart --> StoreStart["Store rusage + wall time"]
+    StoreStart --> Execution["Instrumented Code Executes"]
+    Execution --> End["Destructor"]
+    End --> CaptureEnd["call getrusage()"]
+    CaptureEnd --> Diff["Compute Differences"]
+    Diff --> Record["Record Metrics"]

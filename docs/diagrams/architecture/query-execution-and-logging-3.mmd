@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Scheduler
+    participant QueryObj as Query
+    participant DB as Database
+    participant Logger
+
+    Scheduler->>QueryObj: addNewResults(qd, epoch)
+    QueryObj->>DB: getPreviousQueryResults()
+    QueryObj->>QueryObj: compute DiffResults
+    QueryObj->>DB: saveQueryResults(json, epoch)
+    QueryObj-->>Scheduler: DiffResults + counter
+    Scheduler->>Logger: serialize QueryLogItem

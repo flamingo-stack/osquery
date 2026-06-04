@@ -1,0 +1,10 @@
+flowchart TD
+    Input["Incoming SQL"] --> SQLInternalExec["SQLInternal"]
+    SQLInternalExec --> DBConn["SQLiteDBManager::get()"]
+    DBConn --> Prepare["sqlite3_prepare_v2"]
+    Prepare --> Authorizer["sqliteAuthorizer"]
+    Prepare --> VTableCallbacks["Virtual Table Callbacks"]
+    VTableCallbacks --> TableGen["TablePlugin::generate"]
+    TableGen --> Results["QueryDataTyped"]
+    Results --> PostProcess["Escape and Size Calculation"]
+    PostProcess --> Output["Final Results"]

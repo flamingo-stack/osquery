@@ -1,0 +1,6 @@
+flowchart LR
+    ReadCall["read() or write()"] --> NonBlockCheck["Non Blocking Mode?"]
+    NonBlockCheck -->|"Yes"| Overlap["OVERLAPPED Structure"]
+    Overlap --> Buffer["Async Buffer"]
+    Buffer --> Pending["Pending IO State"]
+    NonBlockCheck -->|"No"| Sync["Synchronous IO"]

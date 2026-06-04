@@ -1,0 +1,11 @@
+flowchart TD
+    ConfigLoad["Config Update"] --> ParseDecorators["Parse decorators key"]
+    ParseDecorators --> StoreQueries["Store queries by type"]
+    StoreQueries --> RunLoad["Run load decorators"]
+
+    ScheduledTick["Scheduler Tick"] --> RunInterval["Run interval decorators"]
+    QueryExecution["Before Query"] --> RunAlways["Run always decorators"]
+
+    RunLoad --> DecorationStore["Global Decoration Store"]
+    RunAlways --> DecorationStore
+    RunInterval --> DecorationStore

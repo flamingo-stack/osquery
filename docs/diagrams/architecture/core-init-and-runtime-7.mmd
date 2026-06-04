@@ -1,0 +1,4 @@
+flowchart LR
+    Watcher["Watcher Process"] -->|"Spawns"| Worker["Worker Process"]
+    Worker -->|"Monitored By"| Watcher
+    Watcher --> Extensions["Managed Extensions"]

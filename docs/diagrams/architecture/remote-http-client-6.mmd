@@ -1,0 +1,5 @@
+flowchart LR
+    Runtime["Core Runtime"] --> Distributed["Distributed Querying"]
+    Runtime --> Config["Config and Packs"]
+    Distributed --> HTTP["Remote Http Client"]
+    Config --> HTTP

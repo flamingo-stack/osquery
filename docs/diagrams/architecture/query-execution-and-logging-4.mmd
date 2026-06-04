@@ -1,0 +1,9 @@
+flowchart TD
+    Query["Query"] --> GetPrev["getPreviousQueryResults()"]
+    Query --> Save["saveQueryResults()"]
+    Query --> Epoch["getPreviousEpoch()"]
+    Query --> Counter["getQueryCounter()"]
+    GetPrev --> DB["OsqueryDatabase"]
+    Save --> DB
+    Epoch --> DB
+    Counter --> DB

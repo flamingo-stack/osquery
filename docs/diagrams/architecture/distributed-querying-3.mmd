@@ -1,0 +1,6 @@
+flowchart TD
+    Incoming["Incoming Query"] --> Check["checkAndSetAsRunning()"]
+    Check --> Deny{{"Within denylist window?"}}
+    Deny -->|"Yes"| Skip["Skip Execution"]
+    Deny -->|"No"| Execute["Run SQL"]
+    Execute --> Clear["setAsNotRunning()"]

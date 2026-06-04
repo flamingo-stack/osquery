@@ -1,0 +1,12 @@
+flowchart TD
+    Config["Configuration"] --> Scheduler["Scheduler"]
+    Scheduler --> SQL["SQL Engine"]
+    SQL --> Diff["Diff Engine"]
+    Diff --> Persist["Database"]
+    Diff --> Log["Logger"]
+    Events["Event Publishers"] --> Subscribers["Event Subscribers"]
+    Subscribers --> Persist
+    Distributed["Remote Queries"] --> SQL
+    SQL --> Distributed
+    Extensions["Extensions"] --> Registry["Plugin Registry"]
+    Registry --> SQL

@@ -1,0 +1,4 @@
+flowchart TD
+    FileOpen["Open File"] --> OwnerCheck["isOwnerRoot or isOwnerCurrentUser"]
+    OwnerCheck --> PermCheck["hasSafePermissions"]
+    PermCheck --> Decision["Allow or Reject"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Macro["FLAG Macro"] --> GFlags["DEFINE_type"]
+    Macro --> Create["Flag::create()"]
+    Create --> Registry["Internal Flag Map"]
+    Registry --> Help["Custom Help Output"]
+    Registry --> RuntimeAccess["Flag::getValue()"]

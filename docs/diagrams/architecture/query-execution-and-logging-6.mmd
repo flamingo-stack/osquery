@@ -1,0 +1,7 @@
+flowchart TD
+    NewResults["Current Results"]
+    OldResults["Stored Results"]
+    NewResults --> DiffEngine["Diff Engine"]
+    OldResults --> DiffEngine
+    DiffEngine --> Added["Added Rows"]
+    DiffEngine --> Removed["Removed Rows"]

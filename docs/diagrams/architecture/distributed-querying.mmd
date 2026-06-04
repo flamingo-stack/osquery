@@ -1,0 +1,10 @@
+flowchart LR
+    ControlPlane["Remote Control Plane"] -->|"HTTPS JSON"| TLSPlugin["TLSDistributedPlugin"]
+    TLSPlugin -->|"getQueries()"| DistributedEngine["Distributed"]
+    DistributedEngine -->|"Execute SQL"| SQLCore["SQL Core and Virtual Tables"]
+    SQLCore -->|"QueryData"| DistributedEngine
+    DistributedEngine -->|"Batch Results"| TLSPlugin
+    TLSPlugin -->|"writeResults()"| ControlPlane
+
+    DistributedEngine -->|"Record Performance"| QueryPerf["QueryPerformance"]
+    DistributedEngine -->|"Create Log Items"| QueryLog["QueryLogItem"]

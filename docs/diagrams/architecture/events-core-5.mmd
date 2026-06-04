@@ -1,0 +1,7 @@
+flowchart TD
+    Delay["EventFactory.delay()"] --> Spawn["Spawn Publisher Threads"]
+    Spawn --> RunLoop["EventFactory.run(type)"]
+    RunLoop --> Poll["publisher.run()"]
+    Poll --> Pause["pause(200ms)"]
+    Pause --> Poll
+    Poll -->|"isEnding"| Exit["tearDown()"]

@@ -1,0 +1,5 @@
+flowchart LR
+    EventSubscriber["Event Subscriber"] --> EventRows["GenerateRowsResult"]
+    EventRows --> QueryObj["Query.addNewEvents()"]
+    QueryObj --> Diff["DiffResults"]
+    Diff --> LogItem["QueryLogItem"]

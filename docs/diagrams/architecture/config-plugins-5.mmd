@@ -1,0 +1,5 @@
+flowchart TD
+    ConfigOptions["options block"] --> ValidateFlag["Validate flag name"]
+    ValidateFlag --> CheckCLI["Check CLI-only restriction"]
+    CheckCLI --> UpdateFlag["Flag::updateValue"]
+    UpdateFlag --> AdjustLogging["setVerboseLevel() if needed"]

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Core
+    participant EMRunner
+    participant EMWatcher
+
+    Core->>EMRunner: start()
+    Core->>EMWatcher: start()
+    EMRunner->>Socket: bind + serve
+    EMWatcher->>Registry: monitor UUID routes

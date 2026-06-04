@@ -1,0 +1,5 @@
+flowchart TD
+    ScheduledQuery["ScheduledQuery"] --> QueryObj["Query"]
+    QueryObj --> CheckSql["isNewQuerySql()"]
+    QueryObj --> StatusCheck["getQueryStatus()"]
+    QueryObj --> CounterLogic["incrementCounter()"]

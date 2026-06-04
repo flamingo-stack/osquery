@@ -1,0 +1,4 @@
+flowchart LR
+    EventSubscriber["Event Subscriber"] --> EventFactory["Event Factory"]
+    EventFactory -->|"Event JSON"| LoggerPlugin
+    LoggerPlugin -->|"logEvent"| ExternalSink

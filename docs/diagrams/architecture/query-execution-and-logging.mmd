@@ -1,0 +1,9 @@
+flowchart LR
+    Scheduler["Scheduled Query"] --> SQL["SQL Execution Engine"]
+    SQL --> Results["QueryDataTyped"]
+    Results --> QueryObj["Query"]
+    QueryObj --> Diff["DiffResults"]
+    QueryObj --> DB["Persistent Storage"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Serializer["JSON Serialization"]
+    Serializer --> Logger["Logger Plugins"]

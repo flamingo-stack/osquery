@@ -1,0 +1,17 @@
+flowchart TD
+    ConfigSource["Configuration Source"] --> FilesystemPlugin["FilesystemConfigPlugin"]
+    FilesystemPlugin --> CoreConfig["Config Core"]
+
+    CoreConfig --> DecoratorsParser["DecoratorsConfigParserPlugin"]
+    CoreConfig --> EventsParser["EventsConfigParserPlugin"]
+    CoreConfig --> FilePathsParser["FilePathsConfigParserPlugin"]
+    CoreConfig --> OptionsParser["OptionsConfigParserPlugin"]
+    CoreConfig --> ViewsParser["ViewsConfigParserPlugin"]
+
+    DecoratorsParser --> LoggerSubsystem["Logger Subsystem"]
+    FilePathsParser --> EventsFramework["Events Framework"]
+    ViewsParser --> SQLCore["SQL Core"]
+    OptionsParser --> FlagSystem["Flag System"]
+
+    ExtensionFramework["Extensions Framework"] --> UpdatePlugin["UpdateConfigPlugin"]
+    UpdatePlugin --> CoreConfig

@@ -1,0 +1,5 @@
+flowchart TD
+    Loop["Periodic Watch"] --> Check["socketExists()"]
+    Check --> Ping["client.ping()"]
+    Ping --> Healthy["EXT_SUCCESS?"]
+    Healthy -->|"No"| Remove["removeBroadcast(uuid)"]

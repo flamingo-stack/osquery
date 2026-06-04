@@ -1,0 +1,10 @@
+flowchart LR
+    SQLite["SQLite Engine"] --> xBestIndex["xBestIndex"]
+    SQLite --> xFilter["xFilter"]
+    SQLite --> xNext["xNext"]
+    SQLite --> xColumn["xColumn"]
+
+    xBestIndex --> ConstraintMap["ConstraintMap"]
+    xFilter --> QueryContextVT["QueryContext"]
+    QueryContextVT --> TablePluginImpl["TablePlugin::generate"]
+    TablePluginImpl --> Rows["TableRows"]

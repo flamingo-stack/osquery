@@ -1,0 +1,4 @@
+flowchart LR
+    Query["SQL Query"] --> External["ExternalSQLPlugin"]
+    External --> Manager["ExtensionManagerClient.query()"]
+    Manager --> SQLite["Core SQLite Engine"]

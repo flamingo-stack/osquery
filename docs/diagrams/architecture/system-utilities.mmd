@@ -1,0 +1,22 @@
+flowchart TD
+    SystemUtilities["System Utilities"]
+
+    EnumHash["EnumClassHash"]
+    TimeUtils["Time Utilities"]
+
+    SQLCore["SQL Core and Virtual Tables"]
+    Scheduler["Scheduled Query Engine"]
+    Distributed["Distributed Querying"]
+    Logging["Query Execution and Logging"]
+    Events["Events Core"]
+
+    SystemUtilities --> EnumHash
+    SystemUtilities --> TimeUtils
+
+    TimeUtils --> Scheduler
+    TimeUtils --> Logging
+    TimeUtils --> Distributed
+    TimeUtils --> Events
+
+    EnumHash --> SQLCore
+    EnumHash --> Scheduler

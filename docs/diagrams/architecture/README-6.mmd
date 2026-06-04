@@ -1,0 +1,5 @@
+flowchart LR
+    Core["Core Runtime"] --> LoggerInterface["LoggerPlugin"]
+    SQL["SQL Engine"] --> LoggerInterface
+    Events["Events"] --> LoggerInterface
+    LoggerInterface --> Backend["External Sink"]

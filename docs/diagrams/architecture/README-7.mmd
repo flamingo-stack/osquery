@@ -1,0 +1,5 @@
+flowchart TD
+    Core --> API["OsqueryDatabase"]
+    API --> Plugin["Active DB Plugin"]
+    Plugin --> RocksDB["Persistent Storage"]
+    Plugin --> Memory["In-Memory Backend"]

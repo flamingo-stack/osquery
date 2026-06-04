@@ -1,0 +1,7 @@
+flowchart TD
+    Parent["Parent Process"] -->|"fork()"| Child["Child Process"]
+    Child -->|"set environment"| Env["OSQUERY_WORKER or OSQUERY_EXTENSION"]
+    Child -->|"reset signals via sigaction"| Reset["Default Signal Handlers"]
+    Child -->|"execve()"| Executable["Worker or Extension Binary"]
+    Parent -->|"waitpid()"| Status["ProcessState"]
+    Parent -->|"SIGTERM or SIGKILL"| Child

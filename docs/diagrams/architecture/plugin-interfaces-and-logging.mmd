@@ -1,0 +1,7 @@
+flowchart LR
+    CoreRuntime["Core Init And Runtime"] -->|"Buffered Status Logs"| LoggerInterface["LoggerPlugin Interface"]
+    QueryEngine["Query Execution And Logging"] -->|"QueryLogItem JSON"| LoggerInterface
+    EventsCore["Events Core"] -->|"Event Records"| LoggerInterface
+    Extensions["Extensions Framework"] -->|"Registers Logger Plugins"| LoggerInterface
+    LoggerInterface -->|"logString or logStatus"| LoggerBackend["Concrete Logger Plugin"]
+    LoggerBackend -->|"Writes To"| ExternalSink["External Logging System"]

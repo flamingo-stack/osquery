@@ -1,0 +1,8 @@
+flowchart TD
+    TCPConnect["TCP Connect"] --> Wrap["Wrap in SSL Stream"]
+    Wrap --> Handshake["async_handshake"]
+    Handshake --> Verify{"Verify Peer?"}
+    Verify -->|"Yes"| Validate["Certificate Validation"]
+    Verify -->|"No"| Continue["Proceed"]
+    Validate --> Continue
+    Continue --> Ready["Secure Channel Ready"]

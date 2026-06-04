@@ -1,0 +1,4 @@
+flowchart TD
+    Request["registerExtension()"] --> Generate["UuidGenerator.getUuid()"]
+    Generate --> Store["Track UUID in set"]
+    Store --> Assign["Associate UUID with Registry routes"]

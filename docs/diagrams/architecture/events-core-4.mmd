@@ -1,0 +1,4 @@
+flowchart LR
+    Subscriber["EventSubscriberPlugin"] -->|"create()"| SubObj["Subscription"]
+    SubObj -->|"addSubscription()"| Publisher["EventPublisherPlugin"]
+    Publisher -->|"invoke callback"| Subscriber

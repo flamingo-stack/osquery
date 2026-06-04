@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Distributed Querying or Config Module"] --> Client["Client"]
+    Client --> Request["HTTP_Request"]
+    Client --> Response["HTTP_Response"]
+    Client --> Asio["Boost.Asio io_context"]
+    Client --> TLS["OpenSSL TLS Layer"]
+    Client --> Beast["Boost.Beast HTTP Engine"]

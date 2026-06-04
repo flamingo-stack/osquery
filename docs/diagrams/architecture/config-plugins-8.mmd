@@ -1,0 +1,10 @@
+flowchart TD
+    Source["Filesystem or Extension"] --> Retrieve["ConfigPlugin::genConfig"]
+    Retrieve --> Core["Config Core"]
+    Core --> Parse["ConfigParserPlugin::update"]
+
+    Parse --> Flags["Runtime Flags"]
+    Parse --> Views["SQL Views"]
+    Parse --> Decorators["Log Decorations"]
+    Parse --> FilePaths["Filesystem Monitoring"]
+    Parse --> Events["Event Subscriptions"]

@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Request Method Invoked"] --> Init["initHTTPRequest()"]
+    Init --> Connect["createConnection()"]
+    Connect --> TLSCheck{"TLS Enabled?"}
+    TLSCheck -->|"Yes"| Encrypt["encryptConnection()"]
+    TLSCheck -->|"No"| Send["sendHTTPRequest()"]
+    Encrypt --> Send
+    Send --> Write["async_write"]
+    Write --> Read["async_read"]
+    Read --> Post["postResponseHandler()"]
+    Post --> End["Response Returned"]

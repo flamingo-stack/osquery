@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Node
+    participant TLSPlugin
+    participant Server
+
+    Node->>TLSPlugin: getQueries()
+    TLSPlugin->>Server: POST read_endpoint
+    Server-->>TLSPlugin: JSON queries
+    TLSPlugin-->>Node: JSON payload
+
+    Node->>TLSPlugin: writeResults(json)
+    TLSPlugin->>Server: POST write_endpoint
+    Server-->>TLSPlugin: ACK

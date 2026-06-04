@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Config Load Triggered"] --> Gen["ConfigPlugin.genConfig()"]
+    Gen --> Validate["Validate JSON Structure"]
+    Validate --> Update["Update Sources"]
+    Update --> Packs["Create / Update Packs"]
+    Packs --> Parsers["Apply Config Parsers"]
+    Parsers --> Reconfigure["Reconfigure Registries"]
+    Reconfigure --> Ready["Schedule Active"]

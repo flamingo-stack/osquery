@@ -1,0 +1,4 @@
+flowchart LR
+    QueryLogItem["QueryLogItem"] --> Mode{"Serialization Mode"}
+    Mode -->|"Standard"| Standard["Single JSON Object"]
+    Mode -->|"Events"| Events["Multiple Event JSON Objects"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Start["genConfig()"] --> Validate["Validate config_path"]
+    Validate --> Resolve["Resolve .d drop-in files"]
+    Resolve --> Sort["Sort files"]
+    Sort --> Read["Read each file"]
+    Read --> Merge["Return config map"]
