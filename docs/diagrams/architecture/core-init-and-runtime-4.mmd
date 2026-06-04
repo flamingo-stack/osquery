@@ -1,7 +1,0 @@
-flowchart TD
-    Watcher["Watcher Process"] --> Spawn["Spawn Worker"]
-    Spawn --> Monitor["Monitor CPU And Memory"]
-    Monitor --> Check{{"Limit Exceeded?"}}
-    Check -->|"No"| Continue["Continue Monitoring"]
-    Check -->|"Yes"| Kill["Stop Worker"]
-    Kill --> Respawn["Respawn Worker"]

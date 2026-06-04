@@ -1,5 +1,0 @@
-flowchart TD
-    ReadCall["readFile()"] --> Open["PlatformFile"]
-    Open --> SizeCheck["checkFileReadLimit()"]
-    SizeCheck --> Loop["Block Read Loop"]
-    Loop --> Predicate["Callback / Buffer"]

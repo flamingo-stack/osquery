@@ -1,6 +1,0 @@
-flowchart TD
-    Publisher["EventPublisher"] --> EventFactory["EventFactory"]
-    Subscriber["EventSubscriber"] --> EventFactory
-    EventFactory --> Callback["EventCallback"]
-    Callback --> Storage["Database Storage"]
-    SQL["SELECT *_events"] --> Subscriber

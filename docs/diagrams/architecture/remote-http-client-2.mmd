@@ -1,5 +1,0 @@
-flowchart LR
-    OldOpts["Current Options"] --> Compare["operator=="]
-    NewOpts["New Options"] --> Compare
-    Compare -->|"Different"| Reconfigure["Reinitialize Connection"]
-    Compare -->|"Same"| Reuse["Reuse Existing Settings"]

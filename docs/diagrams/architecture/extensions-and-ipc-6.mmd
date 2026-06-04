@@ -1,5 +1,0 @@
-flowchart TD
-    Start["Core Start"] --> StartManager["startExtensionManager()"]
-    StartManager --> Watcher["ExtensionManagerWatcher"]
-    Watcher --> Runner["ExtensionManagerRunner"]
-    Runner --> Listen["Thrift Listen"]
