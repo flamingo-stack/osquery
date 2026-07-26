@@ -1,170 +1,189 @@
 # Quick Start
 
-Get osquery with OpenFrame running in under 10 minutes.
+This guide gets osquery built from source and running in interactive mode in as few steps as possible.
 
 ---
 
-## TL;DR — Fastest Path
+## TL;DR
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/flamingo-stack/osquery.git
 cd osquery
 
-# 2. Configure the build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -G Ninja
+# 2. Configure the build (Linux / macOS)
+cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
-# 3. Build osquery (this takes 5–30 minutes depending on hardware)
-cmake --build build --parallel $(nproc)
+# 3. Build osqueryi (interactive shell)
+cmake --build build --target osqueryi -j$(nproc)
 
 # 4. Run the interactive shell
 ./build/osquery/osqueryi
 ```
 
-> **Hardware note**: Building from source requires at minimum 24 GB RAM and 6 CPU cores. See the [Prerequisites Guide](prerequisites.md) for full system requirements.
+On **Windows** (PowerShell):
+
+```bash
+cmake -B build -S . -G "Visual Studio 17 2022" -A x64
+cmake --build build --config RelWithDebInfo --target osqueryi
+.\build\osquery\RelWithDebInfo\osqueryi.exe
+```
 
 ---
 
-## Step 1: Clone the Repository
+## Step-by-Step
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/flamingo-stack/osquery.git
 cd osquery
 ```
 
+> The repository bundles most of its dependencies under `libraries/cmake/source/` — no separate dependency installation step is required for most platforms.
+
 ---
 
-## Step 2: Configure the Build
+### 2. Configure the Build
 
-### Linux / macOS
+osquery uses **CMake** as its build system. Choose a build type:
 
-```bash
-cmake -S . -B build \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-  -G Ninja
-```
-
-### Windows (Visual Studio)
-
-```bash
-cmake -S . -B build ^
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
-  -G "Visual Studio 17 2022"
-```
-
-### Common CMake Options
-
-| Option | Description |
+| Build Type | Description |
 |---|---|
-| `-DCMAKE_BUILD_TYPE=RelWithDebInfo` | Optimized build with debug symbols (recommended) |
-| `-DCMAKE_BUILD_TYPE=Debug` | Full debug build (slower, larger binaries) |
-| `-DCMAKE_BUILD_TYPE=Release` | Fully optimized production build |
-| `-G Ninja` | Use Ninja for faster parallel builds |
-| `-DOSQUERY_BUILD_TESTS=ON` | Include test suite in the build |
-
----
-
-## Step 3: Build
+| `Debug` | Full debug symbols, no optimizations |
+| `RelWithDebInfo` | Optimized + debug symbols (recommended for dev) |
+| `Release` | Fully optimized, minimal symbols |
 
 ```bash
-# Linux/macOS — use all available CPU cores
-cmake --build build --parallel $(nproc)
-
-# Windows — use all available CPU cores
-cmake --build build --parallel %NUMBER_OF_PROCESSORS%
+cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
-The first build downloads and compiles all third-party dependencies. Subsequent builds with `ccache` are significantly faster.
+> Ninja is the recommended generator. You can also use `Unix Makefiles` if Ninja is unavailable.
 
 ---
 
-## Step 4: Run Your First Query
+### 3. Build Targets
 
-Launch the osquery interactive shell:
+Build only what you need:
+
+```bash
+# Build the interactive shell only (fastest)
+cmake --build build --target osqueryi -j$(nproc)
+
+# Build the daemon
+cmake --build build --target osqueryd -j$(nproc)
+
+# Build everything
+cmake --build build -j$(nproc)
+```
+
+> The first build will compile all bundled libraries and may take **20–60 minutes** depending on hardware.
+
+---
+
+### 4. Run the Interactive Shell
 
 ```bash
 ./build/osquery/osqueryi
 ```
 
-Expected output:
+You will be greeted with the osquery SQL shell:
 
 ```text
 Using a virtual database. Need help, type '.help'
 osquery>
 ```
 
-Now try your first query:
+---
+
+## Hello World: Your First Queries
+
+Once in the `osqueryi` shell, try these queries:
 
 ```sql
-osquery> SELECT hostname, cpu_brand, physical_memory FROM system_info;
+-- What OS is this system running?
+SELECT * FROM os_version;
+
+-- What processes are currently running?
+SELECT pid, name, path FROM processes LIMIT 10;
+
+-- What network ports are listening?
+SELECT pid, port, protocol FROM listening_ports;
+
+-- What users exist on this system?
+SELECT uid, username, shell FROM users;
+
+-- What's the current uptime?
+SELECT * FROM uptime;
 ```
 
-Example output:
+Example output for `os_version`:
 
 ```text
-+------------------+-------------------------------+------------------+
-| hostname         | cpu_brand                     | physical_memory  |
-+------------------+-------------------------------+------------------+
-| my-linux-host    | Intel(R) Core(TM) i9-12900K   | 34207285248      |
-+------------------+-------------------------------+------------------+
++----------+--------+-------+-------+-------+-------+----------+
+| name     | major  | minor | patch | build | arch  | platform |
++----------+--------+-------+-------+-------+-------+----------+
+| Ubuntu   | 22     | 04    | 0     |       | x86_64| ubuntu   |
++----------+--------+-------+-------+-------+-------+----------+
 ```
 
 ---
 
-## Step 5: Explore More Tables
+## Useful Shell Commands
+
+| Command | Description |
+|---|---|
+| `.tables` | List all available virtual tables |
+| `.schema <table>` | Show columns and types for a table |
+| `.mode line` | Switch to line-per-column output |
+| `.mode pretty` | Switch to tabular output (default) |
+| `.help` | Show all shell commands |
+| `.exit` | Exit the shell |
 
 ```sql
--- List all running processes
-osquery> SELECT pid, name, cmdline FROM processes LIMIT 10;
+-- Discover tables related to processes
+.tables process
 
--- Check listening network ports
-osquery> SELECT pid, port, protocol, address FROM listening_ports LIMIT 10;
-
--- List installed packages (Linux)
-osquery> SELECT name, version, arch FROM deb_packages LIMIT 10;
-
--- Show users on the system
-osquery> SELECT uid, gid, username, shell FROM users;
+-- Inspect the processes table schema
+.schema processes
 ```
 
 ---
 
-## Step 6: Run as a Daemon
+## Run the Daemon
 
-To run osquery as a background daemon with scheduled queries:
+To run osquery as a scheduled query daemon:
 
 ```bash
-# Create a basic configuration
-sudo mkdir -p /etc/osquery
-sudo tee /etc/osquery/osquery.conf <<'EOF'
+# Create a minimal configuration file
+cat > /tmp/osquery.conf << 'EOF'
 {
   "options": {
-    "logger_plugin": "filesystem",
-    "schedule_splay_percent": 10
+    "logger_path": "/tmp/osquery_logs",
+    "disable_logging": false
   },
   "schedule": {
-    "system_info": {
-      "query": "SELECT hostname, cpu_brand, physical_memory FROM system_info;",
-      "interval": 3600
+    "os_version": {
+      "query": "SELECT * FROM os_version;",
+      "interval": 60
+    },
+    "listening_ports": {
+      "query": "SELECT pid, port, protocol FROM listening_ports;",
+      "interval": 30
     }
   }
 }
 EOF
 
 # Run the daemon
-sudo ./build/osquery/osqueryd --config_path=/etc/osquery/osquery.conf
+./build/osquery/osqueryd \
+  --flagfile /tmp/osquery.conf \
+  --verbose
 ```
 
----
-
-## Expected Results Summary
-
-| Command | What You Should See |
-|---|---|
-| `osqueryi` | Interactive SQL prompt |
-| `SELECT * FROM system_info;` | Host identity, CPU, RAM details |
-| `SELECT * FROM processes LIMIT 5;` | Running process list |
-| `osqueryd` | Daemon starts, logs to `/var/log/osquery/` |
+> The daemon runs scheduled queries on their configured intervals and logs results to the `logger_path` directory.
 
 ---
 
@@ -172,6 +191,5 @@ sudo ./build/osquery/osqueryd --config_path=/etc/osquery/osquery.conf
 
 After completing this quick start:
 
-- Follow the [First Steps Guide](first-steps.md) to explore key features and common workflows
-- Review the [Prerequisites Guide](prerequisites.md) for full system and software requirements
-- Explore the [Development section](../development/README.md) to understand the architecture and contribute
+- Follow the [First Steps Guide](first-steps.md) to explore key features in depth
+- Review [Prerequisites](prerequisites.md) if you encounter build issues

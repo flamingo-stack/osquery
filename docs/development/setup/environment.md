@@ -1,33 +1,26 @@
 # Development Environment Setup
 
-This guide covers recommended IDE configurations, development tools, editor extensions, and environment variables for contributing to osquery with OpenFrame.
+This guide covers IDE recommendations, editor configuration, compiler setup, and useful tooling for developing on the osquery codebase.
 
 ---
 
 ## Recommended IDEs
 
-### Visual Studio Code (All Platforms)
+### Visual Studio Code (Cross-Platform)
 
-VS Code with the C++ extension pack is the recommended cross-platform IDE for osquery development.
+VS Code is the most widely used editor for osquery development across all three platforms.
 
-**Required Extensions:**
+**Required extensions:**
 
-| Extension | ID | Purpose |
+| Extension | Publisher | Purpose |
 |---|---|---|
-| C/C++ | `ms-vscode.cpptools` | IntelliSense, debugging, syntax highlighting |
-| CMake Tools | `ms-vscode.cmake-tools` | CMake integration, build configuration |
-| CMake | `twxs.cmake` | CMake syntax highlighting |
-| clangd | `llvm-vs-code-extensions.vscode-clangd` | Fast code navigation, diagnostics |
+| C/C++ | Microsoft | IntelliSense, debugging, formatting |
+| CMake Tools | Microsoft | CMake integration, build and test from sidebar |
+| CMake Language Support | twxs | Syntax highlighting for CMakeLists.txt |
+| clangd | LLVM | Fast code completion, diagnostics, go-to-definition |
+| GitLens | GitKraken | Enhanced Git history and blame |
 
-**Optional but Recommended:**
-
-| Extension | ID | Purpose |
-|---|---|---|
-| GitLens | `eamodio.gitlens` | Enhanced Git history and annotations |
-| Clang-Format | `xaver.clang-format` | Auto-formatting on save |
-| Error Lens | `usernamehakki.error-lens` | Inline error display |
-
-**Install all at once:**
+**Installing extensions:**
 
 ```bash
 code --install-extension ms-vscode.cpptools
@@ -37,164 +30,198 @@ code --install-extension llvm-vs-code-extensions.vscode-clangd
 code --install-extension eamodio.gitlens
 ```
 
-**Recommended `.vscode/settings.json`:**
+**Workspace settings (`.vscode/settings.json`):**
 
 ```json
 {
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.generator": "Ninja",
-  "cmake.buildType": "Debug",
-  "editor.formatOnSave": true,
+  "cmake.buildType": "RelWithDebInfo",
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/build",
-    "--header-insertion=iwyu",
-    "--clang-tidy"
+    "--clang-tidy",
+    "--background-index"
   ],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
   "C_Cpp.intelliSenseEngine": "disabled"
 }
 ```
 
-> When using `clangd`, disable the built-in IntelliSense engine to avoid conflicts.
+> Set `C_Cpp.intelliSenseEngine` to `"disabled"` when using clangd to avoid conflicts.
 
 ---
 
-### CLion (JetBrains)
+### CLion (Cross-Platform)
 
-CLion provides first-class CMake support. Open the project root and CLion will auto-detect the `CMakeLists.txt`.
+JetBrains CLion has excellent CMake and C++ support built-in.
 
-**Recommended Settings:**
-
-- Set the CMake build directory to `build/`
-- Enable `clang-format` in **Settings → Editor → Code Style → C/C++**
-- Use the built-in CMake tab for build configuration
+**Configuration:**
+1. Open the repository root — CLion auto-detects the top-level `CMakeLists.txt`.
+2. Go to **File → Settings → Build, Execution, Deployment → CMake**.
+3. Set **Build type** to `RelWithDebInfo`.
+4. Set **CMake options** to `-G Ninja`.
+5. Set **Build directory** to `build`.
 
 ---
 
 ### Xcode (macOS Only)
 
-Generate an Xcode project from CMake:
+Generate an Xcode project from the CMake configuration:
 
 ```bash
-cmake -S . -B build-xcode -G Xcode
+cmake -B build-xcode -S . -G Xcode \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 open build-xcode/osquery.xcodeproj
 ```
 
 ---
 
-## Development Tools
+### Visual Studio (Windows Only)
 
-Install these tools before starting development:
-
-### All Platforms
+Generate a Visual Studio solution:
 
 ```bash
-# Python tools for code generation
-pip3 install jinja2 pexpect six
-```
-
-### Linux
-
-```bash
-sudo apt-get install -y \
-  clang-format \
-  clang-tidy \
-  ccache \
-  valgrind \
-  gdb
-```
-
-### macOS
-
-```bash
-brew install \
-  clang-format \
-  ccache \
-  llvm
-```
-
-### Windows
-
-- Install [LLVM](https://releases.llvm.org/) for `clang-format` and `clang-tidy`
-- Configure `PATH` to include the LLVM `bin` directory
-
----
-
-## Setting Up ccache (Highly Recommended)
-
-`ccache` dramatically speeds up incremental rebuilds:
-
-```bash
-# Install ccache
-sudo apt-get install ccache   # Linux
-brew install ccache            # macOS
-
-# Enable in CMake
-cmake -S . -B build \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake -B build -S . -G "Visual Studio 17 2022" -A x64
+start build\osquery.sln
 ```
 
 ---
 
-## Generate compile_commands.json for clangd
+## Compiler Setup
 
-For full IntelliSense support with `clangd`, generate the compilation database:
+osquery uses **Clang** as the primary compiler on Linux and macOS, and **MSVC** on Windows.
+
+### Linux — Install Clang
 
 ```bash
-cmake -S . -B build \
-  -G Ninja \
+# Ubuntu / Debian
+sudo apt-get install -y clang-15 llvm-15 lld-15
+
+# Set as default (optional)
+sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
+sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
+```
+
+### macOS — Use Homebrew LLVM
+
+```bash
+brew install llvm
+
+# Add to your shell profile:
+export PATH="$(brew --prefix llvm)/bin:$PATH"
+export CC=clang
+export CXX=clang++
+```
+
+### Specifying Compilers in CMake
+
+```bash
+cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++
+```
+
+---
+
+## Compile Commands Database
+
+osquery's CMake configuration generates a `compile_commands.json` file automatically when using Ninja or Makefiles. This enables clangd and other tools to provide accurate IntelliSense:
+
+```bash
+cmake -B build -S . -G Ninja \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-# Link to project root (required by clangd)
+# Symlink to repo root for clangd auto-discovery
 ln -sf build/compile_commands.json compile_commands.json
-```
-
----
-
-## Environment Variables for Development
-
-| Variable | Purpose | Example |
-|---|---|---|
-| `OSQUERY_EXTENSIONS_SOCKET` | Extension manager socket path | `/tmp/osquery.em` |
-| `OSQUERY_CONFIG_PATH` | Override default config location | `./test.conf` |
-| `OSQUERY_DB_PATH` | Custom database path for development | `/tmp/osquery-dev.db` |
-| `OPENSSL_ROOT_DIR` | OpenSSL installation path (Windows/macOS) | `/usr/local/opt/openssl` |
-
-Set in your shell profile or export before building:
-
-```bash
-export OPENSSL_ROOT_DIR="/usr/local/opt/openssl@3"
-```
-
-On Windows:
-
-```bash
-set OPENSSL_ROOT_DIR=C:\OpenSSL-Win64
 ```
 
 ---
 
 ## Code Formatting
 
-osquery enforces formatting with `clang-format`. The configuration is in `.clang-format` at the repository root.
+osquery uses **clang-format** for consistent C++ formatting.
 
 ```bash
+# Install clang-format
+sudo apt-get install -y clang-format-15   # Linux
+brew install clang-format                  # macOS
+
 # Format a single file
 clang-format -i osquery/core/init.cpp
 
-# Check formatting without modifying
-clang-format --dry-run --Werror osquery/core/init.cpp
-
-# Format all C++ files in a directory
-find osquery/core -name "*.cpp" -o -name "*.h" | xargs clang-format -i
+# Check formatting without modifying (for CI)
+tools/formatting/format-check.sh
 ```
 
-The CI pipeline enforces formatting. Run format checks before submitting PRs.
+The `.clang-format` configuration in the repository root defines the style rules.
 
 ---
 
-## Next Steps
+## Static Analysis
 
-Once your environment is set up, proceed to the [Local Development Guide](local-development.md) for instructions on building, running, and debugging osquery locally.
+```bash
+# Run clang-tidy on a file
+clang-tidy osquery/core/init.cpp \
+  -p build/compile_commands.json
+
+# Run with fixes applied
+clang-tidy -fix osquery/core/init.cpp \
+  -p build/compile_commands.json
+```
+
+---
+
+## Development Environment Variables
+
+| Variable | Recommended Value | Description |
+|---|---|---|
+| `CC` | `clang` | C compiler |
+| `CXX` | `clang++` | C++ compiler |
+| `NINJA_STATUS` | `[%f/%t %e] ` | Show build progress with elapsed time |
+| `CLICOLOR_FORCE` | `1` | Force colored compiler output |
+
+Add to your shell profile (`~/.bashrc`, `~/.zshrc`):
+
+```bash
+export CC=clang
+export CXX=clang++
+export NINJA_STATUS="[%f/%t %e] "
+```
+
+---
+
+## Useful Aliases
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias osquery-build='cmake --build build -j$(nproc)'
+alias osquery-configure='cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo'
+alias osqueryi='./build/osquery/osqueryi'
+alias osqueryd='./build/osquery/osqueryd'
+```
+
+---
+
+## Python Environment for Tooling
+
+osquery's code generation and test tooling requires Python 3:
+
+```bash
+# Create a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# Install tooling dependencies
+pip install jinja2 six future pexpect psutil timeout-decorator
+```
+
+---
+
+## Community
+
+For questions about development setup, join the **OpenMSP Slack**:
+
+https://www.openmsp.ai/

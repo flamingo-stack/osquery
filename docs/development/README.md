@@ -1,96 +1,106 @@
 # Development Documentation
 
-Welcome to the osquery with OpenFrame development documentation. This section covers everything you need to build, run, test, and contribute to the project.
+Welcome to the osquery development documentation. This section covers everything needed to set up a development environment, understand the architecture, write tests, follow security best practices, and contribute to the codebase.
 
 ---
 
-## Overview
-
-osquery is a C++ cross-platform OS instrumentation framework. The codebase is organized around a modular, plugin-driven architecture where every major subsystem is independently testable and extensible.
-
-The **OpenFrame** layer adds authentication and encryption components that integrate with the [Flamingo/OpenFrame MSP platform](https://openframe.ai).
-
----
-
-## Documentation Index
+## Contents
 
 | Guide | Description |
 |---|---|
-| [Environment Setup](setup/environment.md) | IDE recommendations, development tools, editor extensions |
-| [Local Development](setup/local-development.md) | Clone, build, run locally, debug configuration |
-| [Architecture Overview](architecture/README.md) | High-level architecture diagrams and core component descriptions |
-| [Security Best Practices](security/README.md) | Auth patterns, encryption, secrets management |
-| [Testing Guide](testing/README.md) | Test structure, running tests, writing new tests |
-| [Contributing Guidelines](contributing/guidelines.md) | Code style, branch naming, PR process, commit format |
+| [Environment Setup](setup/environment.md) | IDE configuration, editor plugins, and development tooling |
+| [Local Development](setup/local-development.md) | Cloning, building, running, and debugging locally |
+| [Architecture Overview](architecture/README.md) | High-level design, core components, and data flow |
+| [Security Guidelines](security/README.md) | Authentication, secrets management, and secure coding |
+| [Testing Overview](testing/README.md) | Test structure, running tests, and coverage |
+| [Contributing Guidelines](contributing/guidelines.md) | Code style, branch strategy, PR process, and review checklist |
 
 ---
 
-## Technology Stack
+## Quick Navigation
 
-| Layer | Technology |
-|---|---|
-| **Language** | C++17 |
-| **Build System** | CMake 3.21+ with Ninja |
-| **SQL Engine** | SQLite (embedded, in-memory) |
-| **IPC** | Apache Thrift (UNIX sockets / named pipes) |
-| **Encryption** | OpenSSL (AES-256-GCM via OpenFrame layer) |
-| **Networking** | Boost.Asio + Boost.Beast |
-| **Event Systems** | inotify (Linux), FSEvents (macOS), ETW (Windows), BPF (Linux) |
-| **Database** | RocksDB (persistent), ephemeral in-memory store |
-| **Code Generation** | Python scripts for table schema, API, and amalgamation |
-| **Testing** | Google Test + Google Mock |
+### I want to…
+
+**Set up my development environment:**
+→ Start with [Local Development](setup/local-development.md)
+
+**Understand how osquery works internally:**
+→ Read the [Architecture Overview](architecture/README.md)
+
+**Write a new virtual table:**
+→ See [Local Development](setup/local-development.md) for the build setup, then read the [Architecture Overview](architecture/README.md) for the virtual table framework
+
+**Run the test suite:**
+→ Go to [Testing Overview](testing/README.md)
+
+**Submit a pull request:**
+→ Read [Contributing Guidelines](contributing/guidelines.md) first
+
+**Understand security considerations:**
+→ See [Security Guidelines](security/README.md)
 
 ---
 
-## Repository Structure
+## Repository Layout
 
 ```text
 osquery/
-├── osquery/           # Core C++ source — SQL, eventing, config, logging
-│   ├── core/          # Initialization, flags, watcher/worker model
-│   ├── sql/           # SQLite engine, virtual tables, authorizer
-│   ├── config/        # Configuration loading, packs, parsers
-│   ├── events/        # Eventing framework (publishers/subscribers)
-│   ├── database/      # Storage backend abstraction (RocksDB, ephemeral)
-│   ├── distributed/   # Distributed query orchestration
-│   ├── extensions/    # Thrift-based extension/IPC framework
-│   ├── remote/        # HTTP client, TLS transport
-│   ├── logger/        # Logging plugins and observability
-│   └── tables/        # Virtual table implementations
-├── openframe/         # OpenFrame authentication and encryption layer
-├── plugins/           # Logger, config, database, and distributed plugins
-├── libraries/         # CMake-managed third-party dependencies
-├── tools/             # Codegen scripts, CI tools, formatting
-├── tests/             # Integration test suite
-└── external/          # Extension examples
+├── external/examples/         # Extension SDK examples
+│   ├── config_plugin/         # Example config plugin extension
+│   ├── read_only_table/       # Example read-only virtual table
+│   ├── string_batch/          # Example batch string table
+│   └── writable_table/        # Example writable virtual table
+├── libraries/cmake/source/    # Bundled third-party libraries
+├── openframe/                 # Flamingo OpenFrame integration layer
+├── osquery/                   # Core osquery source
+│   ├── carver/                # File carving subsystem
+│   ├── config/                # Configuration loading and management
+│   ├── core/                  # Init, flags, shutdown, watcher
+│   ├── database/              # RocksDB / ephemeral persistence
+│   ├── devtools/              # Interactive shell (osqueryi)
+│   ├── dispatcher/            # Thread pool and scheduler
+│   ├── distributed/           # Distributed query execution
+│   ├── events/                # Eventing core and platform publishers
+│   ├── extensions/            # Thrift IPC and extension manager
+│   ├── filesystem/            # Cross-platform file abstraction
+│   ├── hashing/               # MD5/SHA1/SHA256 utilities
+│   ├── logger/                # Logger plugin infrastructure
+│   ├── main/                  # Binary entry points
+│   ├── numeric_monitoring/    # Performance metric plugins
+│   ├── process/               # Process abstraction layer
+│   ├── profiler/              # Code profiler utilities
+│   ├── registry/              # Plugin registry factory
+│   ├── remote/                # HTTP/HTTPS client and TLS transport
+│   ├── sql/                   # SQLite integration and virtual tables
+│   ├── system/                # Network hostname, user/group services
+│   ├── tables/                # All virtual table implementations
+│   ├── utils/                 # Cross-platform utilities
+│   └── worker/                # Worker IPC and logging bridge
+├── plugins/                   # Pluggable config, logger, and DB backends
+├── tests/                     # Integration test specs
+└── tools/                     # Build tools, CI scripts, code generation
+    ├── ci/                    # CI helper scripts
+    ├── cmake/                 # CMake helper scripts
+    ├── codegen/               # Table and API code generators
+    └── tests/                 # Python integration test runner
 ```
 
 ---
 
-## Quick Commands
+## Development Philosophy
 
-```bash
-# Configure build
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+osquery is designed around several key principles:
 
-# Build everything
-cmake --build build --parallel $(nproc)
-
-# Run interactive shell
-./build/osquery/osqueryi
-
-# Run tests
-cmake --build build --target osquery_tests
-cd build && ctest --output-on-failure
-```
+1. **Portability first** — Every feature targets Linux, macOS, and Windows.
+2. **Plugin-based extensibility** — Tables, loggers, config sources, and databases are all plugins.
+3. **Security by default** — SQLite opcodes are allowlisted; file permissions are enforced.
+4. **Process isolation** — The watcher/worker model limits blast radius from buggy queries.
+5. **SQL as the interface** — All system data is accessible through standard SQL.
 
 ---
 
-## Getting Help
+## Community
 
-All development discussions happen in the **OpenMSP Slack community**:
+Questions, ideas, and discussions are handled in the **OpenMSP Slack community**:
 
-- [Join OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- [https://www.openmsp.ai/](https://www.openmsp.ai/)
-
-> We do not use GitHub Issues or GitHub Discussions. All support and collaboration is on Slack.
+https://www.openmsp.ai/
