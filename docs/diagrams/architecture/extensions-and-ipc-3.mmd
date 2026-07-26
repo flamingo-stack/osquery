@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Ext as Extension Process
+    participant EM as Extension Manager
+
+    Ext->>EM: registerExtension(info, registry)
+    EM->>EM: validate SDK
+    EM->>EM: generate UUID
+    EM-->>Ext: ExtensionStatus(uuid)
+    Ext->>Ext: start ExtensionRunner

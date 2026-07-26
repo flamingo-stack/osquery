@@ -1,0 +1,4 @@
+flowchart TD
+    Flags["Distributed TLS Flags"] --> MakeURI["TLSRequestHelper.makeURI()"]
+    MakeURI --> ReadURI["read_uri_"]
+    MakeURI --> WriteURI["write_uri_"]

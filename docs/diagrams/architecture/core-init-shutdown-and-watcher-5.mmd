@@ -1,0 +1,11 @@
+flowchart TD
+    WatchLoop["Watcher Loop"] --> Inspect["Inspect Process via SQL"]
+    Inspect --> Compute["Compute PerformanceChange"]
+    Compute --> CpuCheck{"CPU Limit Exceeded?"}
+    Compute --> MemCheck{"Memory Limit Exceeded?"}
+
+    CpuCheck -->|"Yes"| Restart["Stop and Respawn"]
+    MemCheck -->|"Yes"| Restart
+
+    CpuCheck -->|"No"| Continue["Continue Monitoring"]
+    MemCheck -->|"No"| Continue

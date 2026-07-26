@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Caller"] --> PF["PlatformFile"]
+    PF --> Open["Open Handle"]
+    PF --> Read["read()"]
+    PF --> Write["write()"]
+    PF --> Seek["seek()"]
+    PF --> Perms["Permission Checks"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Init["Initializer"] --> RoleCheck["Determine Role"]
+    RoleCheck --> WatcherProc["Watcher Process"]
+    RoleCheck --> WorkerProc["Worker Process"]
+
+    WatcherProc --> WorkerProc
+    WorkerProc --> Config
+    WorkerProc --> SQL
+    WorkerProc --> Events
+    WorkerProc --> Logging

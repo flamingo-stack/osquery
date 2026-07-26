@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Process Start"] --> ParseFlags["Parse CLI Flags"]
+    ParseFlags --> SetupRegistry["Initialize Registry"]
+    SetupRegistry --> InitDB["Initialize Database"]
+    InitDB --> StartExt["Start Extension Manager"]
+    StartExt --> LoadConfig["Load Config Plugin"]
+    LoadConfig --> InitLogger["Initialize Logger Plugin"]
+    InitLogger --> AttachEvents["Attach Events"]
+    AttachEvents --> Running["System Running"]

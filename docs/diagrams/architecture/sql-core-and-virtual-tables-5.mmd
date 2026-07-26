@@ -1,0 +1,11 @@
+flowchart TD
+    Config["Config & Packs"] --> Scheduler
+    Scheduler --> SQLInternalExec2["SQLInternal"]
+    SQLInternalExec2 --> SQLiteLayer["SQLite + Virtual Tables"]
+    SQLiteLayer --> TablePlugins["Table Plugins / Extensions"]
+
+    SQLInternalExec2 --> Results2["QueryDataTyped"]
+    Results2 --> QueryManager["Query (Historical State)"]
+    QueryManager --> Diff2["DiffResults"]
+    Diff2 --> LogItem2["QueryLogItem"]
+    LogItem2 --> LoggingLayer["Logging Module"]

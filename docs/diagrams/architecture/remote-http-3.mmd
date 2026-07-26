@@ -1,0 +1,5 @@
+flowchart LR
+    Start["Start Timer"] --> AsyncCall["Async Network Call"]
+    AsyncCall --> Done{"Completed?"}
+    Done -->|"Yes"| Cancel["Cancel Timer"]
+    Done -->|"No (Timeout)"| Abort["Abort Operation"]

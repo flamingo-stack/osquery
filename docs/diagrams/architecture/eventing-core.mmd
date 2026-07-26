@@ -1,0 +1,22 @@
+flowchart TD
+    Config["Configuration & Schedule"] --> EventFactory["EventFactory"]
+
+    subgraph publishers["Event Publishers"]
+        Publisher1["EventPublisherPlugin"]
+    end
+
+    subgraph subscribers["Event Subscribers"]
+        Subscriber1["EventSubscriberPlugin"]
+        SubscriptionObj["Subscription"]
+    end
+
+    EventFactory --> Publisher1
+    EventFactory --> Subscriber1
+
+    Subscriber1 -->|"creates"| SubscriptionObj
+    SubscriptionObj -->|"registered via"| EventFactory
+    EventFactory -->|"binds to"| Publisher1
+
+    Publisher1 -->|"fires events"| Subscriber1
+    Subscriber1 -->|"stores rows"| Database[("Event Backing Store")]
+    Database -->|"queried by"| SQL["SQL Engine"]

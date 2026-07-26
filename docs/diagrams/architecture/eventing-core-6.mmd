@@ -1,0 +1,9 @@
+flowchart TD
+    OS["Operating System Event"] --> Publisher["EventPublisher"]
+    Publisher --> SubMatch["Match Subscription"]
+    SubMatch --> Callback["EventCallback"]
+    Callback --> Store["addBatch()"]
+    Store --> DB[("Database")]
+    Query["Scheduled Query"] --> Gen["generateRows()"]
+    Gen --> DB
+    Gen --> Result["Query Result"]

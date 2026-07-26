@@ -1,0 +1,6 @@
+flowchart LR
+    Core["osquery Core"] -->|"starts"| Manager["Extension Manager"]
+    ExtensionProc["Extension Process"] -->|"registerExtension()"| Manager
+    Manager -->|"assigns UUID"| ExtensionProc
+    Core -->|"callExtension()"| ExtensionProc
+    ExtensionProc -->|"Thrift Response"| Core

@@ -1,0 +1,14 @@
+flowchart TD
+    API["Filesystem And Fileops API"] --> PlatformFile["PlatformFile"]
+    API --> Glob["Globbing & Directory Utilities"]
+    API --> Permissions["Permission & Safety Checks"]
+    API --> StatLayer["Stat & Metadata Layer"]
+
+    PlatformFile --> PosixImpl["POSIX Implementation"]
+    PlatformFile --> WindowsImpl["Windows Implementation"]
+
+    StatLayer --> PosixStat["posix fileops stat"]
+    StatLayer --> WindowsStat["WINDOWS_STAT"]
+
+    Glob --> PosixGlob["glob() Wrapper"]
+    Glob --> WindowsFind["WindowsFindFiles"]

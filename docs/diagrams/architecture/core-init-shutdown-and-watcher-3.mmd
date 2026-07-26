@@ -1,0 +1,7 @@
+flowchart TD
+    AnyThread["Any Thread"] --> Request["requestShutdown()"]
+    Request --> FlagSet["Set Atomic Flag"]
+    FlagSet --> Notify["Notify Condition Variable"]
+    Notify --> MainThread["Main Thread Unblocks"]
+    MainThread --> Cleanup["Dispatcher Stop + Join"]
+    Cleanup --> Exit["Process Exit"]

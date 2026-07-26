@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Refresh Triggered"] --> CallPlugin["Call genConfig On Active Plugin"]
+    CallPlugin --> CheckStatus{"Success?"}
+    CheckStatus -->|"No"| Accelerate["Use Accelerated Refresh Interval"]
+    CheckStatus -->|"Yes"| UpdateConfig["Update Internal State"]
+    UpdateConfig --> Reconfigure["Reconfigure Registries And Loggers"]
+    Reconfigure --> Done["Done"]
+    Accelerate --> Done

@@ -1,0 +1,4 @@
+flowchart TD
+    Watcher["ExtensionManagerWatcher"] --> Check["Ping Extension"]
+    Check -->|"Success"| Keep["Keep Registered"]
+    Check -->|"Failure"| Remove["removeBroadcast()"]

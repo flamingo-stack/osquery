@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Server
+    participant Agent
+    participant SQL
+
+    Agent->>Server: Request distributed work
+    Server-->>Agent: JSON query set
+    Agent->>SQL: Execute query
+    SQL-->>Agent: QueryData
+    Agent->>Server: Submit results

@@ -1,0 +1,11 @@
+flowchart TD
+    RemoteServer["Remote Server"] -->|"HTTPS POST"| TLSPlugin["TLSDistributedPlugin"]
+    TLSPlugin -->|"getQueries()"| DistPlugin["DistributedPlugin Interface"]
+    DistPlugin --> DistManager["Distributed Manager"]
+
+    DistManager -->|"runQueries()"| SQLEngine["SQL Engine"]
+    SQLEngine --> VirtualTables["Virtual Tables"]
+
+    SQLEngine -->|"QueryData"| DistManager
+    DistManager -->|"serializeResults()"| TLSPlugin
+    TLSPlugin -->|"HTTPS POST"| RemoteServer

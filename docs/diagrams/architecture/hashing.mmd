@@ -1,0 +1,13 @@
+flowchart TD
+    App["Caller Module"] -->|"hashFromFile()"| FileHelper["File Hash Helper"]
+    App -->|"hashFromBuffer()"| BufferHelper["Buffer Hash Helper"]
+    App -->|"hashMultiFromFile()"| MultiHelper["Multi Hash Helper"]
+
+    FileHelper --> CoreHash["Hash Class"]
+    BufferHelper --> CoreHash
+    MultiHelper --> CoreHash
+
+    CoreHash --> Ctx["Internal Context"]
+    CoreHash --> Encoding["Encoding Layer"]
+
+    Encoding --> Result["Digest String"]

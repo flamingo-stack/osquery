@@ -1,0 +1,5 @@
+flowchart LR
+    Registry["RegistryFactory"] -->|"route match"| CallExt["callExtension()"]
+    CallExt --> Client["ExtensionClient"]
+    Client --> Thrift["Thrift call()"]
+    Thrift --> Response["PluginResponse"]

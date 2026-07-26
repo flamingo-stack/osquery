@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Log Produced"] --> Decision{"Direct Event Logging?"}
+    Decision -->|"Yes"| Direct["logEvent"]
+    Decision -->|"No"| DB["Persist to Database"]
+    DB --> Forward["Forward to logString"]

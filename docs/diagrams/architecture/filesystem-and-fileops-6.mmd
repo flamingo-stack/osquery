@@ -1,0 +1,7 @@
+flowchart TD
+    Interface["Platform-Agnostic Interface"]
+    Interface --> POSIX["POSIX Backend"]
+    Interface --> WIN["Windows Backend"]
+
+    POSIX --> Syscalls["open/read/write/stat"]
+    WIN --> WinAPI["CreateFile/ReadFile/ACL APIs"]

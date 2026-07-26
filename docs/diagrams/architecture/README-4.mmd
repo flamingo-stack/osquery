@@ -1,0 +1,5 @@
+flowchart TD
+    OS["Operating System Event"] --> Publisher["EventPublisher"]
+    Publisher --> Subscriber["EventSubscriber"]
+    Subscriber --> Database
+    Database --> SQLCore

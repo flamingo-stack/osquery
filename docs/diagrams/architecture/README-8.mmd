@@ -1,0 +1,16 @@
+flowchart TD
+    Config --> Scheduler
+    Scheduler --> SQLCore
+    SQLCore --> VirtualTables
+    VirtualTables --> OSData["Operating System"]
+
+    SQLCore --> DiffEngine
+    DiffEngine --> LogItem
+
+    LogItem --> Logging
+    LogItem --> Distributed
+
+    Distributed --> RemoteHTTP
+    SQLCore --> Database
+    Events --> Database
+    Database --> SQLCore

@@ -1,0 +1,5 @@
+flowchart TD
+    Path["File Path"] --> PlatformStat["platformStat"]
+    PlatformStat --> PosixStatNode["stat()/lstat()"]
+    PlatformStat --> WinStatNode["CreateFile + GetFileInformationByHandle"]
+    WinStatNode --> VersionInfo["Version Metadata"]

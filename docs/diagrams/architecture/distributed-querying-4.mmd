@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Agent
+    participant TLS as TLSDistributedPlugin
+    participant Server
+
+    Agent->>TLS: writeResults(json)
+    TLS->>Server: POST write_endpoint
+    Server-->>TLS: Ack response

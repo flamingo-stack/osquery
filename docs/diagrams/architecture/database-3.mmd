@@ -1,0 +1,8 @@
+flowchart TD
+    Start["initDatabasePlugin()"] --> CheckFlag{"disable_database?"}
+    CheckFlag -->|"Yes"| UseEphemeral["Activate Ephemeral Plugin"]
+    CheckFlag -->|"No"| UseRocksDB["Activate rocksdb Plugin"]
+    UseEphemeral --> SetActive["Registry setActive()"]
+    UseRocksDB --> SetActive
+    SetActive --> RetryLoop["Retry up to 25 times"]
+    RetryLoop --> Initialized["Set kDBInitialized"]

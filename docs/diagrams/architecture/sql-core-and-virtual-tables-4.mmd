@@ -1,0 +1,10 @@
+flowchart TD
+    Execution["Scheduled Execution"] --> SQLInternalExec["SQLInternal"]
+    SQLInternalExec --> NewResults["QueryDataTyped"]
+
+    NewResults --> QueryState["Query"]
+    QueryState --> Previous["Previous Results (DB)"]
+    QueryState --> DiffCalc["diff(old, new)"]
+
+    DiffCalc --> DiffResultsNode["DiffResults"]
+    DiffResultsNode --> QueryLogItemNode["QueryLogItem"]

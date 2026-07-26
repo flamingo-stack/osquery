@@ -1,0 +1,5 @@
+flowchart TD
+    Incoming["Incoming Query"] --> Hash["hashQuery()"]
+    Hash --> Check["checkAndSetAsRunning()"]
+    Check -->|"Denylisted"| Skip["Skip Execution"]
+    Check -->|"Allowed"| Execute["Run SQL"]

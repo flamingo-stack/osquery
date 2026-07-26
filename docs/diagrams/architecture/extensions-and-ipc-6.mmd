@@ -1,0 +1,4 @@
+flowchart LR
+    Factory["PipeChannelFactory"] --> Ticket["PipeChannelTicket"]
+    Ticket --> Parent["Parent PipeChannel"]
+    Ticket --> Child["Child PipeChannel"]

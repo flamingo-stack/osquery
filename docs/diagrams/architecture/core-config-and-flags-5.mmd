@@ -1,0 +1,5 @@
+flowchart TD
+    QueryStart["recordQueryStart"] --> PersistExec["Store executing_query"]
+    QueryEnd["recordQueryPerformance"] --> UpdateStats["Update QueryPerformance"]
+    UpdateStats --> PersistStats["Persist To Database"]
+    PersistStats --> ClearExec["Clear executing_query If Safe"]

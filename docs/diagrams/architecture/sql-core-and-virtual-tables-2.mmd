@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant SQLite
+    participant Module as sqlite3_module
+    participant VTable as VirtualTable
+    participant Registry as Table Registry
+
+    SQLite->>Module: xBestIndex()
+    Module->>VTable: Record constraints
+
+    SQLite->>Module: xFilter(argc, argv)
+    Module->>Registry: generate(context)
+    Registry-->>Module: TableRows
+
+    SQLite->>Module: xNext()
+    SQLite->>Module: xColumn()

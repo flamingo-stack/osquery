@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Agent
+    participant TLS as TLSDistributedPlugin
+    participant Server
+
+    Agent->>TLS: getQueries()
+    TLS->>Server: POST read_endpoint
+    Server-->>TLS: JSON queries
+    TLS-->>Agent: JSON string

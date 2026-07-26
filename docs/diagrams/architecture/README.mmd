@@ -1,0 +1,27 @@
+flowchart TD
+    Config["Core Config And Flags"] --> Scheduler["Scheduler"]
+    Scheduler --> SQLCore["SQL Core And Virtual Tables"]
+
+    SQLCore --> SQLite["Embedded SQLite"]
+    SQLite --> VTables["Virtual Tables"]
+    VTables --> TablePlugins["Table Plugins / Extensions"]
+
+    SQLCore --> DiffEngine["Diff Engine"]
+    DiffEngine --> LogItem["QueryLogItem"]
+
+    LogItem --> Logging["Logging Module"]
+    LogItem --> Distributed["Distributed Querying"]
+
+    Distributed --> RemoteHTTP["Remote HTTP"]
+
+    SQLCore --> Database["Database"]
+
+    Eventing["Eventing Core"] --> Database
+    Eventing --> SQLCore
+
+    Extensions["Extensions And IPC"] --> TablePlugins
+    Extensions --> Config
+    Extensions --> Logging
+
+    Watcher["Init Shutdown And Watcher"] --> Scheduler
+    Watcher --> Extensions

@@ -1,0 +1,14 @@
+flowchart TD
+    Init["Initializer"] --> RoleCheck["Determine Role"]
+
+    RoleCheck -->|"Watcher"| WatcherProc["Watcher Process"]
+    RoleCheck -->|"Worker"| WorkerProc["Worker Process"]
+    RoleCheck -->|"Shell"| ShellProc["Shell Mode"]
+
+    WatcherProc -->|"spawn"| WorkerProc
+    WatcherProc -->|"monitor"| Extensions["Extension Processes"]
+
+    WorkerProc --> Config["Config System"]
+    WorkerProc --> SQL["SQL Engine"]
+    WorkerProc --> Events["Eventing Core"]
+    WorkerProc --> Logger["Logging"]

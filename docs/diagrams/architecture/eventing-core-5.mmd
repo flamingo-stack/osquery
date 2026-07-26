@@ -1,0 +1,7 @@
+flowchart TD
+    Insert["Insert pattern path"] --> Normalize["Tokenize path"]
+    Normalize --> Store["Store in multiset"]
+
+    Lookup["Lookup concrete path"] --> Tokenize2["Tokenize"]
+    Tokenize2 --> CompareNode["Compare via Compare functor"]
+    CompareNode --> Result["Match or No Match"]

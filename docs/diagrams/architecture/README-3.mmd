@@ -1,0 +1,10 @@
+flowchart TD
+    ScheduledQuery["ScheduledQuery"] --> SQLInternal["SQLInternal"]
+    SQLInternal --> SQLite["SQLite Engine"]
+    SQLite --> VirtualTable["VirtualTable"]
+    VirtualTable --> TableRegistry["TablePlugin Registry"]
+
+    SQLInternal --> Results["QueryData"]
+    Results --> Diff["DiffResults"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Logging
