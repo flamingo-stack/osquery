@@ -1,106 +1,178 @@
 # First Steps
 
-Now that osquery is running, here are the first things to explore and configure.
+After installing or building osquery, here are the five most important things to do to get productive quickly.
 
 ---
 
 ## 1. Explore Available Tables
 
-osquery ships with hundreds of virtual tables. Discover them with the `.tables` command in the interactive shell:
-
-```bash
-./build/osquery/osqueryi
-```
+osquery ships with over 300 virtual tables covering virtually every aspect of the operating system. The first step is to discover what's available.
 
 ```sql
--- List all available tables
-osquery> .tables
+-- In osqueryi: list all tables
+.tables
 
--- Search for tables by name
-osquery> .tables process
-osquery> .tables network
-osquery> .tables user
+-- Search for process-related tables
+.tables process
 
--- Inspect the schema of any table
-osquery> .schema processes
-osquery> .schema listening_ports
-osquery> .schema users
+-- Search for network-related tables
+.tables network
 ```
 
-Tables are organized by platform:
+Common table categories:
 
 | Category | Example Tables |
 |---|---|
-| **System** | `system_info`, `uptime`, `cpu_info`, `memory_info` |
-| **Processes** | `processes`, `process_open_files`, `process_open_sockets` |
-| **Networking** | `listening_ports`, `interface_addresses`, `arp_cache`, `routes` |
-| **Users & Groups** | `users`, `groups`, `logged_in_users`, `sudoers` |
+| **Processes** | `processes`, `process_open_files`, `process_open_sockets`, `listening_ports` |
+| **Users & Groups** | `users`, `groups`, `logged_in_users`, `last` |
 | **Packages** | `deb_packages`, `rpm_packages`, `homebrew_packages`, `chocolatey_packages` |
+| **Files & FS** | `file`, `hash`, `extended_attributes`, `mounts` |
+| **Network** | `interface_addresses`, `routes`, `arp_cache`, `dns_resolvers` |
 | **Events** | `file_events`, `process_events`, `socket_events` |
-| **Security** | `authorized_keys`, `certificates`, `secureboot`, `disk_encryption` |
+| **Hardware** | `cpu_info`, `usb_devices`, `pci_devices`, `battery` |
+| **Kernel** | `kernel_info`, `kernel_modules`, `kernel_extensions` |
+| **Cloud** | `ec2_instance_metadata`, `azure_instance_metadata` |
 
 ---
 
-## 2. Write Your First Scheduled Query Pack
+## 2. Inspect Table Schemas
 
-Create a configuration pack to run queries on a schedule:
+Before writing queries, understand the schema of any table:
 
-```bash
-sudo tee /etc/osquery/packs/first-steps.json <<'EOF'
-{
-  "queries": {
-    "users_snapshot": {
-      "query": "SELECT uid, username, shell, directory FROM users;",
-      "interval": 3600,
-      "description": "Snapshot of all local users every hour"
-    },
-    "listening_ports": {
-      "query": "SELECT pid, port, protocol, address FROM listening_ports;",
-      "interval": 300,
-      "description": "Check open ports every 5 minutes"
-    },
-    "new_processes": {
-      "query": "SELECT pid, name, path, cmdline, start_time FROM processes;",
-      "interval": 60,
-      "description": "Poll running processes every minute"
-    }
-  }
-}
-EOF
+```sql
+-- View the processes table schema
+.schema processes
+
+-- View the file table schema
+.schema file
+
+-- View listening_ports schema
+.schema listening_ports
 ```
 
-Reference it in your `osquery.conf`:
+Example output for `.schema processes`:
+
+```text
+CREATE TABLE processes(
+  pid BIGINT,
+  name TEXT,
+  path TEXT,
+  cmdline TEXT,
+  state TEXT,
+  cwd TEXT,
+  root TEXT,
+  uid BIGINT,
+  gid BIGINT,
+  euid BIGINT,
+  ...
+);
+```
+
+---
+
+## 3. Write Your First Security Queries
+
+These queries are immediately useful for security investigation:
+
+```sql
+-- Find processes running as root
+SELECT pid, name, path, cmdline
+FROM processes
+WHERE uid = 0;
+
+-- Find world-writable SUID binaries
+SELECT path, permissions
+FROM suid_bin;
+
+-- Find SSH authorized keys for all users
+SELECT username, key
+FROM users
+JOIN authorized_keys USING (uid);
+
+-- Find processes with network connections
+SELECT p.pid, p.name, lp.address, lp.port
+FROM processes p
+JOIN listening_ports lp ON p.pid = lp.pid;
+
+-- Check for known malware file hashes (replace with real hash)
+SELECT path, sha256
+FROM hash
+WHERE path LIKE '/usr/bin/%'
+  AND sha256 = 'replace_with_suspicious_hash';
+```
+
+---
+
+## 4. Configure Scheduled Queries
+
+To run osquery in daemon mode with scheduled queries, create a configuration file:
 
 ```json
 {
   "options": {
-    "logger_plugin": "filesystem",
+    "logger_path": "/var/log/osquery",
+    "disable_logging": false,
     "schedule_splay_percent": 10
   },
+  "schedule": {
+    "system_info": {
+      "query": "SELECT hostname, cpu_brand, physical_memory FROM system_info;",
+      "interval": 3600
+    },
+    "users": {
+      "query": "SELECT uid, username, shell FROM users;",
+      "interval": 600,
+      "description": "Track user accounts"
+    },
+    "listening_ports": {
+      "query": "SELECT pid, port, protocol, family, address FROM listening_ports;",
+      "interval": 60,
+      "description": "Track listening network ports"
+    },
+    "processes": {
+      "query": "SELECT pid, name, path, cmdline, uid FROM processes;",
+      "interval": 30,
+      "description": "Track running processes"
+    }
+  },
   "packs": {
-    "first-steps": "/etc/osquery/packs/first-steps.json"
+    "incident-response": "/etc/osquery/packs/incident-response.conf"
   }
 }
 ```
 
+Start the daemon pointing at this config:
+
+```bash
+sudo osqueryd \
+  --config_path /etc/osquery/osquery.conf \
+  --logger_path /var/log/osquery \
+  --pidfile /var/run/osqueryd.pid \
+  --daemonize
+```
+
 ---
 
-## 3. Enable File Integrity Monitoring
+## 5. Enable File Integrity Monitoring (FIM)
 
-osquery can monitor filesystem changes using platform-native event APIs (inotify on Linux, FSEvents on macOS, ETW on Windows):
+osquery's eventing system allows you to monitor file changes in real time.
+
+Add a `file_paths` section to your configuration:
 
 ```json
 {
   "file_paths": {
-    "etc": ["/etc/%%"],
-    "homes": ["/root/.ssh/%%", "/home/%/.ssh/%%"],
-    "sensitive": ["/usr/bin/%%", "/usr/sbin/%%"]
-  },
-  "schedule": {
-    "file_events": {
-      "query": "SELECT * FROM file_events;",
-      "interval": 30
-    }
+    "etc": [
+      "/etc/%%"
+    ],
+    "ssh": [
+      "/home/%/.ssh/%%",
+      "/root/.ssh/%%"
+    ],
+    "binaries": [
+      "/usr/bin/%%",
+      "/usr/local/bin/%%"
+    ]
   }
 }
 ```
@@ -108,55 +180,14 @@ osquery can monitor filesystem changes using platform-native event APIs (inotify
 Then query the event table:
 
 ```sql
-osquery> SELECT time, target_path, action, md5 FROM file_events;
+-- Recent file changes (requires osqueryd with eventing)
+SELECT time, action, category, path, md5
+FROM file_events
+ORDER BY time DESC
+LIMIT 20;
 ```
 
----
-
-## 4. Connect to OpenFrame (Flamingo Platform)
-
-If you are part of the [OpenFrame](https://openframe.ai) / [Flamingo](https://flamingo.run) platform:
-
-1. Obtain your OpenFrame credentials from your platform administrator
-2. Configure the TLS enrollment endpoint in your daemon flags
-3. The `OpenframeAuthorizationManager` handles token lifecycle automatically
-4. The `OpenframeTokenRefresher` keeps sessions active in the background
-
-The OpenFrame layer uses AES-256-GCM encryption via the `OpenframeEncryptionService` — all credential handling is fully automated once configured.
-
-Refer to your environment configuration for the specific connection details.
-
----
-
-## 5. Load an Extension
-
-osquery's extension system lets you add custom tables, loggers, and configuration plugins as separate processes:
-
-```bash
-# Start osqueryd with extension support enabled
-sudo ./build/osquery/osqueryd \
-  --config_path=/etc/osquery/osquery.conf \
-  --extensions_socket=/var/osquery/osquery.em \
-  --extensions_autoload=/etc/osquery/extensions.load
-
-# In a separate terminal, run your extension
-./my_extension --socket=/var/osquery/osquery.em
-```
-
-Extensions communicate via Apache Thrift over UNIX domain sockets (Linux/macOS) or named pipes (Windows).
-
----
-
-## Key Configuration Flags
-
-| Flag | Description | Default |
-|---|---|---|
-| `--config_path` | Path to the JSON configuration file | Platform-specific |
-| `--logger_plugin` | Logging backend (`filesystem`, `tls`, `syslog`) | `filesystem` |
-| `--schedule_splay_percent` | Random splay to distribute query load | `10` |
-| `--extensions_socket` | Path to the Thrift extension socket | Platform-specific |
-| `--config_refresh` | How often (seconds) to refresh remote config | `0` (disabled) |
-| `--watchdog_level` | Resource limit profile (0=normal, 1=restrictive, -1=disabled) | `0` |
+> FIM requires osqueryd (not osqueryi) to be running with the `file_paths` configuration active.
 
 ---
 
@@ -164,15 +195,22 @@ Extensions communicate via Apache Thrift over UNIX domain sockets (Linux/macOS) 
 
 | Resource | Link |
 |---|---|
-| **OpenMSP Community Slack** | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
-| **OpenMSP Website** | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
-| **Flamingo Platform** | [https://flamingo.run](https://flamingo.run) |
-| **OpenFrame** | [https://openframe.ai](https://openframe.ai) |
-
-> All support and discussions are managed on the **OpenMSP Slack community** — not GitHub Issues or GitHub Discussions.
+| **OpenMSP Slack** | https://www.openmsp.ai/ |
+| **Source Code** | https://github.com/flamingo-stack/osquery |
+| **Report Issues / Discussion** | https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA |
 
 ---
 
-## Watch: osquery in Action
+## Key Configuration Flags Reference
 
-[![osquery Overview](https://img.youtube.com/vi/1UcWGiHbLVo/hqdefault.jpg)](https://www.youtube.com/watch?v=1UcWGiHbLVo)
+| Flag | Default | Description |
+|---|---|---|
+| `--config_path` | `/etc/osquery/osquery.conf` | Path to the primary config file |
+| `--logger_path` | `/var/log/osquery` | Directory for query result logs |
+| `--pidfile` | `/var/run/osqueryd.pid` | PID file location |
+| `--verbose` | `false` | Enable verbose status output |
+| `--disable_watchdog` | `false` | Disable the watchdog supervisor |
+| `--watchdog_memory_limit` | `200` | Max worker memory in MB |
+| `--watchdog_utilization_limit` | `10` | Max CPU utilization percent |
+| `--disable_events` | `false` | Disable the eventing subsystem |
+| `--extensions_autoload` | (empty) | Path to file listing extension paths |

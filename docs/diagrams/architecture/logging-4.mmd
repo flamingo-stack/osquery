@@ -1,0 +1,5 @@
+flowchart TD
+    Input["Serialized Log Data"] --> WriteMethod["logStringToFile"]
+    WriteMethod --> Path["Resolve Log Path"]
+    Path --> FS["Filesystem API"]
+    FS --> File[("Log File")]

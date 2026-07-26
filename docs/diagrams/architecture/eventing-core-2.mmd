@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Factory delay()"] --> Spawn["Spawn publisher thread"]
+    Spawn --> RunLoop["EventFactory::run()"]
+    RunLoop --> Execute["publisher.run()"]
+    Execute --> Check["isEnding?"]
+    Check -->|"No"| Execute
+    Check -->|"Yes"| TearDown["publisher.tearDown()"]

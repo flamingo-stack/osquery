@@ -1,9 +1,0 @@
-flowchart TD
-    AnyThread["Any Thread"] --> Request["requestShutdown()"]
-    Request --> Signal["Condition Variable"]
-    Signal --> MainThread["Main Thread"]
-    MainThread --> StopServices["Dispatcher::stopServices()"]
-    StopServices --> Join["Join Services"]
-    Join --> StopEvents["EventFactory::end()"]
-    StopEvents --> CloseDB["shutdownDatabase()"]
-    CloseDB --> Exit["Return Exit Code"]

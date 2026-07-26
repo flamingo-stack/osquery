@@ -1,167 +1,186 @@
 # Prerequisites
 
-Before building or deploying osquery with OpenFrame, ensure your environment meets the requirements below.
+Before building or running osquery from source, ensure your environment satisfies the requirements below.
 
 ---
 
-## System Requirements
+## Hardware Requirements
 
-| Tier | RAM | CPU Cores | Disk Space |
+| Tier | RAM | CPU Cores | Disk |
 |---|---|---|---|
 | **Minimum** | 24 GB | 6 cores | 50 GB |
 | **Recommended** | 32 GB | 12 cores | 100 GB |
 
-> Building osquery from source is resource-intensive. The recommended configuration significantly reduces build times and prevents out-of-memory failures during compilation.
+> The build process compiles a large number of bundled libraries (RocksDB, Thrift, Boost, OpenSSL, etc.) in parallel. Insufficient RAM or CPU will significantly increase build times.
 
 ---
 
 ## Supported Operating Systems
 
-| Platform | Architecture | Notes |
+| Platform | Architecture | Status |
 |---|---|---|
-| Linux | x86_64, aarch64 | Ubuntu 20.04+, RHEL 8+, Debian 11+ |
-| macOS | x86_64, aarch64 (Apple Silicon) | macOS 12+ recommended |
-| Windows | x86_64, aarch64 | Windows 10/11, Server 2019+ |
+| Linux (Ubuntu 20.04+, Fedora, CentOS 8+) | x86_64, aarch64 | ✅ Fully supported |
+| macOS 11+ | x86_64, Apple Silicon (aarch64) | ✅ Fully supported |
+| Windows 10 / Server 2016+ | x86_64, aarch64 | ✅ Fully supported |
 
 ---
 
 ## Required Software
 
-| Tool | Minimum Version | Purpose |
+### Build Tools
+
+| Tool | Minimum Version | Notes |
 |---|---|---|
-| **CMake** | 3.21+ | Build system generator |
-| **Python** | 3.8+ | Code generation, tooling scripts |
-| **Git** | 2.x | Source control |
-| **C++ Compiler** | GCC 9+ / Clang 10+ / MSVC 2019+ | Compiling C++17 sources |
-| **Ninja** | 1.10+ | Fast parallel builds (recommended) |
-| **OpenSSL** | 1.1.1+ | TLS support and AES-256-GCM encryption (OpenFrame) |
+| CMake | 3.21+ | Build system generator |
+| Git | 2.x | Source control and submodule management |
+| Python | 3.6+ | Code generation scripts (`tools/codegen/`) |
+| Clang / LLVM | 11+ (Linux/macOS) | Primary compiler |
+| MSVC | VS 2019+ | Windows builds only |
+| Ninja | 1.10+ | Recommended build backend (faster than Make) |
 
----
+### Linux-Specific Dependencies
 
-## Optional but Recommended
-
-| Tool | Purpose |
-|---|---|
-| **ccache** | Speeds up incremental C++ builds significantly |
-| **clang-format** | Code formatting (enforced by CI) |
-| **Docker** | Isolated build environments for Linux targets |
-
----
-
-## Platform-Specific Notes
-
-### Linux
-
-On Debian/Ubuntu, install build essentials:
+These packages are required on Linux before building:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y \
+# Ubuntu / Debian
+sudo apt-get update && sudo apt-get install -y \
   build-essential \
   cmake \
-  ninja-build \
+  git \
   python3 \
   python3-pip \
-  git \
-  openssl \
-  libssl-dev \
-  clang-format
-```
+  clang \
+  llvm \
+  ninja-build \
+  libstdc++-dev \
+  lzma-dev \
+  zlib1g-dev \
+  libssl-dev
 
-On RHEL/CentOS/Fedora:
-
-```bash
+# Fedora / RHEL / CentOS
 sudo dnf install -y \
   gcc-c++ \
   cmake \
-  ninja-build \
-  python3 \
   git \
+  python3 \
+  python3-pip \
+  clang \
+  llvm \
+  ninja-build \
   openssl-devel \
-  clang
+  zlib-devel \
+  xz-devel
 ```
 
-### macOS
-
-Install Xcode Command Line Tools and Homebrew tools:
+### macOS-Specific Dependencies
 
 ```bash
+# Install Xcode Command Line Tools
 xcode-select --install
-brew install cmake ninja python3 openssl git
+
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install build dependencies
+brew install cmake ninja python3 llvm
 ```
 
-### Windows
+### Windows-Specific Dependencies
 
-1. Install [Visual Studio 2019 or 2022](https://visualstudio.microsoft.com/) with the **Desktop development with C++** workload
-2. Install [CMake](https://cmake.org/download/) 3.21+
-3. Install [Git for Windows](https://git-scm.com/download/win)
-4. Install [Python 3.8+](https://www.python.org/downloads/windows/)
-5. Optionally install [Ninja](https://github.com/ninja-build/ninja/releases)
+1. Install **Visual Studio 2019 or 2022** with the "Desktop Development with C++" workload.
+2. Install **CMake** (3.21+) — available from https://cmake.org/download/.
+3. Install **Python 3.6+** — available from https://www.python.org/downloads/.
+4. Install **Git for Windows** — available from https://git-scm.com/.
+5. Install **Ninja** — download from https://ninja-build.org/ and add to `PATH`.
+
+For AMD64 targets on Windows, the OpenFrame CLI installer can be obtained from:
+
+```text
+https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_windows_amd64.zip
+```
 
 ---
 
-## OpenFrame Platform Requirements
+## Python Packages (for tooling)
 
-If you are connecting to the [OpenFrame platform](https://openframe.ai), you also need:
+The code generation and test scripts require these Python packages:
 
-| Requirement | Description |
-|---|---|
-| **OpenFrame Account** | Active account on the Flamingo/OpenFrame platform |
-| **Network Access** | Outbound HTTPS (port 443) to OpenFrame services |
-| **AES-256 Key** | Symmetric secret key for the `OpenframeEncryptionService` |
-| **JWT Token** | Authorization token managed by `OpenframeAuthorizationManager` |
+```bash
+pip3 install jinja2 six future
+```
 
-Refer to your environment configuration and OpenFrame administrator for credential details.
+For integration tests:
+
+```bash
+pip3 install pexpect psutil timeout-decorator
+```
 
 ---
 
 ## Environment Variables
 
-The following environment variables may be required depending on your deployment:
+| Variable | Purpose | Example |
+|---|---|---|
+| `OSQUERY_WORKER` | Set by the daemon to identify worker processes | Set automatically by `osqueryd` |
+| `CC` | C compiler override | `clang` |
+| `CXX` | C++ compiler override | `clang++` |
 
-| Variable | Purpose |
-|---|---|
-| `OSQUERY_FLAGS_FILE` | Path to a flagfile for osquery runtime configuration |
-| `OSQUERY_EXTENSIONS_SOCKET` | Path to the Thrift extension manager socket |
-| `OSQUERY_CONFIG_PATH` | Custom configuration file path (overrides default) |
-
-Set variables using your shell profile or deployment tooling. For example:
-
-```bash
-export OSQUERY_FLAGS_FILE="/etc/osquery/osquery.flags"
-export OSQUERY_EXTENSIONS_SOCKET="/var/osquery/osquery.em"
-```
+> You generally do not need to set any environment variables manually. The CMake build system auto-detects compilers.
 
 ---
 
-## Verifying Your Environment
+## Account / Access Requirements
 
-Run the following checks to confirm your build environment is ready:
+| Resource | Requirement |
+|---|---|
+| GitHub | Read access to [flamingo-stack/osquery](https://github.com/flamingo-stack/osquery) |
+| Sudo / Admin | Required for installing system packages and running `osqueryd` as a service |
+| TLS endpoint (optional) | Required for distributed querying and remote logging |
+
+---
+
+## Verification Commands
+
+Run these commands to verify your environment is ready:
 
 ```bash
-# Check CMake version
+# Check CMake version (need 3.21+)
 cmake --version
 
-# Check C++ compiler
-c++ --version
-
-# Check Python
-python3 --version
-
-# Check Git
+# Check Git version
 git --version
 
-# Check OpenSSL
-openssl version
+# Check Python version (need 3.6+)
+python3 --version
 
-# Check Ninja (if installed)
+# Check Clang version (Linux/macOS)
+clang --version
+
+# Check Ninja version
 ninja --version
+
+# Confirm Python packages
+python3 -c "import jinja2; print('jinja2 ok')"
+python3 -c "import six; print('six ok')"
 ```
 
-All tools should report versions meeting the minimums in the table above.
+Expected output (versions will vary):
+
+```text
+cmake version 3.25.1
+git version 2.40.1
+Python 3.11.4
+clang version 15.0.7
+1.11.1
+jinja2 ok
+six ok
+```
 
 ---
 
-## Next Steps
+## Community Support
 
-Once prerequisites are confirmed, proceed to the [Quick Start Guide](quick-start.md) to clone, build, and run osquery.
+Questions and help are available in the **OpenMSP Slack community**:
+
+https://www.openmsp.ai/

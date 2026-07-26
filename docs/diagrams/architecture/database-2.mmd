@@ -1,0 +1,5 @@
+flowchart TD
+    ResetRequest["Reset Request"] --> WriteLock["Acquire Write Lock"]
+    WriteLock --> TearDown["Plugin tearDown()"]
+    TearDown --> SetUp["Plugin setUp()"]
+    SetUp --> Initialized["Mark Initialized"]

@@ -1,7 +1,5 @@
 flowchart TD
-    Client["ExtensionClient"] --> Transport["Thrift Transport"]
-    Transport --> Socket["UNIX Socket or Named Pipe"]
-    Socket --> Server["ExtensionRunner or ManagerRunner"]
-    Server --> Handler["ExtensionHandler or ExtensionManagerHandler"]
-    Handler --> Interface["ExtensionInterface / ExtensionManagerInterface"]
-    Interface --> Registry["RegistryFactory"]
+    Start["Core Startup"] --> ManagerStart["startExtensionManager()"]
+    ManagerStart --> Watcher["ExtensionManagerWatcher"]
+    ManagerStart --> Runner["ExtensionManagerRunner"]
+    Runner --> Listening["Thrift Server Listening"]

@@ -1,0 +1,13 @@
+flowchart TD
+    ConfigPlugin["Config Plugin Registry"] -->|"genConfig"| ConfigCore["Config Singleton"]
+    ConfigCore -->|"updateSource"| Schedule["Schedule And Packs"]
+    ConfigCore -->|"applyParsers"| ParserRegistry["Config Parser Registry"]
+    ParserRegistry --> OptionsParser["Options Parser"]
+    ParserRegistry --> DecoratorsParser["Decorators Parser"]
+    ParserRegistry --> FilePathsParser["File Paths Parser"]
+    ParserRegistry --> EventsParser["Events Parser"]
+    ParserRegistry --> ViewsParser["Views Parser"]
+
+    ConfigCore -->|"persist state"| Database[("Osquery Database")]
+    ConfigCore -->|"configure"| OtherRegistries["Other Registries And Plugins"]
+    RefreshRunner["Config Refresh Runner"] --> ConfigCore

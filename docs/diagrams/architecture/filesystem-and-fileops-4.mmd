@@ -1,0 +1,5 @@
+flowchart TD
+    File["Target File"] --> OwnerCheck["Owner Validation"]
+    OwnerCheck --> ExecCheck["Executable Check"]
+    ExecCheck --> ACLCheck["ACL / Mode Check"]
+    ACLCheck --> Result["Safe or Rejected"]

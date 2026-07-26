@@ -1,6 +1,10 @@
-flowchart TD
-    Exec["Query Execution"] --> Diff["DiffResults"]
-    Diff --> LogItem["QueryLogItem"]
-    LogItem --> Serialize["JSON Serialization"]
-    Serialize --> Logger["LoggerPlugin"]
-    Logger --> Sink["External Backend"]
+sequenceDiagram
+    participant Server
+    participant Agent
+    participant SQL
+
+    Agent->>Server: Request distributed work
+    Server-->>Agent: JSON queries
+    Agent->>SQL: Execute query
+    SQL-->>Agent: Results
+    Agent->>Server: Submit results

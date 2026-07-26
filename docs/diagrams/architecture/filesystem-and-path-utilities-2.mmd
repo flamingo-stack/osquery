@@ -1,5 +1,0 @@
-flowchart TD
-    Open["Open PlatformFile"] --> Validate["Handle Valid?"]
-    Validate -->|No| Fail["Return Error"]
-    Validate -->|Yes| IO["Read / Write / Seek"]
-    IO --> Close["Destructor Closes Handle"]

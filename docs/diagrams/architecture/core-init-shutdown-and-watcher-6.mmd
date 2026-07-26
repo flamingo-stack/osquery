@@ -1,0 +1,7 @@
+flowchart TD
+    WorkerExit["Worker Exits"] --> CheckStatus{"Catastrophic?"}
+    CheckStatus -->|"Yes"| ShutdownAll["Request Global Shutdown"]
+    CheckStatus -->|"No"| RespawnCheck{"Respawn Limit Reached?"}
+    RespawnCheck -->|"Yes"| ShutdownAll
+    RespawnCheck -->|"No"| Backoff["Apply Delay + Backoff"]
+    Backoff --> Launch["Launch New Worker"]

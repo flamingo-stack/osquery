@@ -1,0 +1,10 @@
+flowchart TD
+    Scheduler["Scheduled Query Engine"] -->|"QueryLogItem"| LoggerCore["LoggerPlugin"]
+    Eventing["Eventing Core"] -->|"Event Data"| LoggerCore
+    Init["Init and Shutdown"] -->|"Status Logs"| LoggerCore
+    Distributed["Distributed Querying"] -->|"Query Results"| LoggerCore
+
+    LoggerCore -->|"logString"| Filesystem["Filesystem Logger Plugin"]
+    LoggerCore -->|"logStatus"| Filesystem
+
+    Filesystem --> Disk[("Log Files")]

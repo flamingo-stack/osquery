@@ -1,0 +1,4 @@
+flowchart LR
+    Pattern["Pattern"] --> Replace["replaceGlobWildcards"]
+    Replace --> PlatformGlobNode["platformGlob"]
+    PlatformGlobNode --> Results["Matched Paths"]

@@ -1,239 +1,259 @@
 # Architecture Overview
 
-osquery is built as a modular, plugin-driven system. Each subsystem is independently composable, testable, and extensible. The codebase is written in C++17 and targets Linux, macOS, and Windows.
+osquery is a modular, layered system built around a SQL execution engine that treats the operating system as a relational database. This document provides a high-level architectural overview, describes each core component, and illustrates key data flows.
 
 ---
 
 ## High-Level Architecture
 
 ```mermaid
-graph TD
-    CLI["osqueryi / osqueryd"] --> Core["Core Init And Runtime"]
-    Core --> Config["Configuration And Packs"]
-    Core --> SQL["SQL Engine And Virtual Tables"]
-    Core --> Events["Eventing Framework"]
-    Core --> Logging["Logging And Observability"]
-    Core --> DB["Database And Storage Plugins"]
-    Core --> Dist["Distributed Querying"]
-    Core --> Ext["Extensions And IPC"]
-    Core --> HTTP["Remote HTTP Client"]
-    Core --> OF["OpenFrame Auth Layer"]
-    Config --> SQL
-    Config --> Events
-    SQL --> Logging
-    Events --> DB
-    Dist --> SQL
-    Dist --> HTTP
-    Ext --> SQL
-    Ext --> DB
-    OF --> HTTP
+flowchart TD
+    Config["Core Config & Flags"] --> Scheduler["Scheduler"]
+    Scheduler --> SQLCore["SQL Core & Virtual Tables"]
+
+    SQLCore --> SQLite["Embedded SQLite"]
+    SQLite --> VTables["Virtual Tables"]
+    VTables --> TablePlugins["Table Plugins / Extensions"]
+
+    SQLCore --> DiffEngine["Diff Engine"]
+    DiffEngine --> LogItem["QueryLogItem"]
+
+    LogItem --> Logging["Logging Module"]
+    LogItem --> Distributed["Distributed Querying"]
+
+    Distributed --> RemoteHTTP["Remote HTTPS"]
+
+    SQLCore --> Database["RocksDB Database"]
+
+    Eventing["Eventing Core"] --> Database
+    Eventing --> SQLCore
+
+    Extensions["Extensions & IPC"] --> TablePlugins
+    Extensions --> Config
+    Extensions --> Logging
+
+    Watcher["Init / Shutdown / Watcher"] --> Scheduler
+    Watcher --> Extensions
 ```
 
 ---
 
 ## Core Components
 
-| Module | Location | Description |
+| Module | Location | Responsibility |
 |---|---|---|
-| **Core Init And Runtime** | `osquery/core/` | Process bootstrap, flags, watchdog, shutdown |
-| **SQL Engine And Virtual Tables** | `osquery/sql/` | SQLite engine, authorizer, virtual table binding |
-| **Configuration And Packs** | `osquery/config/` | Config loading, packs, parsers, scheduled queries |
-| **Eventing Framework** | `osquery/events/` | Pub/sub system for OS events (inotify, BPF, ETW) |
-| **Logging And Observability** | `osquery/logger/` | Differential logging, JSON serialization, logger plugins |
-| **Database And Storage Plugins** | `osquery/database/` | Key-value storage (RocksDB, ephemeral) |
-| **Distributed Querying** | `osquery/distributed/` | Remote SQL orchestration across fleets |
-| **Extensions And IPC** | `osquery/extensions/` | Apache Thrift-based extension framework |
-| **Remote HTTP Client** | `osquery/remote/` | Boost.Asio/Beast HTTPS client with TLS |
-| **OpenFrame Auth Layer** | `openframe/` | JWT token management, AES-256-GCM encryption |
-| **Virtual Tables** | `osquery/tables/` | 300+ OS-specific table implementations |
+| **Core Init/Shutdown/Watcher** | `osquery/core/` | Process lifecycle, multi-process supervision |
+| **Core Config & Flags** | `osquery/config/` | Configuration loading, scheduling, flag management |
+| **SQL Core & Virtual Tables** | `osquery/sql/` | SQLite embedding, virtual table framework, query execution |
+| **Eventing Core** | `osquery/events/` | Publisher–subscriber OS event collection |
+| **Database** | `osquery/database/` | RocksDB/ephemeral key-value persistence |
+| **Logging** | `osquery/logger/` | Pluggable log emission (filesystem, TLS, Kafka, etc.) |
+| **Distributed Querying** | `osquery/distributed/` | Remote SQL orchestration over TLS |
+| **Extensions & IPC** | `osquery/extensions/` | Thrift-based cross-process plugin framework |
+| **Filesystem & Fileops** | `osquery/filesystem/` | Cross-platform file abstraction |
+| **Hashing** | `osquery/hashing/` | MD5/SHA1/SHA256 file and buffer digests |
+| **Remote HTTP** | `osquery/remote/` | Boost.Asio/Beast HTTPS client for outbound connections |
 
 ---
 
-## Runtime Lifecycle
+## Process Model
+
+osquery implements a **watcher/worker** supervision model:
 
 ```mermaid
-sequenceDiagram
-    participant Main
-    participant Initializer
-    participant Registry
-    participant Config
-    participant Extensions
-    participant Events
+flowchart TD
+    Init["Initializer"] --> RoleCheck["Determine Role"]
 
-    Main->>Initializer: Construct(argc, argv)
-    Initializer->>Initializer: Parse flags
-    Initializer->>Registry: registryAndPluginInit()
-    Initializer->>Extensions: startExtensionManager()
-    Initializer->>Config: load()
-    Initializer->>Events: attachEvents()
-    Initializer->>Initializer: start()
+    RoleCheck -->|"Watcher"| WatcherProc["Watcher Process"]
+    RoleCheck -->|"Worker"| WorkerProc["Worker Process"]
+    RoleCheck -->|"Shell"| ShellProc["osqueryi (Shell Mode)"]
+
+    WatcherProc -->|"spawn"| WorkerProc
+    WatcherProc -->|"monitor"| Extensions["Extension Processes"]
+
+    WorkerProc --> Config["Config System"]
+    WorkerProc --> SQL["SQL Engine"]
+    WorkerProc --> Events["Eventing Core"]
+    WorkerProc --> Logger["Logging"]
 ```
 
-osquery can operate in four runtime modes:
-
-| Mode | Binary | Description |
-|---|---|---|
-| **Interactive Shell** | `osqueryi` | REPL for ad-hoc SQL queries |
-| **Daemon** | `osqueryd` | Background daemon with scheduled queries |
-| **Watcher** | Internal | Supervisor process that monitors the worker |
-| **Extension** | External | External plugin process communicating via Thrift |
+- The **Watcher** (parent process) monitors the worker and all extension processes, enforcing CPU and memory limits.
+- The **Worker** (child process) executes all scheduled queries and runs the event subsystem.
+- If the worker exceeds resource limits or crashes, the watcher restarts it and may denylist the offending query.
+- **Extensions** are separate processes communicating with the core over Thrift/IPC.
 
 ---
 
-## SQL Engine and Virtual Tables
+## SQL Query Lifecycle
 
-The heart of osquery is its SQL engine — an in-memory SQLite instance hardened with a strict authorizer.
-
-```mermaid
-graph TD
-    Query["SQL Query"] --> SQLPlugin["SQLiteSQLPlugin"]
-    SQLPlugin --> DBManager["SQLiteDBManager"]
-    DBManager --> DBInst["SQLiteDBInstance"]
-    DBInst --> SQLiteCore["In-Memory SQLite Engine"]
-    SQLiteCore --> VTabModule["sqlite3_module"]
-    VTabModule --> VirtualTable["VirtualTable Wrapper"]
-    VirtualTable --> TablePlugin["TablePlugin"]
-    TablePlugin --> OS["Operating System Data"]
-```
-
-**Key properties:**
-- All queries run against an in-memory SQLite database
-- A strict authorizer allowlists only safe SQL opcodes
-- Virtual tables are attached dynamically from the registry
-- Constraint pushdown and projection optimization reduce OS calls
-
----
-
-## Eventing Framework
-
-Event-driven monitoring is handled by a publish/subscribe system:
-
-```mermaid
-graph TD
-    Publisher["EventPublisher"] --> EventFactory["EventFactory"]
-    Subscriber["EventSubscriber"] --> EventFactory
-    EventFactory --> Callback["EventCallback"]
-    Callback --> Storage["Database Storage"]
-    SQL["SELECT from events tables"] --> Subscriber
-```
-
-| Platform | Event Technology |
-|---|---|
-| Linux | inotify, BPF, Audit netlink |
-| macOS | FSEvents, EndpointSecurity, OpenBSM |
-| Windows | ETW, USN Journal, Windows Event Log |
-
----
-
-## Configuration and Scheduling
-
-```mermaid
-graph TD
-    Source["Config Source"] --> ConfigCore["Config Singleton"]
-    ConfigCore --> Parsers["ConfigParserPlugins"]
-    Parsers --> Schedule["Scheduled Queries"]
-    Schedule --> Scheduler["Query Scheduler"]
-    Scheduler --> SQL["SQL Engine"]
-    SQL --> Logging["Logging And Observability"]
-```
-
-Configuration sources:
-- **FilesystemConfigPlugin** — local JSON file with `.d/` fragment support
-- **TLS Config Plugin** — remote configuration over HTTPS
-- **Extension Config Plugin** — configuration provided by an extension process
-
----
-
-## OpenFrame Authentication Layer
-
-The `openframe/` directory contains the Flamingo/OpenFrame integration:
-
-```mermaid
-graph LR
-    Provider["AuthorizationManagerProvider"] --> Manager["AuthorizationManager"]
-    Extractor["TokenExtractor"] --> Manager
-    Refresher["TokenRefresher"] --> Extractor
-    Manager --> Token["JWT Bearer Token"]
-    Token --> HTTP["Remote HTTP Client"]
-    EncSvc["EncryptionService"] --> OpenSSL["OpenSSL AES-256-GCM"]
-```
-
-| Component | Responsibility |
-|---|---|
-| `OpenframeAuthorizationManager` | Singleton token store with provider-controlled lifecycle |
-| `OpenframeAuthorizationManagerProvider` | Sole factory for the token manager |
-| `OpenframeEncryptionService` | AES-256-GCM decryption via OpenSSL |
-| `OpenframeTokenExtractor` | Fetches tokens from OpenFrame services |
-| `OpenframeTokenRefresher` | Background thread for token renewal |
-
----
-
-## Extension System
-
-Extensions communicate with osquery core via Apache Thrift over UNIX domain sockets (Linux/macOS) or named pipes (Windows):
-
-```mermaid
-graph LR
-    Core["osquery Core"] --> Manager["Extension Manager"]
-    Manager --> Registry["RegistryFactory"]
-    ExtProc["Extension Process"] --> Manager
-    Manager --> ExtProc
-```
-
-Extensions can provide:
-- Custom virtual tables
-- Logger plugins
-- Config plugins
-- Distributed plugins
-
----
-
-## Data Flow: Query Execution to Log
+This is the path taken by a single scheduled SQL query from configuration to log output:
 
 ```mermaid
 sequenceDiagram
     participant Scheduler
-    participant SQL as SQL Engine
-    participant DB as Database
+    participant SQLCore as SQL Core
+    participant SQLite
+    participant VTable as Virtual Table
+    participant TablePlugin as Table Plugin
+    participant DiffEngine as Diff Engine
     participant Logger
 
-    Scheduler->>SQL: Execute scheduled query
-    SQL->>SQL: Run against virtual tables
-    SQL-->>Scheduler: QueryData (current results)
-    Scheduler->>DB: Load previous results
-    DB-->>Scheduler: Previous QueryData
-    Scheduler->>Scheduler: Compute DiffResults
-    Scheduler->>Logger: logQueryLogItem(diff)
-    Logger->>Logger: Serialize to JSON
-    Logger-->>Logger: Forward to backend sink
+    Scheduler->>SQLCore: Execute scheduled query
+    SQLCore->>SQLite: sqlite3_exec()
+    SQLite->>VTable: xFilter() callback
+    VTable->>TablePlugin: generate(context)
+    TablePlugin-->>VTable: TableRows
+    VTable-->>SQLite: Row data
+    SQLite-->>SQLCore: QueryData
+    SQLCore->>DiffEngine: Compute diff against prior result
+    DiffEngine-->>SQLCore: DiffResults (added/removed rows)
+    SQLCore->>Logger: Emit QueryLogItem
 ```
+
+### Key Security Enforcement Points
+
+- **SQLite Authorizer** — Only allowlisted opcodes are permitted. ATTACH and dangerous PRAGMAs are denied.
+- **Required constraints** — Tables with required columns (e.g., `file` requires `path`) are enforced at the virtual table layer.
+- **Watchdog limits** — Queries consuming too much CPU or memory cause worker restart and query denylisting.
+
+---
+
+## Eventing System
+
+osquery's event tables capture real-time OS activity via a publisher–subscriber model:
+
+```mermaid
+flowchart TD
+    OS["Operating System Event"] --> Publisher["EventPublisher"]
+    Publisher --> Subscriber["EventSubscriber"]
+    Subscriber --> Database[("Event Backing Store")]
+    Database --> SQLCore["SQL Engine"]
+```
+
+### Platform Publishers
+
+| Platform | Publishers |
+|---|---|
+| **Linux** | inotify, BPF/eBPF, auditd netlink, udev, syslog |
+| **macOS** | FSEvents, IOKit, OpenBSM, EndpointSecurity, SCNetwork |
+| **Windows** | ETW (Event Tracing for Windows), WEL, NTFS journal, USN journal |
+
+Event data is persisted in the database and exposed as SQL tables like `file_events`, `process_events`, `socket_events`, and `bpf_process_events`.
+
+---
+
+## Extension & IPC Architecture
+
+osquery is designed to be extended without modifying the core binary:
+
+```mermaid
+flowchart LR
+    Core["osquery Core"] -->|"starts"| Manager["Extension Manager (Thrift)"]
+    ExtProc["Extension Process"] -->|"registerExtension()"| Manager
+    Manager -->|"assigns UUID"| ExtProc
+    Core -->|"callExtension()"| ExtProc
+    ExtProc -->|"Thrift Response"| Core
+```
+
+Extensions communicate over:
+- **UNIX domain sockets** (Linux/macOS)
+- **Named pipes** (Windows)
+
+Extensions can provide:
+- Custom virtual tables
+- Config plugins (alternative config sources)
+- Logger plugins (alternative log destinations)
+- Distributed plugins (alternative orchestration backends)
+
+---
+
+## Database Layer
+
+```mermaid
+flowchart TD
+    Client["Core Modules"] -->|"IDatabaseInterface"| OsqueryDB["OsqueryDatabase"]
+    OsqueryDB --> API["Global Database APIs"]
+    API --> Registry["Plugin Registry"]
+    Registry -->|"Active Plugin"| Plugin["DatabasePlugin"]
+    Plugin --> RocksDB["RocksDB (persistent default)"]
+    Plugin --> Ephemeral["Ephemeral (in-memory fallback)"]
+```
+
+Domains stored in the database:
+
+| Domain | Contents |
+|---|---|
+| `queries` | Scheduled query result state (for diff computation) |
+| `events` | Persisted event rows from subscribers |
+| `distributed` | Distributed query request tracking |
+| `distributed_running` | Active distributed execution state |
+| `configurations` | Cached config data |
+| `query_performance` | Execution time and resource metrics |
+| `carves` | File carving session state |
+
+---
+
+## Configuration Lifecycle
+
+```mermaid
+flowchart TD
+    Start["Refresh Triggered"] --> CallPlugin["Call genConfig On Active Plugin"]
+    CallPlugin --> CheckStatus{"Success?"}
+    CheckStatus -->|"No"| Accelerate["Use Accelerated Refresh Interval"]
+    CheckStatus -->|"Yes"| UpdateConfig["Update Internal State"]
+    UpdateConfig --> Reconfigure["Reconfigure Registries & Loggers"]
+    Reconfigure --> Done["Done"]
+    Accelerate --> Done
+```
+
+Config sources are pluggable:
+- **Filesystem** (`--config_path`) — JSON file(s) on disk
+- **TLS** (`tls` config plugin) — Remote server via HTTPS
+- **Extension** — Any custom plugin registered via the extension framework
+
+---
+
+## Distributed Querying
+
+```mermaid
+sequenceDiagram
+    participant Server as Remote Server
+    participant Agent as osquery Agent
+    participant SQL as SQL Engine
+
+    Agent->>Server: POST read_endpoint (getQueries)
+    Server-->>Agent: JSON query list
+    Agent->>SQL: Execute each query
+    SQL-->>Agent: QueryData results
+    Agent->>Server: POST write_endpoint (writeResults)
+```
+
+Queries are denylisted (via SHA-256 hash) if they crash the worker or consume excessive resources.
 
 ---
 
 ## Key Design Decisions
 
-| Decision | Rationale |
-|---|---|
-| **In-memory SQLite** | Zero persistent SQL state; each query is a fresh execution |
-| **Plugin/Registry pattern** | All major subsystems (loggers, config, tables) are hot-swappable |
-| **Watcher/Worker isolation** | Worker crashes don't bring down the watchdog supervisor |
-| **Thrift for extensions** | Language-agnostic, versioned, cross-platform RPC |
-| **Differential logging** | Only changed rows are logged, dramatically reducing volume |
-| **AES-256-GCM encryption** | OpenFrame credentials protected with authenticated encryption |
+1. **Single embedded SQLite instance** — Managed by `SQLiteDBManager` as a singleton with transient connection support for concurrency.
+2. **Plugin registry pattern** — All extensible components (tables, loggers, config sources, databases) are registered as plugins, enabling runtime composition.
+3. **Process isolation** — The watcher/worker model isolates query execution failures from the supervision layer.
+4. **Allowlist-only SQL** — The SQLite authorizer denies all dangerous opcodes by default, preventing SQL-injection-style attacks on the agent itself.
+5. **Differential results** — Scheduled queries only log changes (added/removed rows), dramatically reducing log volume.
 
 ---
 
 ## Reference Documentation
 
-For deep dives into each module, see the reference architecture docs:
+For deeper dives into each module, see the reference architecture docs:
 
-- [Core Init And Runtime](./reference/architecture/core-init-and-runtime/core-init-and-runtime.md)
-- [SQL Engine And Virtual Tables](./reference/architecture/sql-engine-and-virtual-tables/sql-engine-and-virtual-tables.md)
-- [Configuration And Packs](./reference/architecture/configuration-and-packs/configuration-and-packs.md)
-- [Eventing Framework And Subscriptions](./reference/architecture/eventing-framework-and-subscriptions/eventing-framework-and-subscriptions.md)
-- [Extensions And IPC](./reference/architecture/extensions-and-ipc/extensions-and-ipc.md)
-- [Distributed Querying](./reference/architecture/distributed-querying/distributed-querying.md)
-- [Remote HTTP Client](./reference/architecture/remote-http-client/remote-http-client.md)
-- [Logging And Query Observability](./reference/architecture/logging-and-query-observability/logging-and-query-observability.md)
-- [Database And Storage Plugins](./reference/architecture/database-and-storage-plugins/database-and-storage-plugins.md)
-- [Filesystem And Path Utilities](./reference/architecture/filesystem-and-path-utilities/filesystem-and-path-utilities.md)
+- [SQL Core & Virtual Tables](../../reference/architecture/sql-core-and-virtual-tables/sql-core-and-virtual-tables.md)
+- [Eventing Core](../../reference/architecture/eventing-core/eventing-core.md)
+- [Core Init/Shutdown/Watcher](../../reference/architecture/core-init-shutdown-and-watcher/core-init-shutdown-and-watcher.md)
+- [Core Config & Flags](../../reference/architecture/core-config-and-flags/core-config-and-flags.md)
+- [Database](../../reference/architecture/database/database.md)
+- [Logging](../../reference/architecture/logging/logging.md)
+- [Distributed Querying](../../reference/architecture/distributed-querying/distributed-querying.md)
+- [Extensions & IPC](../../reference/architecture/extensions-and-ipc/extensions-and-ipc.md)
+- [Filesystem & Fileops](../../reference/architecture/filesystem-and-fileops/filesystem-and-fileops.md)
+- [Hashing](../../reference/architecture/hashing/hashing.md)
+- [Remote HTTP](../../reference/architecture/remote-http/remote-http.md)

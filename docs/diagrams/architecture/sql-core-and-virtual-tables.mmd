@@ -1,0 +1,16 @@
+flowchart TD
+    Scheduler["Scheduler / Config"] --> SQLPlugin["SQLiteSQLPlugin"]
+    SQLPlugin --> DBManager["SQLiteDBManager"]
+    DBManager --> SQLiteDB["SQLite In-Memory DB"]
+
+    SQLiteDB --> VirtualModule["sqlite3_module"]
+    VirtualModule --> VirtualTable["VirtualTable"]
+    VirtualTable --> TablePlugin["TablePlugin Registry"]
+
+    SQLPlugin --> SQLInternal["SQLInternal"]
+    SQLInternal --> QueryPlanner["QueryPlanner"]
+
+    SQLInternal --> QueryResults["QueryDataTyped"]
+    QueryResults --> DiffEngine["DiffResults"]
+    DiffEngine --> QueryLogItem["QueryLogItem"]
+    QueryLogItem --> Logger["Logging Module"]

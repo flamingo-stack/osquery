@@ -1,0 +1,6 @@
+flowchart TD
+    Dist["Distributed Manager"] --> Monitor["monitorNonnumeric()"]
+    Monitor --> SQLExec["SQL Execution"]
+    SQLExec --> Results["QueryData"]
+    SQLExec --> Perf["QueryPerformance"]
+    Perf --> Dist

@@ -1,5 +1,4 @@
 flowchart TD
-    Watcher["ExtensionManagerWatcher"] --> UUIDs["Registered UUIDs"]
-    UUIDs --> Ping["Ping Extension"]
-    Ping -->|"Success"| Keep["Keep Registered"]
-    Ping -->|"Failure x2"| Remove["Remove Broadcast Route"]
+    Watcher["ExtensionManagerWatcher"] --> Check["Ping Extension"]
+    Check -->|"Success"| Keep["Keep Registered"]
+    Check -->|"Failure"| Remove["removeBroadcast()"]

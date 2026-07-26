@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Create Hash Instance"] --> Init["Initialize Context"]
+    Init --> UpdateLoop["update(buffer, size)"]
+    UpdateLoop -->|"More Data"| UpdateLoop
+    UpdateLoop --> DigestCall["digest()"]
+    DigestCall --> Encode["Apply Encoding"]
+    Encode --> EndNode["Return Digest String"]

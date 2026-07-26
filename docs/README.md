@@ -1,17 +1,18 @@
-# osquery — OpenFrame Edition Documentation
+# osquery Documentation
 
-Welcome to the documentation for **osquery with OpenFrame** — the cross-platform OS instrumentation framework extended with AI-driven MSP automation by [Flamingo](https://flamingo.run) and [OpenFrame](https://openframe.ai).
+Welcome to the documentation for **osquery** — the SQL-powered system telemetry engine maintained by [Flamingo](https://flamingo.run) as part of the [OpenFrame platform](https://openframe.ai).
+
+> osquery exposes operating system state as a relational database, enabling operators to query processes, users, files, network sockets, hardware, and real-time events using standard SQL.
 
 ---
 
 ## 📚 Table of Contents
 
-- [Getting Started](#-getting-started)
-- [Development](#-development)
-- [Reference Architecture](#-reference-architecture)
-- [Architecture Diagrams](#-architecture-diagrams)
-- [Quick Links](#-quick-links)
-- [Community](#-community)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [Reference Architecture](#reference-architecture)
+- [Architecture Diagrams](#architecture-diagrams)
+- [Quick Links](#quick-links)
 
 ---
 
@@ -21,75 +22,79 @@ New to osquery? Start here.
 
 | Guide | Description |
 |---|---|
-| [Introduction](./getting-started/introduction.md) | What is osquery with OpenFrame? Features and target audience |
-| [Prerequisites](./getting-started/prerequisites.md) | System requirements, supported platforms, required software |
-| [Quick Start](./getting-started/quick-start.md) | Clone, build, and run osquery in under 10 minutes |
-| [First Steps](./getting-started/first-steps.md) | Explore virtual tables, scheduled packs, FIM, extensions, and OpenFrame |
-
-**Recommended reading order:** Introduction → Prerequisites → Quick Start → First Steps
+| [Introduction](./getting-started/introduction.md) | What osquery is, key features, architecture overview, and target audience |
+| [Prerequisites](./getting-started/prerequisites.md) | Hardware requirements, supported OS, required software, and verification steps |
+| [Quick Start](./getting-started/quick-start.md) | Clone, build, and run osquery in minutes |
+| [First Steps](./getting-started/first-steps.md) | Explore tables, write security queries, configure scheduled queries, and enable FIM |
 
 ---
 
-## 🛠 Development
+## 🛠️ Development
 
-Guides for contributors and developers building on or extending osquery.
+Guides for contributors and developers working on the osquery codebase.
 
 ### Setup
 
 | Guide | Description |
 |---|---|
-| [Environment Setup](./development/setup/environment.md) | IDE recommendations, clangd, ccache, editor extensions |
-| [Local Development](./development/setup/local-development.md) | Build configurations, debug flags, GDB/LLDB, VS Code debugging |
+| [Local Development](./development/setup/local-development.md) | Cloning, building, running, debugging, and working with the Extension SDK |
+| [Environment Setup](./development/setup/environment.md) | IDE configuration, compiler setup, clang-format, and development tooling |
 
 ### Architecture
 
 | Guide | Description |
 |---|---|
-| [Architecture Overview](./development/architecture/README.md) | High-level module breakdown, runtime lifecycle, design decisions |
+| [Architecture Overview](./development/architecture/README.md) | High-level design, core components, process model, SQL lifecycle, eventing, and key design decisions |
 
-### Quality
+### Testing
 
 | Guide | Description |
 |---|---|
-| [Testing Guide](./development/testing/README.md) | GTest/GMock structure, running tests, writing unit and integration tests |
-| [Security Best Practices](./development/security/README.md) | Auth patterns, AES-256-GCM, SQL authorizer, TLS, secrets management |
+| [Testing Overview](./development/testing/README.md) | Test structure, building and running tests, writing unit/integration tests, benchmarks, and CI |
+
+### Security
+
+| Guide | Description |
+|---|---|
+| [Security Guidelines](./development/security/README.md) | Authentication, encryption, SQL authorizer, secrets management, and common vulnerability mitigations |
 
 ### Contributing
 
 | Guide | Description |
 |---|---|
-| [Contributing Guidelines](./development/contributing/guidelines.md) | Code style, branch naming, commit format, PR process, virtual table creation |
+| [Contributing Guidelines](./development/contributing/guidelines.md) | Code style, branch naming, commit format, PR process, and review checklist |
 
 ---
 
 ## 📖 Reference Architecture
 
-Deep technical documentation for each core subsystem — generated directly from source code analysis.
+Detailed technical documentation for each osquery subsystem, generated from source code analysis.
 
 | Module | Description |
 |---|---|
-| [Core Init And Runtime](./reference/architecture/core-init-and-runtime/core-init-and-runtime.md) | Process bootstrap, flags, watcher/worker model, watchdog |
-| [SQL Engine And Virtual Tables](./reference/architecture/sql-engine-and-virtual-tables/sql-engine-and-virtual-tables.md) | SQLite engine, authorizer, virtual table binding, constraint pushdown |
-| [Configuration And Packs](./reference/architecture/configuration-and-packs/configuration-and-packs.md) | Config loading, packs, schedulers, decorators, change detection |
-| [Eventing Framework And Subscriptions](./reference/architecture/eventing-framework-and-subscriptions/eventing-framework-and-subscriptions.md) | Publisher/subscriber system, inotify, BPF, FSEvents, ETW |
-| [Extensions And IPC](./reference/architecture/extensions-and-ipc/extensions-and-ipc.md) | Apache Thrift IPC, runtime plugin model, UUID routing |
-| [Distributed Querying](./reference/architecture/distributed-querying/distributed-querying.md) | Remote SQL orchestration, TLS transport, fleet denylisting |
-| [Remote HTTP Client](./reference/architecture/remote-http-client/remote-http-client.md) | Boost.Asio/Beast HTTPS client, TLS handshake, peer verification |
-| [Logging And Query Observability](./reference/architecture/logging-and-query-observability/logging-and-query-observability.md) | Differential result tracking, JSON serialization, pluggable backends |
-| [Database And Storage Plugins](./reference/architecture/database-and-storage-plugins/database-and-storage-plugins.md) | RocksDB persistent backend, ephemeral in-memory store, key-value interface |
-| [Filesystem And Path Utilities](./reference/architecture/filesystem-and-path-utilities/filesystem-and-path-utilities.md) | Cross-platform file abstraction, glob resolution, permission enforcement |
+| [SQL Core & Virtual Tables](./reference/architecture/sql-core-and-virtual-tables/sql-core-and-virtual-tables.md) | SQLite embedding, virtual table framework, diff engine, and query lifecycle |
+| [Eventing Core](./reference/architecture/eventing-core/eventing-core.md) | Publisher–subscriber OS event framework, EventFactory, subscriptions, and PathSet |
+| [Core Init, Shutdown & Watcher](./reference/architecture/core-init-shutdown-and-watcher/core-init-shutdown-and-watcher.md) | Process lifecycle, watcher/worker model, watchdog resource enforcement |
+| [Core Config & Flags](./reference/architecture/core-config-and-flags/core-config-and-flags.md) | Configuration loading, schedules, packs, flag management, and dynamic reconfiguration |
+| [Database](./reference/architecture/database/database.md) | Pluggable key-value persistence, RocksDB backend, ephemeral fallback, and schema migrations |
+| [Logging](./reference/architecture/logging/logging.md) | Pluggable logger plugins, StatusLogLine, FilesystemLoggerPlugin, and logging modes |
+| [Distributed Querying](./reference/architecture/distributed-querying/distributed-querying.md) | Remote SQL orchestration over TLS, denylisting, performance tracking, and result buffering |
+| [Extensions & IPC](./reference/architecture/extensions-and-ipc/extensions-and-ipc.md) | Thrift-based RPC, extension lifecycle, registry broadcasting, and health monitoring |
+| [Filesystem & Fileops](./reference/architecture/filesystem-and-fileops/filesystem-and-fileops.md) | Cross-platform file abstraction, permission enforcement, globbing, and read limits |
+| [Hashing](./reference/architecture/hashing/hashing.md) | Streaming SHA-256, SHA-1, MD5; single-pass multi-hash; file and buffer hashing |
+| [Remote HTTP](./reference/architecture/remote-http/remote-http.md) | Boost.Beast HTTPS client, TLS handling, proxy support, and timeout management |
 
 ---
 
-## 🗺 Architecture Diagrams
+## 🗺️ Architecture Diagrams
 
-Visual Mermaid diagrams for each subsystem are available in:
+Visual Mermaid diagrams for each subsystem are located in:
 
 ```text
 docs/diagrams/architecture/
 ```
 
-Diagrams cover all major subsystems including the SQL engine, eventing framework, configuration pipeline, distributed querying, OpenFrame auth layer, and more. Open any `.mmd` file in a Mermaid-compatible viewer.
+Diagrams are available for all major modules including SQL Core, Eventing Core, Distributed Querying, Extensions, Database, Logging, and more.
 
 ---
 
@@ -97,23 +102,24 @@ Diagrams cover all major subsystems including the SQL engine, eventing framework
 
 | Resource | Link |
 |---|---|
-| [Project README](../README.md) | Main project overview, quick start, and features |
-| [Contributing Guide](../CONTRIBUTING.md) | How to contribute code, docs, and virtual tables |
-| [License](../LICENSE.md) | License information |
+| **Project README** | [../README.md](../README.md) |
+| **Contributing Guide** | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
+| **Source Repository** | [https://github.com/flamingo-stack/osquery](https://github.com/flamingo-stack/osquery) |
+| **OpenMSP Slack** | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
+| **Flamingo** | [https://flamingo.run](https://flamingo.run) |
+| **OpenFrame Platform** | [https://openframe.ai](https://openframe.ai) |
 
 ---
 
-## 💬 Community
+## Community
 
-> We do **not** use GitHub Issues or GitHub Discussions. All support and collaboration happens on **OpenMSP Slack**.
+All collaboration, questions, and discussions happen on the **OpenMSP Slack** community:
 
-| Resource | Link |
-|---|---|
-| OpenMSP Community Slack | [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
-| OpenMSP Website | [https://www.openmsp.ai/](https://www.openmsp.ai/) |
-| OpenFrame Platform | [https://openframe.ai](https://openframe.ai) |
-| Flamingo | [https://flamingo.run](https://flamingo.run) |
+- 💬 **Join:** [https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- 🌐 **OpenMSP:** [https://www.openmsp.ai/](https://www.openmsp.ai/)
+
+> We do not use GitHub Issues or GitHub Discussions. All support and development discussions take place on Slack.
 
 ---
 
-*Documentation generated by [OpenFrame Doc Orchestrator](https://github.com/flamingo-stack/openframe-oss-tenant)*
+*Documentation generated by [🦩 Flamingo AI Technical Writer](https://flamingo.run)*

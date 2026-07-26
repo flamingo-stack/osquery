@@ -1,186 +1,266 @@
 # Local Development Guide
 
-This guide walks you through cloning, building, running, and debugging osquery with OpenFrame on your local machine.
+This guide covers cloning the repository, building osquery locally, running the interactive shell and daemon, and working with the extension SDK.
 
 ---
 
-## Clone the Repository
+## Clone and Initial Setup
 
 ```bash
+# Clone the repository
 git clone https://github.com/flamingo-stack/osquery.git
 cd osquery
+
+# Verify the structure
+ls -la
 ```
+
+> osquery bundles almost all of its third-party dependencies under `libraries/cmake/source/`. You do not need to install RocksDB, Thrift, Boost, or OpenSSL separately — CMake fetches and builds them from source.
 
 ---
 
-## Build Configurations
+## Configuring the Build
 
-### Debug Build (Recommended for Development)
+osquery uses **CMake** (minimum 3.21) with **Ninja** as the recommended backend.
+
+### Standard Development Build
 
 ```bash
-cmake -S . -B build \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
+cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-
-cmake --build build --parallel $(nproc)
 ```
 
-> Debug builds include full debug symbols and disable optimizations, making debugging straightforward.
+### Build Type Reference
 
-### RelWithDebInfo (Recommended for Testing)
+| Type | Use Case |
+|---|---|
+| `Debug` | Debugging, sanitizers, full symbols |
+| `RelWithDebInfo` | Day-to-day development — fast + debuggable |
+| `Release` | Performance testing, packaging |
 
-```bash
-cmake -S . -B build \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+### Common CMake Options
 
-cmake --build build --parallel $(nproc)
-```
+| Option | Default | Description |
+|---|---|---|
+| `OSQUERY_BUILD_TESTS` | `ON` | Build unit and integration tests |
+| `OSQUERY_BUILD_BPF` | auto-detected | Enable eBPF event publisher (Linux) |
+| `OSQUERY_DISABLE_DATABASE_PERF_ISSUE_WORKAROUND` | `OFF` | Database performance workaround |
+| `OSQUERY_ENABLE_ASAN` | `OFF` | Enable AddressSanitizer |
+| `OSQUERY_ENABLE_UBSAN` | `OFF` | Enable UndefinedBehaviorSanitizer |
 
-### Release Build
-
-```bash
-cmake -S . -B build \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release
-
-cmake --build build --parallel $(nproc)
-```
-
-### Build with Tests Enabled
+### Enabling Sanitizers (for debugging)
 
 ```bash
-cmake -S . -B build \
-  -G Ninja \
+cmake -B build-asan -S . -G Ninja \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DOSQUERY_BUILD_TESTS=ON
-
-cmake --build build --parallel $(nproc)
+  -DOSQUERY_ENABLE_ASAN=ON \
+  -DOSQUERY_ENABLE_UBSAN=ON
 ```
 
 ---
 
-## Running osquery Locally
+## Building Targets
+
+### Build Individual Binaries
+
+```bash
+# Interactive shell (fastest to build)
+cmake --build build --target osqueryi -j$(nproc)
+
+# Daemon
+cmake --build build --target osqueryd -j$(nproc)
+
+# Unit tests for a specific subsystem
+cmake --build build --target osquery_sql_tests -j$(nproc)
+
+# All targets
+cmake --build build -j$(nproc)
+```
+
+### Build an Extension
+
+```bash
+# The example read-only table extension
+cmake --build build --target example_extension -j$(nproc)
+```
+
+---
+
+## Running Locally
 
 ### Interactive Shell (`osqueryi`)
 
 ```bash
 ./build/osquery/osqueryi
-```
 
-```sql
-osquery> SELECT hostname, cpu_brand FROM system_info;
-osquery> .tables
-osquery> .schema processes
-osquery> .quit
+# With verbose output
+./build/osquery/osqueryi --verbose
+
+# Execute a single query and exit
+./build/osquery/osqueryi --json "SELECT * FROM os_version"
 ```
 
 ### Daemon (`osqueryd`)
 
+Create a minimal test configuration:
+
 ```bash
-# Create a minimal development config
-cat > /tmp/osquery-dev.conf <<'EOF'
+mkdir -p /tmp/osquery-dev/logs
+
+cat > /tmp/osquery-dev/osquery.conf << 'EOF'
 {
   "options": {
-    "logger_plugin": "filesystem",
-    "logger_path": "/tmp/osquery-dev-logs",
-    "database_path": "/tmp/osquery-dev.db",
-    "schedule_splay_percent": 0
+    "logger_path": "/tmp/osquery-dev/logs",
+    "disable_logging": false
   },
   "schedule": {
-    "system_info": {
-      "query": "SELECT hostname, cpu_brand FROM system_info;",
-      "interval": 60
+    "uptime": {
+      "query": "SELECT * FROM uptime;",
+      "interval": 10
     }
   }
 }
 EOF
 
-mkdir -p /tmp/osquery-dev-logs
-
 ./build/osquery/osqueryd \
-  --config_path=/tmp/osquery-dev.conf \
+  --config_path /tmp/osquery-dev/osquery.conf \
+  --database_path /tmp/osquery-dev/db \
+  --pidfile /tmp/osquery-dev/osqueryd.pid \
   --verbose \
-  --ephemeral
+  --disable_watchdog
 ```
+
+> `--disable_watchdog` is useful during development to avoid the watcher process forking. Remove it in production.
 
 ---
 
-## Development Flags
+## Working with Extensions
 
-These flags are useful during local development:
+Extensions allow you to add custom virtual tables without modifying core osquery. The repository includes four example extensions under `external/examples/`.
 
-| Flag | Purpose |
-|---|---|
-| `--verbose` | Enable verbose logging output |
-| `--ephemeral` | Use in-memory database (no disk writes) |
-| `--disable_watchdog` | Disable resource watchdog (easier debugging) |
-| `--disable_events` | Disable event publishers (faster startup) |
-| `--disable_logging` | Suppress all logger output |
-| `--allow_unsafe` | Allow loading unsigned extensions |
-| `--extensions_timeout=10` | Extension connection timeout in seconds |
-
-Example for a minimal debug session:
+### Build the Example Extension
 
 ```bash
+cmake --build build --target example_extension -j$(nproc)
+```
+
+### Run with an Extension Loaded
+
+```bash
+# Start osqueryi with an extension autoloaded
 ./build/osquery/osqueryi \
-  --verbose \
-  --disable_events \
-  --ephemeral
+  --extension ./build/external/examples/read_only_table/example_extension
+
+# Once loaded, query the extension table
+osquery> SELECT * FROM example;
++--------------+-----------------+
+| example_text | example_integer |
++--------------+-----------------+
+| example      | 1               |
++--------------+-----------------+
+```
+
+### Create Your Own Extension
+
+Extension development follows this pattern:
+
+```cpp
+#include <osquery/sdk/sdk.h>
+#include <osquery/sql/dynamic_table_row.h>
+
+using namespace osquery;
+
+// 1. Define your table plugin
+class MyTable : public TablePlugin {
+ private:
+  TableColumns columns() const {
+    return {
+        std::make_tuple("name",  TEXT_TYPE,    ColumnOptions::DEFAULT),
+        std::make_tuple("value", INTEGER_TYPE, ColumnOptions::DEFAULT),
+    };
+  }
+
+  TableRows generate(QueryContext& request) {
+    TableRows results;
+    auto r = make_table_row();
+    r["name"]  = "my_entry";
+    r["value"] = INTEGER(42);
+    results.push_back(std::move(r));
+    return results;
+  }
+};
+
+// 2. Register with the extension runtime
+REGISTER_EXTERNAL(MyTable, "table", "my_table");
+
+// 3. Standard extension entry point
+int main(int argc, char* argv[]) {
+  osquery::Initializer runner(argc, argv, ToolType::EXTENSION);
+  auto status = startExtension("my_extension", "1.0.0");
+  if (!status.ok()) {
+    LOG(ERROR) << status.getMessage();
+    runner.requestShutdown(status.getCode());
+  }
+  runner.waitForShutdown();
+  return runner.shutdown(0);
+}
 ```
 
 ---
 
-## Incremental Builds
+## Hot Reload / Watch Mode
 
-After making source changes, only rebuild changed targets:
+osquery does not have a native watch mode for source code, but you can use `entr` or `inotifywait` to auto-rebuild on file changes:
 
 ```bash
-# Rebuild only the osqueryi binary
-cmake --build build --target osqueryi
+# Linux: rebuild on any .cpp change in osquery/core
+find osquery/core -name '*.cpp' | \
+  entr -r cmake --build build --target osqueryi -j$(nproc)
+```
 
-# Rebuild only the osqueryd binary
-cmake --build build --target osqueryd
+For configuration changes, the osqueryd daemon automatically reloads config on the configured `config_refresh` interval (default: 0, meaning manual refresh only). Set a refresh interval:
 
-# Rebuild a specific test target
-cmake --build build --target osquery_core_tests
+```json
+{
+  "options": {
+    "config_refresh": 60
+  }
+}
+```
+
+Or send `SIGHUP` to trigger an immediate reload:
+
+```bash
+kill -HUP $(cat /tmp/osquery-dev/osqueryd.pid)
 ```
 
 ---
 
-## Debugging
+## Debug Configuration
 
-### Using GDB (Linux)
+### GDB (Linux)
 
 ```bash
 # Build with debug symbols
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel $(nproc)
+cmake -B build-debug -S . -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-debug --target osqueryi -j$(nproc)
 
-# Launch with GDB
-gdb ./build/osquery/osqueryi
-
-# In GDB:
-# (gdb) set args --verbose --ephemeral
-# (gdb) break osquery::Initializer::start
-# (gdb) run
+# Launch under GDB
+gdb --args ./build-debug/osquery/osqueryi --verbose
+(gdb) run
+(gdb) bt    # backtrace after a crash
 ```
 
-### Using LLDB (macOS)
+### LLDB (macOS)
 
 ```bash
-lldb ./build/osquery/osqueryi
-
-# In LLDB:
-# (lldb) settings set -- target.run-args "--verbose" "--ephemeral"
-# (lldb) b osquery::Initializer::start
-# (lldb) run
+lldb ./build-debug/osquery/osqueryi
+(lldb) run --verbose
+(lldb) bt   # backtrace after a crash
 ```
 
-### Using VS Code Debugger
-
-Add to `.vscode/launch.json`:
+### VS Code Launch Configuration (`.vscode/launch.json`)
 
 ```json
 {
@@ -191,20 +271,13 @@ Add to `.vscode/launch.json`:
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/osquery/osqueryi",
-      "args": ["--verbose", "--ephemeral", "--disable_events"],
+      "args": ["--verbose"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
       "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
+      "MIMode": "lldb",
+      "preLaunchTask": "build osqueryi"
     }
   ]
 }
@@ -212,68 +285,22 @@ Add to `.vscode/launch.json`:
 
 ---
 
-## Developing the OpenFrame Layer
+## Useful Development Flags
 
-The OpenFrame components live in the `openframe/` directory:
-
-```text
-openframe/
-├── openframe_authorization_manager.h/.cpp   # JWT token lifecycle
-├── openframe_authorization_manager_provider.h
-├── openframe_encryption_service.h/.cpp      # AES-256-GCM via OpenSSL
-├── openframe_token_extractor.h/.cpp         # Token acquisition
-└── openframe_token_refresher.h/.cpp         # Background token renewal
-```
-
-When modifying OpenFrame components, rebuild only the affected target:
-
-```bash
-cmake --build build --target openframe_auth
-```
-
-Test the encryption service independently by linking against it in a test binary.
-
----
-
-## Working with Virtual Tables
-
-To add a new virtual table:
-
-1. Create schema and implementation in `osquery/tables/<category>/`
-2. Register the table in the appropriate CMake target
-3. Run the code generator to update schema definitions:
-
-```bash
-python3 tools/codegen/gentable.py osquery/tables/my_category/my_table.table
-```
-
-4. Rebuild and test:
-
-```bash
-cmake --build build --target osqueryi
-./build/osquery/osqueryi
-osquery> .tables my_table
-```
-
----
-
-## Log Output Locations
-
-| Mode | Default Log Path |
+| Flag | Description |
 |---|---|
-| Daemon (Linux) | `/var/log/osquery/` |
-| Daemon (macOS) | `/var/log/osquery/` |
-| Daemon (Windows) | `C:\ProgramData\osquery\log\` |
-| Development override | Set `--logger_path=/tmp/my-logs` |
+| `--verbose` | Enable verbose logging |
+| `--disable_watchdog` | Run without the watcher supervisor |
+| `--disable_events` | Skip eventing subsystem initialization |
+| `--disable_logging` | Suppress result logging (useful for testing) |
+| `--ephemeral` | Use in-memory database (no disk writes) |
+| `--config_path` | Point to a custom config file |
+| `--database_path` | Override the RocksDB data directory |
 
 ---
 
-## Clean Rebuild
+## Community
 
-If you encounter stale build artifacts:
+For local development questions, join the **OpenMSP Slack**:
 
-```bash
-rm -rf build/
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel $(nproc)
-```
+https://www.openmsp.ai/

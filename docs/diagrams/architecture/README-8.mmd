@@ -1,7 +1,16 @@
 flowchart TD
-    Server["Central Server"] --> TLS["TLS Distributed Plugin"]
-    TLS --> Core["Distributed Core"]
-    Core --> SQL["SQL Engine"]
-    SQL --> Results["Results"]
-    Results --> TLS
-    TLS --> Server
+    Config --> Scheduler
+    Scheduler --> SQLCore
+    SQLCore --> VirtualTables
+    VirtualTables --> OSData["Operating System"]
+
+    SQLCore --> DiffEngine
+    DiffEngine --> LogItem
+
+    LogItem --> Logging
+    LogItem --> Distributed
+
+    Distributed --> RemoteHTTP
+    SQLCore --> Database
+    Events --> Database
+    Database --> SQLCore

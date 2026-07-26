@@ -1,0 +1,7 @@
+flowchart TD
+    ConfigCore["Config"] --> ApplyParsers["applyParsers"]
+    ApplyParsers --> Options["options"]
+    ApplyParsers --> Decorators["decorators"]
+    ApplyParsers --> FilePaths["file_paths"]
+    ApplyParsers --> Events["events"]
+    ApplyParsers --> Views["views"]

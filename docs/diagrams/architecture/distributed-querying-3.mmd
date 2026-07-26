@@ -1,6 +1,9 @@
-flowchart TD
-    Incoming["Incoming Query"] --> Check["checkAndSetAsRunning()"]
-    Check --> Running{"Already Running?"}
-    Running -->|"Within Duration"| Block["Denylisted"]
-    Running -->|"Expired"| Allow["Allow Execution"]
-    Check -->|"First Time"| Allow
+sequenceDiagram
+    participant Agent
+    participant TLS as TLSDistributedPlugin
+    participant Server
+
+    Agent->>TLS: getQueries()
+    TLS->>Server: POST read_endpoint
+    Server-->>TLS: JSON queries
+    TLS-->>Agent: JSON string

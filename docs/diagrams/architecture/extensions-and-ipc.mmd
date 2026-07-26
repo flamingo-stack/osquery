@@ -1,12 +1,6 @@
 flowchart LR
-    Core["osquery Core"] -->|"Starts"| Manager["Extension Manager"]
-    Manager -->|"Registers routes"| Registry["RegistryFactory"]
-
+    Core["osquery Core"] -->|"starts"| Manager["Extension Manager"]
     ExtensionProc["Extension Process"] -->|"registerExtension()"| Manager
-    Manager -->|"Assign UUID"| ExtensionProc
-
-    Core -->|"callExtension()"| Manager
-    Manager -->|"Route to UUID"| ExtensionProc
-
-    ExtensionProc -->|"Response"| Manager
-    Manager -->|"PluginResponse"| Core
+    Manager -->|"assigns UUID"| ExtensionProc
+    Core -->|"callExtension()"| ExtensionProc
+    ExtensionProc -->|"Thrift Response"| Core

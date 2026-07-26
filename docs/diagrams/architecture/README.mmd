@@ -1,22 +1,27 @@
 flowchart TD
-    CLI["osqueryi / osqueryd"] --> Core["Core Init And Runtime"]
+    Config["Core Config And Flags"] --> Scheduler["Scheduler"]
+    Scheduler --> SQLCore["SQL Core And Virtual Tables"]
 
-    Core --> Config["Configuration And Packs"]
-    Core --> SQL["SQL Engine And Virtual Tables"]
-    Core --> Events["Eventing Framework"]
-    Core --> Logging["Logging And Observability"]
-    Core --> DB["Database And Storage Plugins"]
-    Core --> Distributed["Distributed Querying"]
-    Core --> Extensions["Extensions And IPC"]
-    Core --> HTTP["Remote HTTP Client"]
-    Core --> FS["Filesystem And Path Utilities"]
+    SQLCore --> SQLite["Embedded SQLite"]
+    SQLite --> VTables["Virtual Tables"]
+    VTables --> TablePlugins["Table Plugins / Extensions"]
 
-    Config --> SQL
-    Config --> Events
-    SQL --> Logging
-    Events --> DB
-    Distributed --> SQL
-    Distributed --> HTTP
-    Logging --> DB
-    Extensions --> SQL
-    Extensions --> DB
+    SQLCore --> DiffEngine["Diff Engine"]
+    DiffEngine --> LogItem["QueryLogItem"]
+
+    LogItem --> Logging["Logging Module"]
+    LogItem --> Distributed["Distributed Querying"]
+
+    Distributed --> RemoteHTTP["Remote HTTP"]
+
+    SQLCore --> Database["Database"]
+
+    Eventing["Eventing Core"] --> Database
+    Eventing --> SQLCore
+
+    Extensions["Extensions And IPC"] --> TablePlugins
+    Extensions --> Config
+    Extensions --> Logging
+
+    Watcher["Init Shutdown And Watcher"] --> Scheduler
+    Watcher --> Extensions

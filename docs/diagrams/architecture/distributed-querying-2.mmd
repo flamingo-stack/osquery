@@ -1,11 +1,4 @@
 flowchart TD
-    Start["Pull Updates"] --> Accept["acceptWork()"]
-    Accept --> Pending{"Pending Queries?"}
-    Pending -->|"Yes"| Run["runQueries()"]
-    Run --> Deny{"Denylisted?"}
-    Deny -->|"No"| Execute["Execute via SQL Engine"]
-    Execute --> Record["recordQueryPerformance()"]
-    Record --> Queue["addResult()"]
-    Queue --> Flush["flushCompleted()"]
-    Deny -->|"Yes"| Skip["Skip Execution"]
-    Flush --> End["Cycle Complete"]
+    Flags["Distributed TLS Flags"] --> MakeURI["TLSRequestHelper.makeURI()"]
+    MakeURI --> ReadURI["read_uri_"]
+    MakeURI --> WriteURI["write_uri_"]

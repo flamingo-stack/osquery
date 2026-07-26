@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Start Loop"] --> Pull["pullUpdates()"]
+    Pull --> Check["Pending Queries?"]
+    Check -->|"Yes"| Run["runQueries()"]
+    Run --> Flush["flushCompleted()"]
+    Flush --> Start
+    Check -->|"No"| Start

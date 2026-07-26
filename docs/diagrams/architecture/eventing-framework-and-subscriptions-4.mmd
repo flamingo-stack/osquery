@@ -1,7 +1,0 @@
-flowchart TD
-    Callback["EventCallback"] --> AddBatch["addBatch()"]
-    AddBatch --> AssignID["generateEventIdentifier()"]
-    AssignID --> Persist["Database write"]
-    Persist --> IndexUpdate["update time index"]
-
-    ExpireCheck["expireEventBatches()"] --> RemoveOld["delete expired batches"]

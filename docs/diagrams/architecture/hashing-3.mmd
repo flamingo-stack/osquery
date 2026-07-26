@@ -1,0 +1,8 @@
+flowchart TD
+    Request["hashMultiFromFile(mask, path)"] --> OpenFile["Open File Stream"]
+    OpenFile --> InitAlgos["Initialize Requested Algorithms"]
+    InitAlgos --> ReadChunk["Read File Chunk"]
+    ReadChunk --> UpdateAll["Update All Active Contexts"]
+    UpdateAll -->|"More Data"| ReadChunk
+    UpdateAll --> Finalize["Finalize Each Algorithm"]
+    Finalize --> ReturnStruct["Return MultiHashes Struct"]

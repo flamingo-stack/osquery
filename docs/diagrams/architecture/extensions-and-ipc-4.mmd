@@ -1,4 +1,5 @@
 flowchart LR
-    SQL["SQL Engine"] --> ExternalSQL["ExternalSQLPlugin"]
-    ExternalSQL --> ManagerClient["ExtensionManagerClient"]
-    ManagerClient --> Extension["Extension Process"]
+    Registry["RegistryFactory"] -->|"route match"| CallExt["callExtension()"]
+    CallExt --> Client["ExtensionClient"]
+    Client --> Thrift["Thrift call()"]
+    Thrift --> Response["PluginResponse"]

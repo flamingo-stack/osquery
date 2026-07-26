@@ -1,0 +1,6 @@
+flowchart LR
+    Query["SQL Query"] --> ExplainPlan["EXPLAIN QUERY PLAN"]
+    Query --> Explain["EXPLAIN"]
+    Explain --> Opcodes["SQLite Opcodes"]
+    Opcodes --> TypeMap["kSQLOpcodes"]
+    TypeMap --> ColumnTypes["Inferred Column Types"]

@@ -1,10 +1,11 @@
 flowchart TD
-    Server["Central Server"] -->|"HTTPS"| TLSPlugin["TLS Distributed Plugin"]
-    TLSPlugin -->|"getQueries()"| DistributedCore["Distributed Core"]
-    DistributedCore -->|"runQueries()"| SQLEngine["SQL Engine"]
-    SQLEngine -->|"QueryData"| DistributedCore
-    DistributedCore -->|"writeResults()"| TLSPlugin
-    TLSPlugin -->|"HTTPS"| Server
+    RemoteServer["Remote Server"] -->|"HTTPS POST"| TLSPlugin["TLSDistributedPlugin"]
+    TLSPlugin -->|"getQueries()"| DistPlugin["DistributedPlugin Interface"]
+    DistPlugin --> DistManager["Distributed Manager"]
 
-    DistributedCore -->|"recordQueryPerformance"| Observability["Query Observability"]
-    DistributedCore -->|"running state"| Storage["Database Plugins"]
+    DistManager -->|"runQueries()"| SQLEngine["SQL Engine"]
+    SQLEngine --> VirtualTables["Virtual Tables"]
+
+    SQLEngine -->|"QueryData"| DistManager
+    DistManager -->|"serializeResults()"| TLSPlugin
+    TLSPlugin -->|"HTTPS POST"| RemoteServer

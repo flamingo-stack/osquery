@@ -1,0 +1,7 @@
+flowchart TD
+    Construct["Constructor"] --> Init["init()"]
+    Init --> AddSub["Add Subscriptions"]
+    AddSub --> Running["EVENT_RUNNING"]
+    Running --> Callback["Event Callback"]
+    Callback --> Store["addBatch()"]
+    Store --> Query["genTable()"]

@@ -1,5 +1,4 @@
-flowchart TD
-    Start["Core Start"] --> StartManager["startExtensionManager()"]
-    StartManager --> Watcher["ExtensionManagerWatcher"]
-    Watcher --> Runner["ExtensionManagerRunner"]
-    Runner --> Listen["Thrift Listen"]
+flowchart LR
+    Factory["PipeChannelFactory"] --> Ticket["PipeChannelTicket"]
+    Ticket --> Parent["Parent PipeChannel"]
+    Ticket --> Child["Child PipeChannel"]

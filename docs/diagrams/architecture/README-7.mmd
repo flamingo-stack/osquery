@@ -1,5 +1,4 @@
-flowchart TD
-    Modules["Core Modules"] --> Interface["IDatabaseInterface"]
-    Interface --> Plugin["Database Plugin"]
-    Plugin --> RocksDB["Persistent Backend"]
-    Plugin --> Ephemeral["In-Memory Backend"]
+flowchart LR
+    Core["osquery Core"] --> Manager["Extension Manager"]
+    Extension["Extension Process"] --> Manager
+    Core --> Extension

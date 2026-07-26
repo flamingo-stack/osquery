@@ -1,375 +1,355 @@
 # Extensions And Ipc
 
-The **Extensions And Ipc** module provides the inter-process communication (IPC) layer and extension framework that allows osquery to be extended at runtime. It enables external processes (extensions) to:
+The **Extensions And Ipc** module implements osquery’s external plugin system and its inter-process communication (IPC) layer. It enables osquery to dynamically load and communicate with external extension processes that provide additional tables, config plugins, logger plugins, and distributed query functionality.
 
-- Register new registry plugins (tables, config plugins, logger plugins, etc.)
-- Execute SQL queries via the core engine
-- Expose custom functionality to the osquery core
-- Communicate securely over platform-specific IPC channels
+This module is responsible for:
 
-This module is the foundation for osquery’s pluggable architecture, separating the core daemon from externally developed functionality while maintaining a controlled and versioned API boundary.
+- Managing the Extension Manager lifecycle
+- Registering and tracking extension processes
+- Exposing and consuming Thrift-based APIs
+- Routing registry calls across process boundaries
+- Monitoring extension health
+- Providing IPC primitives for worker/table isolation
 
----
-
-## 1. Purpose and Design Goals
-
-The Extensions And Ipc module is designed to:
-
-- ✅ Allow third-party or internal extensions to run as separate processes
-- ✅ Provide a stable RPC interface using Apache Thrift
-- ✅ Enforce SDK compatibility and version checks
-- ✅ Isolate crashes or faults from the core daemon
-- ✅ Support cross-platform IPC (UNIX domain sockets on POSIX, named pipes on Windows)
-
-At a high level, it implements:
-
-- An **Extension Manager** (running inside osquery core)
-- One or more **Extension Processes** (external binaries)
-- A **Thrift-based RPC layer**
-- Health monitoring and watchdog services
+Extensions allow osquery to be modular and extensible without modifying the core binary.
 
 ---
 
-## 2. High-Level Architecture
+## Architectural Overview
 
-The Extensions And Ipc module sits between:
+At runtime, osquery core starts an **Extension Manager** (a Thrift server). External extension binaries connect to it, register their registry routes, and start their own Thrift servers.
 
-- The **Registry subsystem** (plugin routing)
-- The **SQL engine** (query delegation)
-- The **Dispatcher and runtime threads**
-- External extension processes
+Communication happens over:
 
-### 2.1 Core–Extension Interaction Model
+- UNIX domain sockets (Linux/macOS)
+- Named pipes (Windows)
+
+### High-Level Flow
 
 ```mermaid
 flowchart LR
-    Core["osquery Core"] -->|"Starts"| Manager["Extension Manager"]
-    Manager -->|"Registers routes"| Registry["RegistryFactory"]
-
+    Core["osquery Core"] -->|"starts"| Manager["Extension Manager"]
     ExtensionProc["Extension Process"] -->|"registerExtension()"| Manager
-    Manager -->|"Assign UUID"| ExtensionProc
-
-    Core -->|"callExtension()"| Manager
-    Manager -->|"Route to UUID"| ExtensionProc
-
-    ExtensionProc -->|"Response"| Manager
-    Manager -->|"PluginResponse"| Core
+    Manager -->|"assigns UUID"| ExtensionProc
+    Core -->|"callExtension()"| ExtensionProc
+    ExtensionProc -->|"Thrift Response"| Core
 ```
 
-### 2.2 IPC and Thrift Layer
+### Major Components
+
+- **ExtensionInfo** – Metadata describing each extension
+- **ExtensionManagerInterface** – Core-side manager API
+- **ExtensionInterface** – Extension-side API implementation
+- **ExtensionRunner / ExtensionManagerRunner** – Thrift server runners
+- **ExtensionClient / ExtensionManagerClient** – Thrift clients
+- **ExtensionManagerWatcher** – Health monitoring
+- **ExternalSQLPlugin** – SQL proxy to extension-provided tables
+- **PipeChannelFactory** – POSIX IPC channel factory for table workers
+
+---
+
+## Extension Lifecycle
+
+### 1. Extension Manager Startup
+
+The core process calls `startExtensionManager()`:
+
+- Verifies socket path availability
+- Starts `ExtensionManagerWatcher`
+- Starts `ExtensionManagerRunner` (Thrift server)
+- Optionally waits for required extensions (`extensions_require` flag)
 
 ```mermaid
 flowchart TD
-    Client["ExtensionClient"] --> Transport["Thrift Transport"]
-    Transport --> Socket["UNIX Socket or Named Pipe"]
-    Socket --> Server["ExtensionRunner or ManagerRunner"]
-    Server --> Handler["ExtensionHandler or ExtensionManagerHandler"]
-    Handler --> Interface["ExtensionInterface / ExtensionManagerInterface"]
-    Interface --> Registry["RegistryFactory"]
+    Start["Core Startup"] --> ManagerStart["startExtensionManager()"]
+    ManagerStart --> Watcher["ExtensionManagerWatcher"]
+    ManagerStart --> Runner["ExtensionManagerRunner"]
+    Runner --> Listening["Thrift Server Listening"]
 ```
 
 ---
 
-## 3. Core Components
+### 2. Extension Registration
 
-### 3.1 Extension Metadata
+An extension binary calls:
 
-**Component:** `ExtensionInfo`
+- `startExtension()`
+- `ExtensionManagerClient::registerExtension()`
 
-Defined in `extensions.h`, this struct mirrors the Thrift `InternalExtensionInfo` type and contains:
+The manager:
 
-- `name`
-- `version`
-- `sdk_version`
-- `min_sdk_version`
-
-This metadata is validated during registration and stored in an `ExtensionList` keyed by a transient `RouteUUID`.
-
----
-
-### 3.2 Extension Manager (Core Side)
-
-**Key Classes:**
-
-- `ExtensionManagerInterface`
-- `ExtensionManagerHandler`
-- `ExtensionManagerRunner`
-- `ExtensionManagerWatcher`
-
-#### Responsibilities
-
-1. Accept extension registrations
-2. Assign unique `RouteUUID` values (via `UuidGenerator`)
-3. Validate SDK compatibility
-4. Maintain active extension metadata
-5. Route plugin calls to registered extensions
-6. Monitor extension health
-
-#### Registration Flow
+1. Validates SDK compatibility
+2. Assigns a unique `RouteUUID` (via `UuidGenerator`)
+3. Registers broadcasted registry routes
+4. Stores `ExtensionInfo`
 
 ```mermaid
 sequenceDiagram
     participant Ext as Extension Process
     participant EM as Extension Manager
-    participant Reg as RegistryFactory
 
     Ext->>EM: registerExtension(info, registry)
-    EM->>EM: Validate name uniqueness
-    EM->>EM: Check SDK compatibility
-    EM->>Reg: addBroadcast(uuid, registry)
-    EM-->>Ext: Return UUID
+    EM->>EM: validate SDK
+    EM->>EM: generate UUID
+    EM-->>Ext: ExtensionStatus(uuid)
+    Ext->>Ext: start ExtensionRunner
 ```
 
-If duplicate names or incompatible SDK versions are detected, registration fails.
+Core structures involved:
+
+- `ExtensionInfo`
+- `ExtensionManagerInterface::registerExtension`
+- `UuidGenerator`
+- `RegistryFactory::addBroadcast`
 
 ---
 
-### 3.3 Extension Process (External Binary)
+### 3. Serving Requests
 
-**Key Classes:**
+Once registered:
 
-- `ExtensionRunner`
-- `ExtensionInterface`
-- `ExtensionHandler`
+- The extension starts `ExtensionRunner`
+- The manager maintains route mappings
+- Core resolves registry calls to extension routes
 
-An extension process:
+When a plugin call is routed externally:
 
-1. Connects to the Extension Manager socket
-2. Registers its broadcasted registry routes
-3. Receives a `RouteUUID`
-4. Starts a Thrift server loop
-5. Waits for calls from the core
-
-Each extension serves the `Extension` Thrift service defined in the generated files.
-
----
-
-### 3.4 Thrift RPC Layer
-
-**Key Files:**
-
-- `impl_thrift.cpp`
-- Generated files under `thrift/gen/`
-
-The module uses Apache Thrift to define two services:
-
-1. `Extension` – implemented by extension processes
-2. `ExtensionManager` – implemented by osquery core
-
-#### Server-Side Wrappers
-
-- `ExtensionHandler` implements `ExtensionIf`
-- `ExtensionManagerHandler` implements `ExtensionManagerIf`
-
-These handlers:
-
-- Translate Thrift structures into internal `PluginRequest`/`PluginResponse`
-- Delegate logic to `ExtensionInterface` or `ExtensionManagerInterface`
-
-#### Client-Side Wrappers
-
-- `ExtensionClient`
-- `ExtensionManagerClient`
-
-They abstract:
-
-- Transport creation
-- Timeout configuration
-- Method invocation
-- Status translation
-
----
-
-### 3.5 Extension API Contracts
-
-The module defines abstract APIs:
-
-- `ExtensionAPI`
-- `ExtensionManagerAPI`
-
-These interfaces enforce a separation between:
-
-- Thrift transport concerns
-- Business logic
-
-This design allows alternative RPC backends in the future while preserving core logic.
-
----
-
-### 3.6 UUID Management
-
-**Component:** `UuidGenerator`
-
-- Generates 16-bit UUID values
-- Tracks active UUIDs in a thread-safe set
-- Removes UUIDs on deregistration
-
-UUIDs uniquely identify extension routes inside `RegistryFactory`.
-
----
-
-### 3.7 External SQL Plugin
-
-**Component:** `ExternalSQLPlugin`
-
-This special plugin allows the core SQL registry to delegate SQL queries to extensions.
+1. Core invokes `callExtension()`
+2. An `ExtensionClient` connects to the extension socket
+3. Thrift `call()` is executed
+4. Response is translated into `PluginResponse`
 
 ```mermaid
 flowchart LR
-    SQL["SQL Engine"] --> ExternalSQL["ExternalSQLPlugin"]
-    ExternalSQL --> ManagerClient["ExtensionManagerClient"]
-    ManagerClient --> Extension["Extension Process"]
+    Registry["RegistryFactory"] -->|"route match"| CallExt["callExtension()"]
+    CallExt --> Client["ExtensionClient"]
+    Client --> Thrift["Thrift call()"]
+    Thrift --> Response["PluginResponse"]
 ```
-
-Used when tables or query logic are implemented outside the core.
 
 ---
 
-### 3.8 Watchers and Health Monitoring
+## Core APIs
 
-**Key Classes:**
+### ExtensionAPI
 
-- `ExtensionWatcher`
-- `ExtensionManagerWatcher`
+Implemented by both core and extension sides.
 
-#### ExtensionWatcher
+Methods:
 
-- Runs inside extension processes
-- Periodically pings the manager
-- Exits fatally if the manager disappears
+- `ping()` – Health check
+- `call(registry, item, request, response)` – Execute registry plugin
+- `shutdown()` – Graceful termination
 
-#### ExtensionManagerWatcher
+### ExtensionManagerAPI
 
-- Runs inside core
-- Pings all registered extensions
-- Removes routes if extensions become unreachable
+Implemented only by the manager.
+
+Methods:
+
+- `extensions()` – List active extensions
+- `options()` – Return gflags snapshot
+- `registerExtension()` – Register routes
+- `deregisterExtension()` – Remove routes
+- `query()` – Execute SQL in core
+- `getQueryColumns()` – Return column metadata
+
+These interfaces are implemented in:
+
+- `ExtensionInterface`
+- `ExtensionManagerInterface`
+
+---
+
+## Thrift Layer
+
+The module uses Apache Thrift for RPC definitions.
+
+Generated files include:
+
+- `Extension.h`
+- `ExtensionManager.h`
+- `osquery_types.h`
+
+### Transport Abstraction
+
+Platform-dependent socket types:
+
+- `TServerSocket` / `TSocket` (POSIX)
+- `TPipeServer` / `TPipe` (Windows)
+
+Encapsulated in:
+
+- `ImplExtensionRunner`
+- `ImplExtensionClient`
+
+---
+
+## Extension Monitoring
+
+### ExtensionWatcher
+
+Monitors:
+
+- Manager socket availability
+- Registration state
+- Extension ping status
+
+If a fatal condition occurs:
+
+- Triggers `requestShutdown()`
+
+### ExtensionManagerWatcher
+
+Runs inside core and:
+
+- Iterates over registered `RouteUUID`s
+- Pings each extension
+- Removes stale routes if unresponsive
 
 ```mermaid
 flowchart TD
-    Watcher["ExtensionManagerWatcher"] --> UUIDs["Registered UUIDs"]
-    UUIDs --> Ping["Ping Extension"]
-    Ping -->|"Success"| Keep["Keep Registered"]
-    Ping -->|"Failure x2"| Remove["Remove Broadcast Route"]
+    Watcher["ExtensionManagerWatcher"] --> Check["Ping Extension"]
+    Check -->|"Success"| Keep["Keep Registered"]
+    Check -->|"Failure"| Remove["removeBroadcast()"]
 ```
 
 ---
 
-### 3.9 Autoloading and Security
+## SQL Integration
 
-Extensions can be autoloaded using:
+The `ExternalSQLPlugin` allows SQL queries to be executed by extensions.
 
-- `--extensions_autoload`
-- `--extension` (shell-only)
+Used when:
 
-Security checks include:
+- A virtual table is implemented externally
+- Query routing requires extension execution
 
-- File extension validation (`.ext`, `.exe` on Windows)
-- Directory permission safety checks
+Flow:
+
+1. SQL engine determines table is external
+2. `ExternalSQLPlugin::query()` invoked
+3. Manager forwards to extension
+
+See also: [Sql Core And Virtual Tables](../sql-core-and-virtual-tables/sql-core-and-virtual-tables.md)
+
+---
+
+## Flags and Configuration
+
+Key flags:
+
+- `extensions_socket`
+- `extensions_autoload`
+- `extensions_timeout`
+- `extensions_interval`
+- `extensions_require`
+- `disable_extensions`
+
+Autoload flow:
+
+1. Read `extensions_autoload` file
+2. Validate binary safety (permissions + extension type)
+3. Launch extension processes
+
+Safety checks include:
+
+- File existence
 - Ownership validation
-
-Unsafe or improperly permissioned binaries are rejected.
-
----
-
-### 3.10 IPC Channel Integration
-
-On POSIX systems, IPC is primarily UNIX domain sockets. Additionally, worker IPC may use pipe-based channels.
-
-**Component:** `GetChannelType<PipeChannelFactory>`
-
-This specialization maps a `PipeChannelFactory` to its underlying `PipeChannel` type, integrating extension communication with the worker IPC framework.
-
-This ensures consistent abstraction across:
-
-- Extension IPC
-- Worker-table IPC
-- Internal task communication
+- Allowed file extensions per platform
 
 ---
 
-## 4. Lifecycle Overview
+## IPC: PipeChannelFactory
 
-### 4.1 Core Startup
+In addition to Thrift IPC, this module integrates with the worker IPC subsystem.
+
+`PipeChannelFactory` provides:
+
+- POSIX pipe-based channel creation
+- Parent/child pipe setup
+- Automatic descriptor cleanup via `PipeChannelTicket`
+
+This is used by the worker table isolation framework.
 
 ```mermaid
-flowchart TD
-    Start["Core Start"] --> StartManager["startExtensionManager()"]
-    StartManager --> Watcher["ExtensionManagerWatcher"]
-    Watcher --> Runner["ExtensionManagerRunner"]
-    Runner --> Listen["Thrift Listen"]
+flowchart LR
+    Factory["PipeChannelFactory"] --> Ticket["PipeChannelTicket"]
+    Ticket --> Parent["Parent PipeChannel"]
+    Ticket --> Child["Child PipeChannel"]
 ```
 
-### 4.2 Extension Startup
+Core abstraction:
 
-```mermaid
-flowchart TD
-    ExtStart["Extension Binary Start"] --> Connect["Connect to Manager Socket"]
-    Connect --> Register["registerExtension()"]
-    Register --> UUID["Receive UUID"]
-    UUID --> StartServer["Start ExtensionRunner"]
-    StartServer --> Serve["Serve Thrift Requests"]
-```
-
-### 4.3 Shutdown Flow
-
-- Extension calls `shutdown()` or receives manager failure
-- Manager deregisters UUID
-- `RegistryFactory::removeBroadcast()` is invoked
-- Stale socket paths are cleaned via `removeStalePaths()`
+- `GetChannelType<PipeChannelFactory>` maps to `PipeChannel`
 
 ---
 
-## 5. Interaction with Other Subsystems
+## UUID Management
 
-The Extensions And Ipc module interacts with:
+Each extension is assigned a transient `RouteUUID`.
 
-- **RegistryFactory** – route registration and broadcast
-- **SQL Engine** – delegated queries
-- **Dispatcher** – background service threads
-- **Flags subsystem** – option propagation
-- **Filesystem utilities** – socket and permission checks
+Generated by:
 
-It acts as a boundary layer rather than a business-logic module.
+- `UuidGenerator`
+
+Characteristics:
+
+- 16-bit random ID
+- Uniqueness enforced via in-memory set
+- Released on deregistration
+
+UUID is used for:
+
+- Socket naming (`extensions_socket.<uuid>`)
+- Route mapping
+- Health checks
 
 ---
 
-## 6. Error Handling and Status Model
+## Failure Handling and Robustness
 
-All RPC responses use:
+The module includes several defensive mechanisms:
+
+- Timeout-based connection attempts (`applyExtensionDelay`)
+- SDK compatibility enforcement
+- Duplicate extension name rejection
+- Stale socket cleanup (`removeStalePaths`)
+- Watchdog-based removal of unresponsive extensions
+
+Failure states propagate through:
 
 - `ExtensionStatus`
-- `ExtensionResponse`
-- `ExtensionCode` (SUCCESS, FAILED, FATAL)
-
-This ensures:
-
-- Consistent status propagation across process boundaries
-- Clear failure semantics for SDK mismatches and duplicate registrations
+- `ExtensionCode` (`EXT_SUCCESS`, `EXT_FAILED`, `EXT_FATAL`)
 
 ---
 
-## 7. Security Considerations
+## Relationship to Other Modules
 
-The module enforces:
+Extensions And Ipc integrates closely with:
 
-- SDK version compatibility checks
-- Duplicate extension prevention
-- File permission validation for autoload
-- Socket path isolation per UUID
-- Controlled shutdown behavior
+- Registry system (plugin routing)
+- SQL engine (external table support)
+- Dispatcher (threaded services)
+- Core flags system
 
-On Windows, named pipes are secured using explicit security descriptors.
+Relevant modules:
+
+- [Sql Core And Virtual Tables](../sql-core-and-virtual-tables/sql-core-and-virtual-tables.md)
+- [Core Init Shutdown And Watcher](../core-init-shutdown-and-watcher/core-init-shutdown-and-watcher.md)
 
 ---
 
-## 8. Summary
+## Summary
 
-The **Extensions And Ipc** module is the runtime extension backbone of osquery. It:
+The **Extensions And Ipc** module provides the foundation for osquery’s plugin extensibility model.
 
-- Implements a bidirectional Thrift RPC system
-- Manages extension lifecycle and UUID assignment
-- Routes registry plugin calls across process boundaries
-- Monitors extension health
-- Enforces compatibility and security constraints
+It combines:
 
-Without this module, osquery would be a static binary. With it, osquery becomes a dynamic, pluggable platform capable of safely integrating externally developed functionality at runtime.
+- Thrift-based RPC
+- Dynamic registry broadcasting
+- Extension lifecycle management
+- Health monitoring
+- Cross-platform IPC abstraction
+
+This design allows osquery to remain secure, modular, and adaptable while keeping core functionality stable and isolated from third-party or experimental components.

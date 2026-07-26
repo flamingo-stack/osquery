@@ -1,11 +1,10 @@
 flowchart TD
-    Start["Process Start"] --> Init["Initializer"]
-    Init --> Flags["Parse Flags"]
-    Init --> Registry["Initialize Registry"]
-    Init --> DBInit["Initialize Database"]
-    Init --> ExtMgr["Start Extension Manager"]
-    Init --> ConfigLoad["Load Configuration"]
-    ConfigLoad --> Schedule["Build Schedule"]
-    Schedule --> QueryExec["Execute Queries"]
-    QueryExec --> Log["Log Results"]
-    Log --> End["Runtime Loop"]
+    Init["Initializer"] --> RoleCheck["Determine Role"]
+    RoleCheck --> WatcherProc["Watcher Process"]
+    RoleCheck --> WorkerProc["Worker Process"]
+
+    WatcherProc --> WorkerProc
+    WorkerProc --> Config
+    WorkerProc --> SQL
+    WorkerProc --> Events
+    WorkerProc --> Logging

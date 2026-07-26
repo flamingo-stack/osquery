@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Core Modules"] -->|"IDatabaseInterface"| OsqueryDB["OsqueryDatabase"]
+    OsqueryDB -->|"Wrapper Calls"| API["Global Database APIs"]
+    API -->|"Registry Lookup"| Registry["Plugin Registry"]
+    Registry -->|"Active Plugin"| Plugin["DatabasePlugin"]
+
+    Plugin --> RocksDB["Persistent Backend<br/>rocksdb"]
+    Plugin --> Ephemeral["Ephemeral Backend<br/>In-Memory"]

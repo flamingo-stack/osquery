@@ -1,0 +1,6 @@
+flowchart LR
+    Execute["Execute Query"] --> Add["addResult()"]
+    Add --> Buffer["results_"]
+    Buffer --> Serialize["serializeResults()"]
+    Serialize --> Flush["flushCompleted()"]
+    Flush --> Server["Remote Server"]

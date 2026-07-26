@@ -1,0 +1,6 @@
+flowchart TD
+    ShutdownStart["Shutdown Begins"] --> StartAlarm["Start AlarmRunnable"]
+    StartAlarm --> WaitLoop["Sleep 200ms Loop"]
+    WaitLoop --> CheckTimeout{"Timeout Exceeded?"}
+    CheckTimeout -->|"No"| WaitLoop
+    CheckTimeout -->|"Yes"| ForceExit["Force _Exit()"]

@@ -1,0 +1,6 @@
+flowchart TD
+    ConfigCore["Config"] --> ScheduleObj["Schedule"]
+    ScheduleObj --> PackA["Pack A"]
+    ScheduleObj --> PackB["Pack B"]
+    PackA --> QueriesA["Scheduled Queries"]
+    PackB --> QueriesB["Scheduled Queries"]

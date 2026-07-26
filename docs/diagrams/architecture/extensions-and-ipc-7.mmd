@@ -1,6 +1,0 @@
-flowchart TD
-    ExtStart["Extension Binary Start"] --> Connect["Connect to Manager Socket"]
-    Connect --> Register["registerExtension()"]
-    Register --> UUID["Receive UUID"]
-    UUID --> StartServer["Start ExtensionRunner"]
-    StartServer --> Serve["Serve Thrift Requests"]

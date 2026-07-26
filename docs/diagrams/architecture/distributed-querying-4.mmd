@@ -1,11 +1,8 @@
 sequenceDiagram
-    participant Node
-    participant TLS as "TLS Distributed Plugin"
+    participant Agent
+    participant TLS as TLSDistributedPlugin
     participant Server
 
-    Node->>TLS: pullUpdates()
-    TLS->>Server: POST read endpoint
-    Server->>TLS: JSON queries
-    TLS->>Node: return JSON
-    Node->>TLS: writeResults(JSON)
-    TLS->>Server: POST write endpoint
+    Agent->>TLS: writeResults(json)
+    TLS->>Server: POST write_endpoint
+    Server-->>TLS: Ack response

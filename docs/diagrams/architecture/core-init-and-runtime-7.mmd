@@ -1,6 +1,0 @@
-flowchart TD
-    SQL["SQL Query"] --> SQLite["SQLite Virtual Table API"]
-    SQLite --> QueryContext["QueryContext"]
-    QueryContext --> ConstraintMap["ConstraintMap"]
-    ConstraintMap --> ConstraintList["ConstraintList"]
-    ConstraintList --> TablePlugin["TablePlugin::generate()"]

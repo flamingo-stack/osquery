@@ -1,7 +1,10 @@
 flowchart TD
-    Query["SQL Query"] --> SQLite["SQLite Engine"]
-    SQLite --> Module["sqlite3_module"]
-    Module --> VirtualTable["VirtualTable Wrapper"]
-    VirtualTable --> TablePlugin["TablePlugin"]
-    TablePlugin --> OS["Operating System Data"]
-    OS --> Rows["Rows Returned"]
+    ScheduledQuery["ScheduledQuery"] --> SQLInternal["SQLInternal"]
+    SQLInternal --> SQLite["SQLite Engine"]
+    SQLite --> VirtualTable["VirtualTable"]
+    VirtualTable --> TableRegistry["TablePlugin Registry"]
+
+    SQLInternal --> Results["QueryData"]
+    Results --> Diff["DiffResults"]
+    Diff --> LogItem["QueryLogItem"]
+    LogItem --> Logging

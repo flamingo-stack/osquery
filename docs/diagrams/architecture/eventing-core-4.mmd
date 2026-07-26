@@ -1,0 +1,6 @@
+flowchart LR
+    Subscriber["EventSubscriber"] --> Create["Subscription::create()"]
+    Create --> Factory["EventFactory::addSubscription()"]
+    Factory --> Publisher["EventPublisher"]
+    Publisher --> Callback["EventCallback"]
+    Callback --> Subscriber

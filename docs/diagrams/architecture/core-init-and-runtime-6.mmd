@@ -1,7 +1,0 @@
-flowchart LR
-    Flag["host_identifier Flag"] --> Mode{{"Mode"}}
-    Mode -->|"uuid"| Hardware["Hardware UUID"]
-    Mode -->|"instance"| Instance["Instance UUID"]
-    Mode -->|"ephemeral"| Ephemeral["Random UUID"]
-    Mode -->|"specified"| Specified["Configured Identifier"]
-    Mode -->|"default"| Hostname["System Hostname"]

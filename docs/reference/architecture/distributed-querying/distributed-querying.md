@@ -1,272 +1,147 @@
 # Distributed Querying
 
-The **Distributed Querying** module enables remote orchestration and execution of SQL queries across a fleet of osquery nodes. It allows a central server to:
+## Overview
 
-- Push SQL queries to enrolled agents
-- Collect query results asynchronously
-- Monitor execution performance
-- Denylist problematic or long-running queries
+The **Distributed Querying** module enables remote orchestration of SQL queries across osquery agents. Instead of relying solely on locally scheduled queries, a central service can dynamically dispatch SQL statements to enrolled nodes and collect structured results over a secure transport.
 
-This module acts as the execution bridge between:
+This module provides:
 
-- The **SQL Engine and Virtual Tables** subsystem (local query execution)
-- The **Database and Storage Plugins** subsystem (state management)
-- The **Logging and Query Observability** subsystem (performance + result logging)
-- Remote transport implementations such as the TLS-based plugin
+- A transport-agnostic distributed query interface (`DistributedPlugin`)
+- A runtime manager for query lifecycle and execution (`Distributed`)
+- Data models for requests and results (`DistributedQueryRequest`, `DistributedQueryResult`)
+- A production-ready TLS-based implementation (`TLSDistributedPlugin`)
+- Query denylisting and execution safety controls
+- Performance monitoring integration
 
-At its core, Distributed Querying defines the request/response model, execution lifecycle, denylist logic, and plugin interface for retrieving and submitting distributed work.
+Distributed Querying integrates tightly with the SQL engine, plugin framework, remote transport layer, and configuration/flag system.
 
 ---
 
 ## Architectural Overview
 
+At a high level, Distributed Querying acts as a bridge between:
+
+- A **remote control plane** (TLS or custom distributed plugin)
+- The **local SQL execution engine**
+- The **internal result buffering and performance tracking system**
+
 ```mermaid
 flowchart TD
-    Server["Central Server"] -->|"HTTPS"| TLSPlugin["TLS Distributed Plugin"]
-    TLSPlugin -->|"getQueries()"| DistributedCore["Distributed Core"]
-    DistributedCore -->|"runQueries()"| SQLEngine["SQL Engine"]
-    SQLEngine -->|"QueryData"| DistributedCore
-    DistributedCore -->|"writeResults()"| TLSPlugin
-    TLSPlugin -->|"HTTPS"| Server
+    RemoteServer["Remote Server"] -->|"HTTPS POST"| TLSPlugin["TLSDistributedPlugin"]
+    TLSPlugin -->|"getQueries()"| DistPlugin["DistributedPlugin Interface"]
+    DistPlugin --> DistManager["Distributed Manager"]
 
-    DistributedCore -->|"recordQueryPerformance"| Observability["Query Observability"]
-    DistributedCore -->|"running state"| Storage["Database Plugins"]
+    DistManager -->|"runQueries()"| SQLEngine["SQL Engine"]
+    SQLEngine --> VirtualTables["Virtual Tables"]
+
+    SQLEngine -->|"QueryData"| DistManager
+    DistManager -->|"serializeResults()"| TLSPlugin
+    TLSPlugin -->|"HTTPS POST"| RemoteServer
 ```
 
-### Key Responsibilities
+### Core Responsibilities
 
 | Component | Responsibility |
 |------------|----------------|
-| Distributed Core | Lifecycle, queuing, denylisting, performance tracking |
-| Distributed Plugin | Abstract interface for remote work retrieval and result submission |
-| TLS Distributed Plugin | HTTPS implementation of Distributed Plugin |
-| SQL Engine | Executes queries against virtual tables |
-| Database Plugins | Persist running state and deduplication |
-| Observability | Tracks performance and execution metrics |
+| DistributedQueryRequest | Represents a remote query and identifier |
+| DistributedQueryResult | Encapsulates execution results, columns, and status |
+| DistributedPlugin | Abstract interface for distributed transports |
+| TLSDistributedPlugin | HTTPS-based implementation |
+| Distributed | Query lifecycle manager and execution coordinator |
 
 ---
 
-# Core Data Structures
+## Core Data Structures
 
-## DistributedQueryRequest
+### DistributedQueryRequest
 
-Represents a single unit of distributed work.
+Represents a single remote query instruction.
 
 ```text
 Fields:
-- id: Unique server-assigned identifier
-- query: SQL string to execute
+- query (string)  -> SQL statement to execute
+- id (string)     -> Server-provided unique identifier
 ```
 
-This structure is serialized/deserialized using:
+The module provides full JSON serialization and deserialization helpers:
 
-- `serializeDistributedQueryRequest`
-- `deserializeDistributedQueryRequest`
-- JSON string helpers for transport safety
+- serializeDistributedQueryRequest
+- deserializeDistributedQueryRequest
+- JSON string variants for network transmission
 
-### Example Server Payload
+This enables transport-neutral encoding across distributed plugins.
+
+---
+
+### DistributedQueryResult
+
+Represents the output of a distributed query execution.
+
+```text
+Fields:
+- request   -> Original DistributedQueryRequest
+- results   -> QueryData (row set)
+- columns   -> ColumnNames
+- status    -> Execution Status
+- message   -> Optional error or informational message
+```
+
+Serialization helpers allow structured transport back to the server.
+
+---
+
+## Distributed Plugin Interface
+
+The `DistributedPlugin` class extends the generic plugin framework and defines the contract for distributed communication.
+
+### Required Methods
+
+```text
+getQueries(std::string& json)
+writeResults(const std::string& json)
+```
+
+### getQueries()
+
+Expected server format:
 
 ```json
 {
   "queries": {
     "id1": "select * from osquery_info",
-    "id2": "select * from processes"
+    "id2": "select * from osquery_schedule"
   }
 }
 ```
 
-Each key becomes a `DistributedQueryRequest` instance.
+The plugin retrieves work from the remote endpoint and returns serialized JSON.
+
+### writeResults()
+
+Expected submission format:
+
+```json
+{
+  "queries": {
+    "id1": [
+      {"col1": "val1", "col2": "val2"}
+    ],
+    "id2": [
+      {"col1": "val1", "col2": "val2"}
+    ]
+  }
+}
+```
+
+The transport implementation determines how the JSON is transmitted (TLS, custom IPC, etc.).
 
 ---
 
-## DistributedQueryResult
+## TLS Distributed Plugin
 
-Encapsulates execution output and metadata.
+The `TLSDistributedPlugin` is the default production implementation.
 
-```text
-Fields:
-- request: Original DistributedQueryRequest
-- results: QueryData (rows)
-- columns: ColumnNames
-- status: Execution Status
-- message: Optional error or informational message
-```
-
-Serialized using:
-
-- `serializeDistributedQueryResult`
-- `deserializeDistributedQueryResult`
-
-This object ensures transport-neutral packaging of results.
-
----
-
-# Distributed Execution Lifecycle
-
-The `Distributed` class orchestrates the runtime behavior.
-
-```mermaid
-flowchart TD
-    Start["Pull Updates"] --> Accept["acceptWork()"]
-    Accept --> Pending{"Pending Queries?"}
-    Pending -->|"Yes"| Run["runQueries()"]
-    Run --> Deny{"Denylisted?"}
-    Deny -->|"No"| Execute["Execute via SQL Engine"]
-    Execute --> Record["recordQueryPerformance()"]
-    Record --> Queue["addResult()"]
-    Queue --> Flush["flushCompleted()"]
-    Deny -->|"Yes"| Skip["Skip Execution"]
-    Flush --> End["Cycle Complete"]
-```
-
----
-
-## 1. Pull Phase
-
-```cpp
-Status pullUpdates();
-```
-
-- Calls the active `DistributedPlugin`
-- Retrieves raw JSON work payload
-- Delegates parsing to `acceptWork()`
-
----
-
-## 2. Work Acceptance
-
-```cpp
-Status acceptWork(const std::string& work);
-```
-
-Behavior:
-
-- Parses `queries` section
-- Evaluates optional `discovery` queries
-- Enqueues only valid work
-
-### Discovery Query Logic
-
-- If no discovery query exists → enqueue
-- If discovery returns rows → enqueue
-- If discovery returns zero rows → skip
-
-This prevents unnecessary execution on nodes where the query is irrelevant.
-
----
-
-## 3. Denylisting Protection
-
-To prevent repeated execution of problematic queries, the module includes:
-
-- `checkAndSetAsRunning()`
-- `setAsNotRunning()`
-- `denylistedQueryTimestampExpired()`
-- `denylistDuration()`
-- `hashQuery()`
-
-### Denylist Mechanism
-
-```mermaid
-flowchart TD
-    Incoming["Incoming Query"] --> Check["checkAndSetAsRunning()"]
-    Check --> Running{"Already Running?"}
-    Running -->|"Within Duration"| Block["Denylisted"]
-    Running -->|"Expired"| Allow["Allow Execution"]
-    Check -->|"First Time"| Allow
-```
-
-The denylist key is derived from:
-
-```text
-SHA256(query)
-```
-
-This ensures consistent identification across restarts and transports.
-
----
-
-## 4. Query Execution
-
-```cpp
-Status runQueries();
-```
-
-For each pending request:
-
-1. Pop request from internal storage
-2. Execute via SQL engine
-3. Measure execution time
-4. Record performance
-5. Store result
-6. Clear running state
-
-Execution uses:
-
-```cpp
-SQL monitorNonnumeric(const std::string& name, const std::string& query);
-```
-
----
-
-## 5. Performance Recording
-
-Performance metrics are stored in:
-
-```text
-std::map<std::string, QueryPerformance> performance_
-```
-
-Tracked metrics include:
-
-- Execution duration
-- Row count
-- Sample process table deltas
-
-These integrate with the **Logging and Query Observability** module.
-
----
-
-## 6. Result Flushing
-
-```cpp
-Status flushCompleted();
-```
-
-- Serializes accumulated `DistributedQueryResult` objects
-- Sends them to the plugin via `writeResults()`
-- Clears local result queue
-
----
-
-# Plugin Interface
-
-## DistributedPlugin (Abstract)
-
-Defines the extension point for remote orchestration.
-
-```cpp
-virtual Status getQueries(std::string& json) = 0;
-virtual Status writeResults(const std::string& json) = 0;
-```
-
-The `call()` method acts as the unified entry point for plugin requests.
-
-Any transport (TLS, filesystem, custom RPC) can implement this interface.
-
----
-
-# TLS Distributed Plugin
-
-The **TLS Distributed Plugin** provides an HTTPS implementation of the plugin interface.
-
-Registered as:
-
-```text
-REGISTER(TLSDistributedPlugin, "distributed", "tls")
-```
-
-## Configuration Flags
+### Configuration Flags
 
 ```text
 --distributed_tls_read_endpoint
@@ -274,103 +149,266 @@ REGISTER(TLSDistributedPlugin, "distributed", "tls")
 --distributed_tls_max_attempts
 ```
 
-## Setup Phase
+### Setup Phase
 
-```cpp
-Status setUp();
+```mermaid
+flowchart TD
+    Flags["Distributed TLS Flags"] --> MakeURI["TLSRequestHelper.makeURI()"]
+    MakeURI --> ReadURI["read_uri_"]
+    MakeURI --> WriteURI["write_uri_"]
 ```
 
-- Builds read/write URIs
-- Uses TLS request helper utilities
+During initialization:
 
-## Query Retrieval
+- Read/write endpoints are constructed
+- TLS transport is configured via the remote subsystem
 
-```cpp
-Status getQueries(std::string& json);
-```
-
-- Sends POST to read endpoint
-- Returns JSON payload containing work
-
-## Result Submission
-
-```cpp
-Status writeResults(const std::string& json);
-```
-
-- Parses JSON
-- POSTs to write endpoint
-- Ignores server response body
-
----
-
-## TLS Data Flow
+### Query Retrieval
 
 ```mermaid
 sequenceDiagram
-    participant Node
-    participant TLS as "TLS Distributed Plugin"
+    participant Agent
+    participant TLS as TLSDistributedPlugin
     participant Server
 
-    Node->>TLS: pullUpdates()
-    TLS->>Server: POST read endpoint
-    Server->>TLS: JSON queries
-    TLS->>Node: return JSON
-    Node->>TLS: writeResults(JSON)
-    TLS->>Server: POST write endpoint
+    Agent->>TLS: getQueries()
+    TLS->>Server: POST read_endpoint
+    Server-->>TLS: JSON queries
+    TLS-->>Agent: JSON string
+```
+
+### Result Submission
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant TLS as TLSDistributedPlugin
+    participant Server
+
+    Agent->>TLS: writeResults(json)
+    TLS->>Server: POST write_endpoint
+    Server-->>TLS: Ack response
+```
+
+The TLS layer leverages:
+
+- TLSRequestHelper
+- JSON serialization utilities
+- Enrollment and node authentication
+
+---
+
+## Distributed Manager
+
+The `Distributed` class orchestrates the full lifecycle of distributed queries.
+
+### Execution Loop Model
+
+```mermaid
+flowchart TD
+    Start["Start Loop"] --> Pull["pullUpdates()"]
+    Pull --> Check["Pending Queries?"]
+    Check -->|"Yes"| Run["runQueries()"]
+    Run --> Flush["flushCompleted()"]
+    Flush --> Start
+    Check -->|"No"| Start
+```
+
+### Key Responsibilities
+
+#### 1. Pulling Work
+
+- Calls `DistributedPlugin::getQueries()`
+- Parses JSON
+- Applies discovery logic
+- Enqueues valid work
+
+#### 2. Discovery Query Handling
+
+Behavior:
+
+- If no discovery query → enqueue immediately
+- If discovery returns rows → enqueue
+- If discovery returns no rows → skip
+
+This allows server-controlled conditional execution.
+
+---
+
+## Denylisting and Concurrency Protection
+
+To prevent runaway or repeatedly failing queries, Distributed Querying implements denylisting.
+
+### Mechanism
+
+- Queries are hashed using SHA-256 (`hashQuery()`)
+- A running state is recorded
+- Re-execution within denylist duration is blocked
+
+```mermaid
+flowchart TD
+    Incoming["Incoming Query"] --> Hash["hashQuery()"]
+    Hash --> Check["checkAndSetAsRunning()"]
+    Check -->|"Denylisted"| Skip["Skip Execution"]
+    Check -->|"Allowed"| Execute["Run SQL"]
+```
+
+### Expiration
+
+- `denylistedQueryTimestampExpired()` determines expiration
+- Duration controlled by configuration flag
+- `cleanupExpiredRunningQueries()` removes stale locks
+
+This ensures:
+
+- No duplicate concurrent execution
+- Backoff after repeated failure
+- Protection against tight execution loops
+
+---
+
+## Query Execution and Performance Monitoring
+
+Distributed queries are executed through the SQL subsystem.
+
+### Execution Flow
+
+```mermaid
+flowchart TD
+    Dist["Distributed Manager"] --> Monitor["monitorNonnumeric()"]
+    Monitor --> SQLExec["SQL Execution"]
+    SQLExec --> Results["QueryData"]
+    SQLExec --> Perf["QueryPerformance"]
+    Perf --> Dist
+```
+
+### Performance Recording
+
+`recordQueryPerformance()` captures:
+
+- Execution latency
+- Result size
+- Process-level sampling rows
+
+Performance metrics are stored in:
+
+```text
+std::map<std::string, QueryPerformance> performance_
+```
+
+This allows integration with logging and monitoring subsystems.
+
+---
+
+## Result Buffering and Flushing
+
+Executed results are stored in memory:
+
+```text
+std::vector<DistributedQueryResult> results_
+```
+
+### Lifecycle
+
+1. Query executed
+2. Result wrapped in `DistributedQueryResult`
+3. Added via `addResult()`
+4. Serialized using `serializeResults()`
+5. Flushed through plugin `writeResults()`
+6. Buffer cleared
+
+```mermaid
+flowchart LR
+    Execute["Execute Query"] --> Add["addResult()"]
+    Add --> Buffer["results_"]
+    Buffer --> Serialize["serializeResults()"]
+    Serialize --> Flush["flushCompleted()"]
+    Flush --> Server["Remote Server"]
 ```
 
 ---
 
-# State Management
+## Integration with Other Subsystems
 
-Distributed Querying relies on persistent state to:
+Distributed Querying depends on several internal modules:
 
-- Track running queries
-- Store denylist timestamps
-- Maintain queued work
+- SQL core and virtual tables (query execution)
+- Remote HTTP and TLS transport (network layer)
+- Hashing utilities (SHA-256 computation)
+- Logging subsystem (status and result logging)
+- Database subsystem (tracking running state)
+- Core flags and configuration (endpoint and behavior tuning)
 
-This state is handled through the Database and Storage Plugins subsystem.
-
----
-
-# Security Model
-
-Key security properties:
-
-1. Query integrity validated via SHA-256 hashing
-2. HTTPS transport in TLS plugin
-3. Configurable retry attempts
-4. Denylist prevents execution storms
-
-The denylist duration is configurable via runtime flags.
+It acts as a coordination layer rather than a standalone engine.
 
 ---
 
-# Integration Points
+## Error Handling and Status Propagation
 
-Distributed Querying integrates with:
+All major operations return `Status` objects:
 
-- SQL Engine and Virtual Tables (local execution)
-- Database and Storage Plugins (persistent state)
-- Logging and Query Observability (performance tracking)
-- Extensions and IPC (optional distributed plugin implementations)
-- Remote HTTP Client (transport layer headers and networking)
+- Network failures
+- JSON parsing errors
+- SQL execution failures
+- Serialization errors
 
-Sibling module reference:
-
-- [Remote HTTP Client](../remote-http-client/remote-http-client.md)
+`DistributedQueryResult` embeds both execution status and message for full round-trip transparency to the remote server.
 
 ---
 
-# Summary
+## Security Model
 
-The **Distributed Querying** module provides:
+Security in Distributed Querying relies on:
 
-- A structured request/response model
-- Pluggable transport abstraction
-- Controlled query lifecycle management
-- Built-in denylisting and performance tracking
-- Secure TLS-based remote orchestration
+- TLS-secured endpoints
+- Enrollment-based authentication
+- SHA-256 query hashing
+- Denylist execution guards
+- Controlled configuration flags
 
-It transforms osquery from a local query engine into a centrally orchestrated distributed telemetry system while preserving execution safety and observability guarantees.
+Sensitive data is not persisted beyond necessary buffers, and results are serialized explicitly before transmission.
+
+---
+
+## End-to-End Workflow Summary
+
+```mermaid
+sequenceDiagram
+    participant Server
+    participant Agent
+    participant SQL
+
+    Agent->>Server: Request distributed work
+    Server-->>Agent: JSON query set
+    Agent->>SQL: Execute query
+    SQL-->>Agent: QueryData
+    Agent->>Server: Submit results
+```
+
+### Step-by-Step
+
+1. Agent pulls distributed work
+2. Queries are parsed and validated
+3. Discovery logic applied
+4. Denylist check performed
+5. SQL executed
+6. Performance metrics recorded
+7. Results serialized
+8. Results sent back to server
+9. Running state cleared
+
+---
+
+## Conclusion
+
+The **Distributed Querying** module transforms osquery from a purely scheduled local query engine into a centrally orchestrated distributed telemetry system.
+
+It provides:
+
+- A flexible plugin-based transport abstraction
+- Safe, denylisted execution control
+- Performance instrumentation
+- Structured request/result serialization
+- TLS-backed production transport
+
+By separating transport (`DistributedPlugin`) from execution management (`Distributed`), the module enables extensibility while preserving execution safety and observability.

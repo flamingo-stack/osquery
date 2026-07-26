@@ -1,0 +1,9 @@
+flowchart TD
+    Init["Initialize Request"] --> Resolve["DNS Resolve"]
+    Resolve --> Connect["TCP Connect"]
+    Connect --> TLS{"TLS Enabled?"}
+    TLS -->|"Yes"| Handshake["TLS Handshake"]
+    TLS -->|"No"| Write["Write HTTP Request"]
+    Handshake --> Write
+    Write --> Read["Read HTTP Response"]
+    Read --> Complete["Return HTTP_Response"]
