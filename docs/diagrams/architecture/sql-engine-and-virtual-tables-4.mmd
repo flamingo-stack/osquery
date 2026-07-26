@@ -1,5 +1,0 @@
-flowchart TD
-    Query["SQL Query"] --> ExplainPlan["EXPLAIN QUERY PLAN"]
-    Query --> Explain["EXPLAIN"]
-    Explain --> OpcodeMap["kSQLOpcodes Mapping"]
-    OpcodeMap --> TypeInference["Apply Column Types"]

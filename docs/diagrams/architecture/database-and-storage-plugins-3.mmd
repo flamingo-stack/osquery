@@ -1,6 +1,0 @@
-flowchart TD
-    Start["Startup"] --> CheckFlag{{"disable_database?"}}
-    CheckFlag -->|"No"| UseRocksDB["Activate RocksDB Plugin"]
-    CheckFlag -->|"Yes"| UseEphemeral["Activate Ephemeral Plugin"]
-    UseRocksDB --> InitDone["Database Initialized"]
-    UseEphemeral --> InitDone

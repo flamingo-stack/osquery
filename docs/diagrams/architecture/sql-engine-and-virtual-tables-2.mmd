@@ -1,5 +1,0 @@
-flowchart LR
-    Caller["Caller"] --> GetConn["SQLiteDBManager.get()"]
-    GetConn --> PrimaryCheck{"Primary Available?"}
-    PrimaryCheck -->|Yes| Primary["Primary SQLiteDBInstance"]
-    PrimaryCheck -->|No| Transient["Transient SQLiteDBInstance"]

@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Start Network Call"] --> Timer["Start Deadline Timer"]
-    Timer --> Async["Async Operation"]
-    Async --> Complete{"Completed?"}
-    Complete -->|"Yes"| CancelTimer["Cancel Timer"]
-    Complete -->|"No"| Timeout["Timer Fires"]
-    Timeout --> Abort["Abort Socket"]
-    CancelTimer --> Return["Return Response"]
-    Abort --> Return

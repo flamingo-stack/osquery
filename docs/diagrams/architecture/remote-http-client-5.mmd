@@ -1,6 +1,0 @@
-flowchart TD
-    Connect["TCP Connect"] --> TLSCheck{"SSL Enabled?"}
-    TLSCheck -->|"Yes"| Handshake["TLS Handshake"]
-    TLSCheck -->|"No"| Plain["Plain HTTP"]
-    Handshake --> Send["Send Request"]
-    Plain --> Send
