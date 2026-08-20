@@ -10,6 +10,7 @@
 #include "tls.h"
 #include "openframe/openframe_authorization_manager.h"
 #include "openframe/openframe_authorization_manager_provider.h"
+#include "openframe/openframe_machine_id_provider.h"
 
 #include <chrono>
 #include <osquery/core/core.h>
@@ -102,6 +103,11 @@ void TLSTransport::decorateRequest(http::Request& r) {
     std::string token = auth_manager.getToken();
     if (!token.empty()) {
       r << http::Request::Header("Authorization", "Bearer " + token);
+    }
+
+    auto machine_id = OpenframeMachineIdProvider::getInstance().getMachineId();
+    if (!machine_id.empty()) {
+      r << http::Request::Header(kOpenframeMachineIdHeader, machine_id);
     }
   }
 }
