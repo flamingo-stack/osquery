@@ -105,7 +105,7 @@ Status OpenBSMNetEvSubscriber::Callback(
           r["action"] = "connect";
         } else if (tok.tt.hdr32_ex.e_type == AUE_BIND) {
           r["action"] = "bind";
-        } else if (tok.tt.hdr32.e_type == AUE_ACCEPT) {
+        } else if (tok.tt.hdr32_ex.e_type == AUE_ACCEPT) {
           r["action"] = "accept";
         } else {
           continue;
@@ -118,7 +118,7 @@ Status OpenBSMNetEvSubscriber::Callback(
           r["action"] = "connect";
         } else if (tok.tt.hdr64_ex.e_type == AUE_BIND) {
           r["action"] = "bind";
-        } else if (tok.tt.hdr64.e_type == AUE_ACCEPT) {
+        } else if (tok.tt.hdr64_ex.e_type == AUE_ACCEPT) {
           r["action"] = "accept";
         } else {
           continue;
@@ -146,7 +146,7 @@ Status OpenBSMNetEvSubscriber::Callback(
       case AUT_SUBJECT64:
         r["auid"] = INTEGER(tok.tt.subj64.auid);
         r["pid"] = INTEGER(tok.tt.subj64.pid);
-        pid = tok.tt.subj32.pid;
+        pid = tok.tt.subj64.pid;
         break;
       case AUT_SUBJECT32_EX:
         r["auid"] = INTEGER(tok.tt.subj32_ex.auid);
@@ -234,3 +234,4 @@ Status OpenBSMNetEvSubscriber::Callback(
 }
 
 } // namespace osquery
+
