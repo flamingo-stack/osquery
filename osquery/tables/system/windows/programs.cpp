@@ -68,17 +68,16 @@ std::string findSelfClosingTag(const std::string& xml,
 
 // Convert a Unix timestamp to a date in YYYYMMDD format
 std::string formatTimestampToDate(time_t timestamp) {
-  try {
-    // Convert the timestamp to a tm structure
-    std::tm* timeInfo = std::gmtime(&timestamp);
-
-    // Format the date as YYYYMMDD
-    std::ostringstream oss;
-    oss << std::put_time(timeInfo, "%Y%m%d");
-    return oss.str();
-  } catch (...) {
+  // Convert the timestamp to a tm structure
+  std::tm* timeInfo = std::gmtime(&timestamp);
+  if (timeInfo == nullptr) {
     return "";
   }
+
+  // Format the date as YYYYMMDD
+  std::ostringstream oss;
+  oss << std::put_time(timeInfo, "%Y%m%d");
+  return oss.str();
 }
 
 std::string packageFamilyNameFromPackageFullName(
@@ -457,3 +456,4 @@ QueryData genPrograms(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
