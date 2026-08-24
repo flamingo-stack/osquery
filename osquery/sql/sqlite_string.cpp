@@ -221,17 +221,19 @@ static void concatFunc(sqlite3_context* context,
   }
 
   std::string output;
+  bool wroteAny = false;
 
   for (auto i = starting; i < argc; i++) {
     if (SQLITE_NULL == sqlite3_value_type(argv[i])) {
       continue;
     }
 
-    output.append(reinterpret_cast<const char*>(sqlite3_value_text(argv[i])));
-
-    if (sep != "" && i + 1 < argc) {
+    if (wroteAny && sep != "") {
       output.append(sep);
     }
+
+    output.append(reinterpret_cast<const char*>(sqlite3_value_text(argv[i])));
+    wroteAny = true;
   }
 
   // Give up if the output is so large it's length overflows int
@@ -354,3 +356,4 @@ void registerStringExtensions(sqlite3* db) {
                           nullptr);
 }
 } // namespace osquery
+
