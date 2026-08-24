@@ -121,7 +121,7 @@ def queries_from_pack(pack_path):
         exit(1)
 
     if "queries" not in pack:
-        print("%s parsed as JSON, but does not contain a 'queries' stanza. Is it really an osquery pack?" % config_path)
+        print("%s parsed as JSON, but does not contain a 'queries' stanza. Is it really an osquery pack?" % pack_path)
         exit(1)
 
     queries = {}
@@ -228,9 +228,10 @@ def profile_cmd(cmd, proc=None, shell=False, timeout=0, count=1):
         "user_time": stats["cpu_times"].user,
         "system_time": stats["cpu_times"].system,
         "cpu_time": stats["cpu_times"].user + stats["cpu_times"].system,
-        "exit": p.wait(),
+        "exit": exit_code,
     }
 
     if stats.get("fds") is not None:
         rval["fds"] = stats["fds"]
     return rval
+
