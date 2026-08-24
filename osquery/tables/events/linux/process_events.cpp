@@ -206,7 +206,7 @@ Status AuditProcessEventSubscriber::ProcessEvents(
                            event_data.syscall_number,
                            *syscall_event_record);
     if (!s.ok()) {
-      VLOG(1) << "Malformed AUDIT_SYSCALL event: " << status.getMessage();
+      VLOG(1) << "Malformed AUDIT_SYSCALL event: " << s.getMessage();
       continue;
     }
 
@@ -388,3 +388,4 @@ AuditProcessEventSubscriber::GetSyscallNameMap() noexcept {
   return kSyscallNameMap;
 }
 } // namespace osquery
+
