@@ -77,13 +77,13 @@ void WmiResultItem::PrintType(const std::string& name) const {
   VARIANT value;
   HRESULT hr = result_->Get(property_name.c_str(), 0, &value, nullptr, nullptr);
   if (hr != S_OK) {
-    std::cerr << "Failed: " << name << "\n";
+    LOG(INFO) << "Failed: " << name;
   } else {
-    std::cout << "Name=" << name << ", Type=" << value.vt << "\n";
+    VLOG(1) << "Name=" << name << ", Type=" << value.vt;
     if (value.vt == VT_I4) {
-      std::cout << "  Value=" << value.lVal << "\n";
+      VLOG(1) << "  Value=" << value.lVal;
     } else if (value.vt == VT_BSTR) {
-      std::wcout << "  Value=" << value.bstrVal << "\n";
+      VLOG(1) << "  Value=" << wstringToString(value.bstrVal);
     }
   }
   VariantClear(&value);
@@ -238,7 +238,7 @@ Status WmiResultItem::GetUnsignedLong(const std::string& name,
     VariantClear(&value);
     return Status::failure("Invalid data type returned.");
   }
-  ret = value.lVal;
+  ret = value.ulVal;
   VariantClear(&value);
   return Status::success();
 }
@@ -255,7 +255,7 @@ Status WmiResultItem::GetLongLong(const std::string& name,
     VariantClear(&value);
     return Status::failure("Invalid data type returned.");
   }
-  ret = value.lVal;
+  ret = value.llVal;
   VariantClear(&value);
   return Status::success();
 }
@@ -272,7 +272,7 @@ Status WmiResultItem::GetUnsignedLongLong(const std::string& name,
     VariantClear(&value);
     return Status::failure("Invalid data type returned.");
   }
-  ret = value.lVal;
+  ret = value.ullVal;
   VariantClear(&value);
   return Status::success();
 }
