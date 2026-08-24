@@ -240,7 +240,7 @@ class TableState(Singleton):
                         column_options.append("ColumnOptions::" + COLUMN_OPTIONS[option])
                     all_options.append(COLUMN_OPTIONS[option])
                 else:
-                    print(yellow(
+                    print(lightred(
                         "Table %s column %s contains an unknown option: %s" % (
                             self.table_name, column.name, option)))
             column.options_set = " | ".join(column_options)
