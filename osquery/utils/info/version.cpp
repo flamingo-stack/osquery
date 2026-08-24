@@ -11,7 +11,6 @@
 #include <osquery/utils/conversions/split.h>
 
 #include <stdexcept>
-#include <stdexcept>
 
 namespace osquery {
 
@@ -49,3 +48,4 @@ bool versionAtLeast(const std::string& v, const std::string& sdk) {
 }
 
 } // namespace osquery
+
