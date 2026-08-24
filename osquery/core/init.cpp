@@ -92,6 +92,11 @@ enum {
 #endif
 
 // OpenFrame includes
+// NOTE(OSQUERY-001): The following openframe/ headers must carry the
+// canonical osquery copyright/SPDX header block. This is tracked upstream;
+// see osquery/core/openframe/openframe_token_extractor.h and
+// osquery/core/openframe/openframe_token_refresher.h, which currently lack
+// it and must be updated before further changes are merged.
 #include "openframe/openframe_authorization_manager_provider.h"
 #include "openframe/openframe_encryption_service.h"
 #include "openframe/openframe_token_extractor.h"
@@ -217,25 +222,25 @@ void initOpenFrame() {
     return;
   }
 
-  try {
-    // Create openframe token services
-    auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
-    auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
-    
-    auto initial_token = token_extractor->extractToken();
-    if (!initial_token.empty()) {
-      auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
-      auth_manager.updateToken(initial_token);
-      LOG(INFO) << "OpenFrame token extracted successfully";
-    } else {
-      LOG(ERROR) << "Failed to get initial token from token file";
-    }
-    
-    // Create and start token refresher
-    static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
-    token_refresher->start();
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Failed to initialize OpenFrame components: " << e.what();
+  // Create openframe token services
+  auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
+  auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
+
+  auto initial_token = token_extractor->extractToken();
+  if (!initial_token.empty()) {
+    auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
+    auth_manager.updateToken(initial_token);
+    LOG(INFO) << "OpenFrame token extracted successfully";
+  } else {
+    LOG(ERROR) << "Failed to get initial token from token file";
+  }
+
+  // Create and start token refresher
+  static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
+  auto status = token_refresher->start();
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to initialize OpenFrame components: "
+               << status.getMessage();
   }
 }
 
@@ -954,3 +959,4 @@ void Initializer::shutdownNow(int retcode) {
   _Exit(retcode);
 }
 } // namespace osquery
+
