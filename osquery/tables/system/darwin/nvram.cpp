@@ -130,7 +130,7 @@ QueryData genNVRAM(QueryContext& context) {
           genSingleVariable(options, key, results);
         }));
   } else {
-    CFMutableDictionaryRef options_dict;
+    CFMutableDictionaryRef options_dict = nullptr;
     kr = IORegistryEntryCreateCFProperties(
         options, &options_dict, kCFAllocatorDefault, 0);
     if (kr != KERN_SUCCESS) {
@@ -140,7 +140,9 @@ QueryData genNVRAM(QueryContext& context) {
     }
 
     // Cleanup (registry entry context).
-    CFRelease(options_dict);
+    if (options_dict != nullptr) {
+      CFRelease(options_dict);
+    }
   }
 
   IOObjectRelease(options);
@@ -148,3 +150,4 @@ QueryData genNVRAM(QueryContext& context) {
 }
 }
 }
+
