@@ -172,7 +172,7 @@ int getBluetoothSharingStatus() {
           continue;
         }
         for (const auto& r : bluetoothSharingStatus) {
-          if (r.find("key") == row.end() || row.find("value") == r.end()) {
+          if (r.find("key") == r.end() || r.find("value") == r.end()) {
             continue;
           }
           if (r.at("key") == "PrefKeyServicesEnabled" &&
@@ -220,3 +220,4 @@ QueryData genSharingPreferences(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+
