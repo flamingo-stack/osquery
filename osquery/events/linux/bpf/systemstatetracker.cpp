@@ -42,7 +42,8 @@ SystemStateTracker::Ref SystemStateTracker::create() {
   IProcessContextFactory::Ref process_context_factory;
   auto status = IProcessContextFactory::create(process_context_factory);
   if (!status) {
-    throw status;
+    LOG(ERROR) << "Failed to create the state tracker: " << status.getMessage();
+    return nullptr;
   }
 
   return create(std::move(process_context_factory));
@@ -51,12 +52,16 @@ SystemStateTracker::Ref SystemStateTracker::create() {
 SystemStateTracker::Ref SystemStateTracker::create(
     IProcessContextFactory::Ref process_context_factory) {
   try {
-    return SystemStateTracker::Ref(
+    std::unique_ptr<SystemStateTracker> tracker(
         new SystemStateTracker(std::move(process_context_factory)));
 
-  } catch (const Status& status) {
-    LOG(ERROR) << "Failed to create the state tracker: " << status.getMessage();
-    return nullptr;
+    auto status = tracker->restart();
+    if (!status.ok()) {
+      LOG(ERROR) << "Failed to create the state tracker: " << status.getMessage();
+      return nullptr;
+    }
+
+    return SystemStateTracker::Ref(tracker.release());
 
   } catch (const std::bad_alloc&) {
     return nullptr;
@@ -271,11 +276,6 @@ SystemStateTracker::SystemStateTracker(
     : d(new PrivateData) {
   d->last_expiration = getUnixTime();
   d->process_context_factory = std::move(process_context_factory);
-
-  auto status = restart();
-  if (!status.ok()) {
-    throw status;
-  }
 }
 
 ProcessContext& SystemStateTracker::getProcessContext(
@@ -1357,3 +1357,4 @@ SystemStateTracker::Context SystemStateTracker::getContextCopy() const {
 }
 
 } // namespace osquery
+
