@@ -8,7 +8,7 @@
  */
 
 // Sanity check integration test for wmi_tpm_info
-// Spec file: specs/windows/wmi_script_event_consumers.table
+// Spec file: specs/windows/tpm_info.table
 
 #include <osquery/tests/integration/tables/helper.h>
 #include <osquery/utils/info/platform_type.h>
@@ -43,3 +43,4 @@ TEST_F(TpmInfo, test_sanity) {
 
 } // namespace table_tests
 } // namespace osquery
+
