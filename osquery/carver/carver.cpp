@@ -334,6 +334,8 @@ Status Carver::postCarve(const boost::filesystem::path& path) {
   auto contUri = TLSRequestHelper::makeURI(FLAGS_carver_continue_endpoint);
   Request<TLSTransport, JSONSerializer> contRequest(contUri);
   contRequest.setOption("hostname", FLAGS_tls_hostname);
+  bool anyBlockFailed = false;
+  Status blockFailureStatus;
   for (size_t i = 0; i < blkCount; i++) {
     std::vector<char> block(FLAGS_carver_block_size, 0);
     auto r = pFile.read(block.data(), FLAGS_carver_block_size);
@@ -349,13 +351,21 @@ Status Carver::postCarve(const boost::filesystem::path& path) {
     params.add("request_id", requestId_);
     params.add("data", base64::encode(std::string(block.begin(), block.end())));
 
-    // TODO: Error sending files.
     status = contRequest.call(params);
     if (!status.ok()) {
       VLOG(1) << "Post of carved block " << i
               << " failed: " << status.getMessage();
+      anyBlockFailed = true;
+      blockFailureStatus = status;
       continue;
     }
+  }
+
+  if (anyBlockFailed) {
+    updateCarveValue(carveGuid_, "status", "DATA POST FAILED");
+    return Status(1,
+                   "Failed to post one or more carved blocks: " +
+                       blockFailureStatus.getMessage());
   }
 
   updateCarveValue(carveGuid_, "status", kCarverStatusSuccess);
@@ -369,3 +379,4 @@ void scheduleCarves() {
   }
 }
 } // namespace osquery
+
