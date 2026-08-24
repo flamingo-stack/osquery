@@ -10,16 +10,17 @@
 #include <osquery/utils/system/errno.h>
 
 #include <string.h>
+#include <cstddef>
 #include <vector>
 
-#define MAX_BUFFER_SIZE 256
+constexpr std::size_t kMaxBufferSize = 256;
 
 namespace osquery {
 const auto kWindowsLanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
 
 std::string platformStrerr(int errnum) {
   std::vector<char> buffer;
-  buffer.assign(MAX_BUFFER_SIZE, '\0');
+  buffer.assign(kMaxBufferSize, '\0');
 
   auto status = ::strerror_s(buffer.data(), buffer.size(), errnum);
   if (status != 0) {
@@ -57,3 +58,4 @@ Status getWindowsErrorDescription(std::wstring& error_message, DWORD error_id) {
 }
 
 } // namespace osquery
+
