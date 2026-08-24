@@ -35,27 +35,27 @@
 namespace osquery {
 namespace tables {
 
-const std::string windowsSearchTableName = "windows_search";
+const std::string kWindowsSearchTableName = "windows_search";
 
 LONGLONG dateToUnixTime(const DATE date) {
   SYSTEMTIME st = {0};
   FILETIME ft = {0};
 
   if (!VariantTimeToSystemTime(date, &st)) {
-    LOG(ERROR) << windowsSearchTableName
+    LOG(ERROR) << kWindowsSearchTableName
                << ": failed to convert date to system time";
     return 0;
   }
 
   if (!SystemTimeToFileTime(&st, &ft)) {
-    LOG(ERROR) << windowsSearchTableName
+    LOG(ERROR) << kWindowsSearchTableName
                << ": failed to convert system time to file time";
     return 0;
   }
 
   LONGLONG unixtime = filetimeToUnixtime(ft);
   if (unixtime == 0) {
-    LOG(ERROR) << windowsSearchTableName
+    LOG(ERROR) << kWindowsSearchTableName
                << ": failed to convert file time to unix time";
     return 0;
   }
@@ -72,7 +72,7 @@ void writePropVariant(REFPROPVARIANT variant, std::wstringstream& wss) {
         SafeArrayAccessData(variant.parray, reinterpret_cast<void**>(&pBStr));
 
     if (FAILED(hr)) {
-      LOG(ERROR) << windowsSearchTableName << ": SafeArrayAccessData failed";
+      LOG(ERROR) << kWindowsSearchTableName << ": SafeArrayAccessData failed";
       return;
     }
 
@@ -220,7 +220,7 @@ osquery::QueryData executeWindowsSearchQuery(CSession& cSession,
   hr = cCommand.Open(cSession, query.c_str());
 
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": error executing query";
+    LOG(ERROR) << kWindowsSearchTableName << ": error executing query";
     return results;
   }
 
@@ -256,7 +256,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
                         CLSCTX_LOCAL_SERVER,
                         IID_PPV_ARGS(&pSearchManager));
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName
+    LOG(ERROR) << kWindowsSearchTableName
                << ": failed to create ISearchManager instance";
     return "";
   }
@@ -269,7 +269,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   // the ISearchCatalogManager
   hr = pSearchManager->GetCatalog(L"SystemIndex", &pSearchCatalogManager);
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": failed to get catalog manager";
+    LOG(ERROR) << kWindowsSearchTableName << ": failed to get catalog manager";
     return "";
   }
   auto const pSearchCatalogManagerGuard = scope_guard::create(
@@ -280,7 +280,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   ISearchQueryHelper* pQueryHelper = nullptr;
   hr = pSearchCatalogManager->GetQueryHelper(&pQueryHelper);
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": failed to get query helper";
+    LOG(ERROR) << kWindowsSearchTableName << ": failed to get query helper";
     return "";
   }
   auto const pQueryHelperGuard =
@@ -288,7 +288,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
 
   hr = pQueryHelper->put_QueryMaxResults(maxResults);
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": failed to set max results";
+    LOG(ERROR) << kWindowsSearchTableName << ": failed to set max results";
     return "";
   }
 
@@ -309,7 +309,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
     hr = pQueryHelper->put_QuerySelectColumns(
         stringToWstring(selectColumns).c_str());
     if (FAILED(hr)) {
-      LOG(ERROR) << windowsSearchTableName << ": failed to set columns";
+      LOG(ERROR) << kWindowsSearchTableName << ": failed to set columns";
       return "";
     }
   }
@@ -317,7 +317,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   if (!sort.empty()) {
     hr = pQueryHelper->put_QuerySorting(stringToWstring(sort).c_str());
     if (FAILED(hr)) {
-      LOG(ERROR) << windowsSearchTableName << ": failed to set sort";
+      LOG(ERROR) << kWindowsSearchTableName << ": failed to set sort";
       return "";
     }
   }
@@ -326,7 +326,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   hr = pQueryHelper->GenerateSQLFromUserQuery(
       stringToWstring(userInput).c_str(), &sql);
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName
+    LOG(ERROR) << kWindowsSearchTableName
                << ": failed to generate SQL from user query";
     return "";
   }
@@ -347,7 +347,7 @@ QueryData genWindowsSearch(QueryContext& context) {
       L"provider=Search.CollatorDSO.1;EXTENDED "
       L"PROPERTIES=\"Application=Windows\"");
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": error initializing CDataSource";
+    LOG(ERROR) << kWindowsSearchTableName << ": error initializing CDataSource";
     return results;
   }
   auto const cDataSourceGuard =
@@ -356,7 +356,7 @@ QueryData genWindowsSearch(QueryContext& context) {
   CSession cSession;
   hr = cSession.Open(cDataSource);
   if (FAILED(hr)) {
-    LOG(ERROR) << windowsSearchTableName << ": error opening CSession";
+    LOG(ERROR) << kWindowsSearchTableName << ": error opening CSession";
     return results;
   }
   auto const cSessionGuard =
@@ -476,3 +476,4 @@ QueryData genWindowsSearch(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+
