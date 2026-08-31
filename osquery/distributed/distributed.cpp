@@ -49,6 +49,7 @@ FLAG(uint64,
      "Seconds to denylist distributed queries (default 1 day)");
 
 DECLARE_bool(verbose);
+DECLARE_bool(openframe_mode);
 
 std::string Distributed::currentRequestId_{""};
 
@@ -153,6 +154,7 @@ void Distributed::addResult(const DistributedQueryResult& result) {
 
 Status Distributed::runQueries() {
   auto queries = getPendingQueries();
+  size_t failed = 0;
 
   for (const auto& query : queries) {
     auto request = popRequest(query);
@@ -166,6 +168,7 @@ Status Distributed::runQueries() {
       result.status = Status(1, "Denylisted");
       result.message = "distributed query is denylisted";
       addResult(result);
+      ++failed;
       continue;
     }
 
@@ -184,6 +187,7 @@ Status Distributed::runQueries() {
     const auto ok = sql.getStatus().ok();
     const auto& msg = ok ? "" : sql.getMessageString();
     if (!ok) {
+      ++failed;
       LOG(ERROR) << "Error executing distributed query: " << request.id << ": "
                  << msg;
     }
@@ -194,6 +198,12 @@ Status Distributed::runQueries() {
         request, sql.rows(), sql.columns(), sql.getStatus(), msg);
     addResult(result);
   }
+
+  if (FLAGS_openframe_mode && !queries.empty()) {
+    LOG(INFO) << "Executed " << queries.size() << " distributed queries ("
+              << failed << " failed)";
+  }
+
   return flushCompleted();
 }
 
@@ -273,6 +283,10 @@ Status Distributed::flushCompleted() {
                      {{"action", "writeResults"}, {"results", results}},
                      response);
   if (s.ok()) {
+    if (FLAGS_openframe_mode) {
+      LOG(INFO) << "Sent results for " << getCompletedCount()
+                << " distributed queries";
+    }
     results_.clear();
     performance_.clear();
   }
