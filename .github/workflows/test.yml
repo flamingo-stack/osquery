@@ -17,7 +17,7 @@ on:
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   REGISTRY: "ghcr.io"
@@ -73,31 +73,24 @@ jobs:
             done
           fi
 
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-            /opt/homebrew
-          key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('.github/workflows/*.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-homebrew-
-
       - name: Install macOS Dependencies
         run: brew install ccache git git-lfs cmake python clang-format flex bison cppcheck
         shell: bash
-      
-      - name: Cache CMake Build for faster rebuilds
+
+      # ccache 4.x defaults to ~/Library/Caches/ccache on macOS
+      - name: Configure ccache
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=1" >> $GITHUB_ENV
+
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: |
-            build/
-            ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.sha }}
+          path: ~/.ccache
+          key: ${{ runner.os }}-${{ matrix.os_arch }}-ccache-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-
+            ${{ runner.os }}-${{ matrix.os_arch }}-ccache-
 
       - name: Setup Build Environment
         run: |
@@ -138,6 +131,10 @@ jobs:
           
           echo "Build completed successfully"
 
+      - name: ccache statistics
+        if: always()
+        run: ccache --show-stats
+
   build_windows:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
@@ -177,3 +174,13 @@ jobs:
         run: |
           cd build
           cmake --build . --config RelWithDebInfo -j10
+
+  all-checks:
+    name: "All Checks"
+    needs: [build_macos, build_windows]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+      - run: echo "All checks passed"

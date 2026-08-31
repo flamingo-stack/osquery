@@ -33,9 +33,38 @@ env:
 # =============================================================================
 
 jobs:
+  # cmake needs 3 semver components and no leading "v"
+  version:
+    name: "Resolve Version"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          v="${INPUT_VERSION:-}"
+          [ -n "$v" ] || v="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          v="${v#v}"
+          case "$v" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::warning::Unusable version '$v'; falling back to 0.0.0" ; v="0.0.0" ;;
+          esac
+          echo "Resolved version: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
   build_macos:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
+    needs: [version]
     if: |
       github.event_name == 'push' || 
       github.event_name == 'workflow_dispatch'
@@ -77,31 +106,24 @@ jobs:
             done
           fi
 
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-            /opt/homebrew
-          key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('.github/workflows/*.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-homebrew-
-
       - name: Install macOS Dependencies
         run: brew install ccache git git-lfs cmake python clang-format flex bison cppcheck
         shell: bash
-      
-      - name: Cache CMake Build for faster rebuilds
+
+      # ccache 4.x defaults to ~/Library/Caches/ccache on macOS
+      - name: Configure ccache
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=1" >> $GITHUB_ENV
+
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: |
-            build/
-            ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.sha }}
+          path: ~/.ccache
+          key: ${{ runner.os }}-${{ matrix.os_arch }}-ccache-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-            ${{ runner.os }}-${{ matrix.os_arch }}-cmake-
+            ${{ runner.os }}-${{ matrix.os_arch }}-ccache-
 
       - name: Setup Build Environment
         run: |
@@ -126,7 +148,7 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++ \
             -DCMAKE_OSX_SYSROOT=$SDKROOT \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DOSQUERY_VERSION="5.9.1" \
+            -DOSQUERY_VERSION="${{ needs.version.outputs.version }}" \
             ..
             
           echo "CMake configuration completed"
@@ -141,6 +163,10 @@ jobs:
           time cmake --build . -j $CPU_COUNT
           
           echo "Build completed successfully"
+
+      - name: ccache statistics
+        if: always()
+        run: ccache --show-stats
 
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
@@ -216,6 +242,7 @@ jobs:
   build_windows:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
+    needs: [version]
     if: |
       github.event_name == 'push' || 
       github.event_name == 'workflow_dispatch'
@@ -249,7 +276,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G "Visual Studio 17 2022" -A ${{ matrix.os_arch }} -DOSQUERY_VERSION="5.9.1" ..
+          cmake -G "Visual Studio 17 2022" -A ${{ matrix.os_arch }} -DOSQUERY_VERSION="${{ needs.version.outputs.version }}" ..
 
       - name: Build OSQuery for Windows ${{ matrix.os_arch }} with MSBuild
         run: |
@@ -293,7 +320,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-        continue-on-error: true
 
       - name: Prepare release artifacts
         run: |
@@ -309,6 +335,14 @@ jobs:
           if [ -d "release-artifacts/osquery-windows-amd64" ]; then
             (cd "release-artifacts/osquery-windows-amd64" && \
               zip "${GITHUB_WORKSPACE}/final-artifacts/clients/osquery-windows-amd64.zip" ${{ env.BINARY_NAME }}.exe)
+          fi
+
+          MISSING=""
+          [ -f "final-artifacts/clients/osquery-macos-universal.tar.gz" ] || MISSING="$MISSING macOS"
+          [ -f "final-artifacts/clients/osquery-windows-amd64.zip" ] || MISSING="$MISSING Windows"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing release artifacts:$MISSING"
+            exit 1
           fi
 
           ls -lh final-artifacts/clients/
