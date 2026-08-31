@@ -15,6 +15,7 @@ function(generateOsqueryOpenframeLibrary)
     openframe_token_extractor.cpp
     openframe_token_refresher.cpp
     openframe_authorization_manager.cpp
+    openframe_machine_id_provider.cpp
   )
 
   target_link_libraries(osquery_openframe PUBLIC
@@ -33,6 +34,7 @@ function(generateOsqueryOpenframeLibrary)
     openframe_token_refresher.h
     openframe_authorization_manager.h
     openframe_authorization_manager_provider.h
+    openframe_machine_id_provider.h
   )
 
   generateIncludeNamespace(osquery_openframe "openframe" "FILE_ONLY" ${public_header_files})
