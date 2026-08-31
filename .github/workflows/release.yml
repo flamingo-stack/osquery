@@ -52,7 +52,7 @@ jobs:
             cmake_arch: x86_64
             artifact_name: osquery-macos-x64
           - name: "macOS ARM64"
-            os: macos-latest
+            os: macos-15 # pinned: Xcode 26 on macos-latest fails to compile boost mpl
             os_arch: arm64
             cmake_arch: arm64
             artifact_name: osquery-macos-arm64
@@ -227,7 +227,7 @@ jobs:
       matrix:
         include:
           - name: "Windows x64"
-            os: windows-latest
+            os: windows-2022 # pinned: windows-latest is VS 2026; generator below needs VS 17
             os_arch: x64
             artifact_name: osquery-windows-amd64
 
@@ -272,7 +272,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: "build/osquery/RelWithDebInfo/${{ env.BINARY_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          path: "build/osquery/RelWithDebInfo/${{ env.BINARY_NAME }}.exe"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
