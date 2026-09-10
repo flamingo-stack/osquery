@@ -300,7 +300,7 @@ Status getDatabaseValue(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot get database value: " + key);
+    return Status::failure("Cannot get database value: " + key);
   } else {
     auto plugin = getDatabasePlugin();
     return plugin->get(domain, key, value);
@@ -313,7 +313,11 @@ Status getDatabaseValue(const std::string& domain,
   std::string result;
   auto s = getDatabaseValue(domain, key, result);
   if (s.ok()) {
-    value = std::stoi(result);
+    auto ret = tryTo<int>(result);
+    if (ret.isError()) {
+      return Status::failure("Invalid integer value for key: " + key);
+    }
+    value = ret.get();
   }
   return s;
 }
@@ -342,7 +346,7 @@ Status setDatabaseBatch(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot set database values");
+    return Status::failure("Cannot set database values");
   }
 
   auto plugin = getDatabasePlugin();
@@ -370,7 +374,7 @@ Status deleteDatabaseValue(const std::string& domain, const std::string& key) {
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot delete database value: " + key);
+    return Status::failure("Cannot delete database value: " + key);
   } else {
     auto plugin = getDatabasePlugin();
     return plugin->remove(domain, key);
@@ -396,8 +400,8 @@ Status deleteDatabaseRange(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot delete database values: " + low + " - " +
-                             high);
+    return Status::failure("Cannot delete database values: " + low + " - " +
+                           high);
   } else {
     auto plugin = getDatabasePlugin();
     return plugin->removeRange(domain, low, high);
@@ -439,7 +443,7 @@ Status scanDatabaseKeys(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot scan database values: " + prefix);
+    return Status::failure("Cannot scan database values: " + prefix);
   } else {
     auto plugin = getDatabasePlugin();
     return plugin->scan(domain, keys, prefix, max);
@@ -751,3 +755,4 @@ IDatabaseInterface& getOsqueryDatabase() {
   return osquery_database;
 }
 } // namespace osquery
+
