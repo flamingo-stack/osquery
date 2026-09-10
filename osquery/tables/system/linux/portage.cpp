@@ -314,7 +314,7 @@ QueryData genPortageKeywordSummary(QueryContext& context) {
   readFile(kPortageMask, masked);
   readFile(kPortageUnMask, unmasked);
 
-  if (!keywords.empty() || !masked.empty() || unmasked.empty()) {
+  if (!keywords.empty() || !masked.empty() || !unmasked.empty()) {
     return parsePortageKeywordSummaryContent(keywords, masked, unmasked);
   } else {
     return {};

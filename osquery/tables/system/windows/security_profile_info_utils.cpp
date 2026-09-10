@@ -114,7 +114,7 @@ Status SceClientHelper::isValidSceProfileData(const PVOID& profileData) {
   }
 
   // Checking that input pointer points to an accessible SceProfileInfo layout
-  if (IsBadReadPtr(&profileData, sizeof(SceProfileInfo))) {
+  if (IsBadReadPtr(profileData, sizeof(SceProfileInfo))) {
     return Status::failure("profileData layout is invalid.");
   }
 
@@ -245,3 +245,4 @@ int SceProfileData::getNormalizedInt(const DWORD& input) {
 
 } // namespace tables
 } // namespace osquery
+

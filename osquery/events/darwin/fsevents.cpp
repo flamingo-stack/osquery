@@ -55,7 +55,7 @@ REGISTER(FSEventsEventPublisher, "event_publisher", "fsevents");
 void FSEventsSubscriptionContext::requireAction(const std::string& action) {
   for (const auto& bit : kMaskActions) {
     if (action == bit.second) {
-      mask = mask & bit.first;
+      mask = mask | bit.first;
     }
   }
 }
@@ -380,3 +380,4 @@ bool FSEventsEventPublisher::isStreamRunning() const {
   return CFRunLoopIsWaiting(run_loop_);
 }
 }
+

@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import shutil
+import sys
 
 logging_format = '[%(levelname)s] %(message)s'
 logging.basicConfig(level=logging.INFO, format=logging_format)
@@ -118,6 +119,7 @@ if __name__ == "__main__":
                     json_data = json.loads(f.read())
                 except ValueError:
                     logging.critical("Error: %s is not valid JSON" % args.input)
+                    sys.exit(1)
 
                 source_files = get_files_to_compile(json_data)
                 source_files.sort()
@@ -129,7 +131,7 @@ if __name__ == "__main__":
                     p = os.path.join(args.output, source_file)
                     if p.find("generated") < 0:
                         try:
-                            os.makedirs(os.path.dirname(p), 0755)
+                            os.makedirs(os.path.dirname(p), 0o755)
                         except:
                             pass
                         shutil.copyfile(
@@ -138,3 +140,4 @@ if __name__ == "__main__":
 
     except IOError as e:
         logging.critical("Error: %s doesn't exist: %s" % (args.input, str(e)))
+

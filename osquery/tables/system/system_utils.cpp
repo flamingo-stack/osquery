@@ -37,7 +37,7 @@ QueryData pidsFromContext(const QueryContext& context, bool all) {
     context.iteritems("pid", EQUALS, ([&procs](const std::string& expr) {
                         auto proc = SQL::selectAllFrom(
                             "processes", "pid", EQUALS, expr);
-                        procs.insert(procs.end(), procs.begin(), procs.end());
+                        procs.insert(procs.end(), proc.begin(), proc.end());
                       }));
   } else if (!all) {
     procs = SQL::selectAllFrom(

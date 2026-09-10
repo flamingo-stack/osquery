@@ -104,7 +104,7 @@ const std::unordered_map<ChromeBrowserType, std::string>
         {ChromeBrowserType::Yandex, "yandex"},
         {ChromeBrowserType::Opera, "opera"},
         {ChromeBrowserType::Edge, "edge"},
-        {ChromeBrowserType::Edge, "edge_beta"},
+        {ChromeBrowserType::EdgeBeta, "edge_beta"},
         {ChromeBrowserType::Vivaldi, "vivaldi"},
         {ChromeBrowserType::Arc, "arc"},
 };
@@ -1264,3 +1264,4 @@ ExpectedExtensionKey computeExtensionIdentifier(
 } // namespace tables
 
 } // namespace osquery
+

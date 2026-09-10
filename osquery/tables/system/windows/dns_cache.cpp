@@ -136,9 +136,23 @@ QueryData genDnsCache(QueryContext& context) {
   PDNSCACHEENTRY pEntry = (PDNSCACHEENTRY)malloc(sizeof(DNSCACHEENTRY));
   HINSTANCE hLib =
       LoadLibraryExW(L"DNSAPI.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (hLib == NULL) {
+    LOG(WARNING) << "Failed to load DNSAPI.dll, error code " << GetLastError();
+    free(pEntry);
+    return results;
+  }
+
   DNS_GET_CACHE_DATA_TABLE DnsGetCacheDataTable =
       (DNS_GET_CACHE_DATA_TABLE)GetProcAddress(hLib, "DnsGetCacheDataTable");
+  if (DnsGetCacheDataTable == nullptr) {
+    LOG(WARNING) << "Failed to resolve DnsGetCacheDataTable, error code "
+                 << GetLastError();
+    free(pEntry);
+    FreeLibrary(hLib);
+    return results;
+  }
 
+  PDNSCACHEENTRY pHead = pEntry;
   int stat = DnsGetCacheDataTable(pEntry);
   pEntry = pEntry->pNext;
   while (pEntry != nullptr) {
@@ -151,9 +165,11 @@ QueryData genDnsCache(QueryContext& context) {
     results.push_back(r);
     pEntry = pEntry->pNext;
   }
-  free(pEntry);
+  free(pHead);
+  FreeLibrary(hLib);
 
   return results;
 }
 } // namespace tables
 } // namespace osquery
+

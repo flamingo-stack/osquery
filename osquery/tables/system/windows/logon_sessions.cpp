@@ -62,9 +62,11 @@ QueryData queryLogonSessions(QueryContext& context) {
       r["logon_domain"] = wstringToString(session_data->LogonDomain.Buffer);
       r["authentication_package"] =
           wstringToString(session_data->AuthenticationPackage.Buffer);
-      r["logon_type"] =
-          kLogonTypeToStr.find(SECURITY_LOGON_TYPE(session_data->LogonType))
-              ->second;
+      auto logon_type_it =
+          kLogonTypeToStr.find(SECURITY_LOGON_TYPE(session_data->LogonType));
+      r["logon_type"] = logon_type_it != kLogonTypeToStr.end()
+                             ? logon_type_it->second
+                             : "Unknown";
       r["session_id"] = INTEGER(session_data->Session);
       r["logon_sid"] = psidToString(session_data->Sid);
       r["logon_time"] = BIGINT(longIntToUnixtime(session_data->LogonTime));
@@ -78,9 +80,12 @@ QueryData queryLogonSessions(QueryContext& context) {
       r["home_directory_drive"] =
           wstringToString(session_data->HomeDirectoryDrive.Buffer);
       results.push_back(std::move(r));
+      LsaFreeReturnBuffer(session_data);
     }
+    LsaFreeReturnBuffer(sessions);
   }
   return results;
 } // function queryLogonSessions
 } // namespace tables
 } // namespace osquery
+
