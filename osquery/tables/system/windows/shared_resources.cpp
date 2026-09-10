@@ -23,7 +23,7 @@ namespace {
 // https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-share
 const std::string kWin32ShareQuery{"SELECT * FROM Win32_Share"};
 
-const std::unordered_map<long, std::string> kShareTypeNameMap = {
+const std::unordered_map<std::uint32_t, std::string> kShareTypeNameMap = {
     {0, "Disk Drive"},
     {1, "Print Queue"},
     {2, "Device"},
@@ -33,7 +33,7 @@ const std::unordered_map<long, std::string> kShareTypeNameMap = {
     {2147483650, "Device Admin"},
     {2147483651, "IPC Admin"}};
 
-const std::string& getShareTypeName(const long& share_type) {
+const std::string& getShareTypeName(const std::uint32_t& share_type) {
   static const std::string kInvalidShareTypeName;
 
   auto it = kShareTypeNameMap.find(share_type);
@@ -96,8 +96,9 @@ QueryData genShares(QueryContext& context) {
 
     long type{};
     status = wmi_item.GetLong("Type", type);
-    row["type"] = BIGINT(status.ok() ? static_cast<std::uint32_t>(type) : 0);
-    row["type_name"] = SQL_TEXT(getShareTypeName(type));
+    auto unsigned_type = status.ok() ? static_cast<std::uint32_t>(type) : 0;
+    row["type"] = BIGINT(unsigned_type);
+    row["type_name"] = SQL_TEXT(getShareTypeName(unsigned_type));
 
     row_list.push_back(std::move(row));
     row.clear();
@@ -107,3 +108,4 @@ QueryData genShares(QueryContext& context) {
 }
 
 } // namespace osquery::tables
+

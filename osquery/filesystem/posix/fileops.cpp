@@ -276,7 +276,11 @@ std::vector<std::string> platformGlob(const std::string& find_path) {
   std::vector<std::string> results;
 
   auto data = (glob_t*)alloca(sizeof(glob_t));
-  ::glob(find_path.c_str(), GLOB_TILDE | GLOB_MARK | GLOB_BRACE, nullptr, data);
+  int rc = ::glob(
+      find_path.c_str(), GLOB_TILDE | GLOB_MARK | GLOB_BRACE, nullptr, data);
+  if (rc != 0) {
+    return results;
+  }
   size_t count = data->gl_pathc;
 
   for (size_t index = 0; index < count; index++) {
@@ -381,3 +385,4 @@ Status platformFileno(FILE* file, int& fd) {
   return Status::success();
 }
 } // namespace osquery
+

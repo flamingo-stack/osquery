@@ -32,7 +32,6 @@ namespace osquery {
 
 DECLARE_string(enroll_secret_path);
 DECLARE_bool(disable_enrollment);
-DECLARE_bool(openframe_mode);
 
 CLI_FLAG(uint64,
          tls_enroll_max_attempts,
@@ -50,6 +49,14 @@ CLI_FLAG(string,
          enroll_tls_endpoint,
          "",
          "TLS/HTTPS endpoint for client enrollment");
+
+/// Optional path prefix inserted before the enroll endpoint (e.g. for
+/// gateway/backend specific routing). Empty by default, meaning no prefix
+/// is added.
+CLI_FLAG(string,
+         enroll_tls_endpoint_prefix,
+         "",
+         "Optional URL path prefix prepended to the enroll TLS endpoint");
 
 /// Undocumented feature for TLS access token passing.
 HIDDEN_FLAG(bool,
@@ -73,12 +80,13 @@ std::string TLSEnrollPlugin::enroll() {
 
   // If no node secret has been negotiated, try a TLS request.
   auto uri = "https://" + FLAGS_tls_hostname;
-  
-  // Add the prefix "/tools/agent/fleetmdm-server" to all requests only if openframe mode is enabled
-  if (FLAGS_openframe_mode) {
-    uri += "/tools/agent/fleetmdm-server";
+
+  // Add an optional path prefix to all requests, configurable via flag
+  // rather than hardcoded in this shared plugin logic.
+  if (!FLAGS_enroll_tls_endpoint_prefix.empty()) {
+    uri += FLAGS_enroll_tls_endpoint_prefix;
   }
-  
+
   uri += FLAGS_enroll_tls_endpoint;
   
   if (FLAGS_tls_secret_always) {
@@ -174,3 +182,4 @@ Status TLSEnrollPlugin::requestKey(const std::string& uri,
   return Status::success();
 }
 } // namespace osquery
+
