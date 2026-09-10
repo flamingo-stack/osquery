@@ -1,3 +1,12 @@
+/**
+ *  Copyright (c) 2014-present, The osquery authors
+ *
+ *  This source code is licensed as defined by the LICENSE file found in the
+ *  root directory of this source tree.
+ *
+ *  SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
+ */
+
 #include "openframe_token_refresher.h"
 #include "openframe_authorization_manager_provider.h"
 
@@ -6,7 +15,7 @@ namespace osquery {
 OpenframeTokenRefresher::OpenframeTokenRefresher(std::shared_ptr<OpenframeTokenExtractor> extractor)
     : running_(false), extractor_(extractor) {
     if (!extractor_) {
-        throw std::runtime_error("Token extractor cannot be null");
+        LOG(ERROR) << "Token extractor cannot be null; token refresher will be inoperative";
     }
 }
 
@@ -18,6 +27,11 @@ void OpenframeTokenRefresher::start() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (running_) {
         LOG(WARNING) << "Token refresher is already running";
+        return;
+    }
+
+    if (!extractor_) {
+        LOG(ERROR) << "Cannot start token refresher: token extractor is null";
         return;
     }
 
