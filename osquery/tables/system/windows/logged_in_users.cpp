@@ -21,6 +21,10 @@
 #include <osquery/utils/conversions/windows/windows_time.h>
 #include <osquery/utils/system/windows/users_groups_helpers.h>
 
+namespace osquery {
+namespace tables {
+
+namespace {
 const std::map<int, std::string> kSessionStates = {
     {WTSActive, "active"},
     {WTSDisconnected, "disconnected"},
@@ -32,9 +36,7 @@ const std::map<int, std::string> kSessionStates = {
     {WTSReset, "reset"},
     {WTSDown, "down"},
     {WTSInit, "init"}};
-
-namespace osquery {
-namespace tables {
+} // namespace
 
 QueryData genLoggedInUsers(QueryContext& context) {
   QueryData results;
@@ -179,3 +181,4 @@ QueryData genLoggedInUsers(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
