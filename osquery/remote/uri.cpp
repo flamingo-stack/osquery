@@ -30,7 +30,16 @@ static inline void toLower(String& s) {
   }
 }
 
+Uri::Uri() : hasAuthority_(false), port_(0) {}
+
 Uri::Uri(const std::string& str) : hasAuthority_(false), port_(0) {
+  auto status = Uri::parse(str, *this);
+  if (!status.ok()) {
+    throw std::invalid_argument(status.getMessage());
+  }
+}
+
+Status Uri::parse(const std::string& str, Uri& uri) {
   static const std::regex uriRegex(
       "([a-zA-Z][a-zA-Z0-9+.-]*):" // scheme:
       "([^?#]*)" // authority and path
@@ -40,19 +49,19 @@ Uri::Uri(const std::string& str) : hasAuthority_(false), port_(0) {
 
   std::smatch match;
   if (!std::regex_match(str, match, uriRegex)) {
-    throw std::invalid_argument("Invalid URL");
+    return Status::failure("Invalid URL");
   }
 
-  scheme_ = submatch(match, 1);
-  toLower(scheme_);
+  uri.scheme_ = submatch(match, 1);
+  toLower(uri.scheme_);
 
   std::string authorityAndPath(match[2].first, match[2].second);
   std::smatch authorityAndPathMatch;
   if (!std::regex_match(
           authorityAndPath, authorityAndPathMatch, authorityAndPathRegex)) {
     // Does not start with //, doesn't have authority
-    hasAuthority_ = false;
-    path_ = authorityAndPath;
+    uri.hasAuthority_ = false;
+    uri.path_ = authorityAndPath;
   } else {
     static const std::regex authorityRegex(
         "(?:([^@:]*)(?::([^@]*))?@)?" // username, password
@@ -66,26 +75,28 @@ Uri::Uri(const std::string& str) : hasAuthority_(false), port_(0) {
                           authority.second,
                           authorityMatch,
                           authorityRegex)) {
-      throw std::invalid_argument("Invalid URI authority");
+      return Status::failure("Invalid URI authority");
     }
 
     std::string port(authorityMatch[4].first, authorityMatch[4].second);
     if (!port.empty()) {
       int iport = std::stoi(port);
       if (iport < UINT16_MAX && iport >= 0) {
-        port_ = static_cast<uint16_t>(iport);
+        uri.port_ = static_cast<uint16_t>(iport);
       }
     }
 
-    hasAuthority_ = true;
-    username_ = submatch(authorityMatch, 1);
-    password_ = submatch(authorityMatch, 2);
-    host_ = submatch(authorityMatch, 3);
-    path_ = submatch(authorityAndPathMatch, 2);
+    uri.hasAuthority_ = true;
+    uri.username_ = submatch(authorityMatch, 1);
+    uri.password_ = submatch(authorityMatch, 2);
+    uri.host_ = submatch(authorityMatch, 3);
+    uri.path_ = submatch(authorityAndPathMatch, 2);
   }
 
-  query_ = submatch(match, 3);
-  fragment_ = submatch(match, 4);
+  uri.query_ = submatch(match, 3);
+  uri.fragment_ = submatch(match, 4);
+
+  return Status::success();
 }
 
 std::string Uri::authority() const {

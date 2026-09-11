@@ -68,6 +68,11 @@ HIDDEN_FLAG(bool,
             tls_allow_unsafe,
             false,
             "Allow TLS server certificate trust failures");
+
+HIDDEN_FLAG(bool,
+            openframe_mode_allow_unsafe,
+            false,
+            "Allow disabling TLS peer verification in openframe_mode");
 #endif
 
 HIDDEN_FLAG(bool,
@@ -117,11 +122,13 @@ http::Client::Options TLSTransport::getOptions() {
 
   options.follow_redirects(true).timeout(16);
 
-  if (FLAGS_openframe_mode) {
+#ifndef NDEBUG
+  if (FLAGS_openframe_mode && FLAGS_openframe_mode_allow_unsafe) {
     options.always_verify_peer(false);
     return options;
-  } 
-  
+  }
+#endif
+
   options.always_verify_peer(verify_peer_);
   if (server_certificate_file_.size() > 0) {
     if (!osquery::isReadable(server_certificate_file_).ok()) {
@@ -314,3 +321,4 @@ Status TLSTransport::sendRequest(const std::string& params, bool compress) {
   return response_status_;
 }
 } // namespace osquery
+
