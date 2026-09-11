@@ -42,14 +42,14 @@ class SeccompEventSubscriber final
     : public EventSubscriber<AuditEventPublisher> {
   /// Mapping from seccomp action codes from seccomp.h to seccomp action names
   static const std::unordered_map<std::uint64_t, std::string>
-      seccomp_actions_map;
+      kSeccompActionsMap;
 
   /// Mapping from architecture codes from audit.h to architecture names
-  static const std::unordered_map<std::uint64_t, std::string> arch_codes_map;
+  static const std::unordered_map<std::uint64_t, std::string> kArchCodesMap;
 
   /// Mapping from system call numbers to system call names for x86_64
   static const std::unordered_map<std::uint64_t, std::string>
-      syscall_x86_64_map;
+      kSyscallX8664Map;
 
   static void parseEvent(const AuditEvent& event, Row& parsed_event) noexcept;
 
