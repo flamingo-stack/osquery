@@ -266,8 +266,8 @@ class RegistryType : public RegistryInterface {
              const PluginRef& plugin_item,
              bool internal = false) override {
     if (nullptr == std::dynamic_pointer_cast<PluginType>(plugin_item)) {
-      throw std::runtime_error("Cannot add foreign plugin type: " +
-                               plugin_name);
+      return Status::failure("Cannot add foreign plugin type: " +
+                             plugin_name);
     }
     return addPlugin(plugin_name, plugin_item, internal);
   }
@@ -349,3 +349,4 @@ class AutoRegisterInterface {
 
 void registryAndPluginInit();
 } // namespace osquery
+
