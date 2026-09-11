@@ -168,8 +168,8 @@ bool validateSocketDescriptor(const ProcessContext& process_context,
   const auto& socket_info =
       std::get<ProcessContext::FileDescriptor::SocketData>(fd_info.data);
 
-  if (!socket_info.opt_domain.has_value() || socket_info.opt_type.has_value() ||
-      socket_info.opt_protocol.has_value()) {
+  if (!socket_info.opt_domain.has_value() || !socket_info.opt_type.has_value() ||
+      !socket_info.opt_protocol.has_value()) {
     return false;
   }
 
@@ -232,3 +232,4 @@ bool validateSocketDescriptor(const ProcessContextMap& process_context_map,
 }
 
 } // namespace osquery
+

@@ -47,6 +47,9 @@ bool isOpenSSHKey(const std::string& keys_content) {
 
 // `true` if the openssh key is encrypted, `false` otherwise.
 bool isOpenSSHKeyEncrypted(const std::string& keys_content) {
+  if (keys_content.size() <= kOpenSshHeader.size() + 1) {
+    return false;
+  }
   const std::string prefix = keys_content.substr(
       kOpenSshHeader.size() + 1, kOpenSshUnencryptedPrefix.size());
   return prefix != kOpenSshUnencryptedPrefix;
@@ -62,12 +65,12 @@ bool parsePrivateKey(const std::string& keys_content,
                      int& key_security_bits,
                      bool& is_encrypted) {
   BIO* bio_stream = BIO_new(BIO_s_mem());
-  auto const bio_stream_guard =
-      scope_guard::create([bio_stream]() { BIO_free(bio_stream); });
-  BIO_write(bio_stream, keys_content.c_str(), keys_content.size());
   if (bio_stream == nullptr) {
     return false;
   }
+  auto const bio_stream_guard =
+      scope_guard::create([bio_stream]() { BIO_free(bio_stream); });
+  BIO_write(bio_stream, keys_content.c_str(), keys_content.size());
 
   // PEM_read_bio_PrivateKey calls passwordCallback
   // if the private key is encrypted. We don't care what the key is;
@@ -220,3 +223,4 @@ QueryData getUserSshKeys(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

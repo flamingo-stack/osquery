@@ -151,7 +151,7 @@ Status OpenBSMProcEvSubscriber::handleExec(const OpenBSMEventContextRef& ec) {
       r["egid"] = INTEGER(tok.tt.subj64.egid);
       r["uid"] = INTEGER(tok.tt.subj64.ruid);
       r["gid"] = INTEGER(tok.tt.subj64.rgid);
-      pid = tok.tt.subj32.pid;
+      pid = tok.tt.subj64.pid;
       break;
     case AUT_SUBJECT32_EX:
       OpenBSM_AUT_SUBJECT32_EX(r, tok);

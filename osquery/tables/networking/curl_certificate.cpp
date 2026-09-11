@@ -302,7 +302,7 @@ Status getTLSCertificate(const std::string& hostname,
   std::string port = "443";
   auto connect_hostname = hostname;
   auto delim = hostname.find(":");
-  if (delim + 1 == hostname.length()) {
+  if (delim != std::string::npos && delim + 1 == hostname.length()) {
     // if no port specified use default port
     connect_hostname = hostname.substr(0, delim);
   } else if (delim != std::string::npos) {
@@ -459,3 +459,4 @@ QueryData genTLSCertificate(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

@@ -119,7 +119,7 @@ Status genArp(const struct rt_msghdr *route,
   // The cache will always know the address.
   r["address"] = ipAsString(addr_map[RTAX_DST]);
 
-  auto sdl = (struct sockaddr_dl *)addr_map[RTA_DST];
+  auto sdl = (struct sockaddr_dl *)addr_map[RTAX_DST];
   if (sdl->sdl_alen > 0) {
     r["mac"] = macAsString(LLADDR(sdl));
   } else {
@@ -220,3 +220,4 @@ QueryData genRoutes(QueryContext &context) {
 }
 }
 }
+
