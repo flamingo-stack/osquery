@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+namespace osquery {
+
 const std::string kNetworkShareIds[6] = {"41", "42", "46", "47", "4C", "C3"};
 
 // Property set GUIDs associated with name entries
@@ -37,7 +39,7 @@ const std::string kPropertySets[15] = {"000214A1-0000-0000-C000-000000000046",
                                        "D5CDD505-2E9C-101B-9397-08002B2CF9AE",
                                        "EF6B490D-5CD8-437A-AFFC-DA8B60EE4A3C",
                                        "F29F85E0-4FF9-1068-AB91-08002B27B3D9"};
-namespace osquery {
+
 std::string guidParse(const std::string& guid_little) {
   std::vector<std::string> guids;
   guids.push_back(guid_little.substr(0, 8));
