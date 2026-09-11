@@ -425,8 +425,12 @@ Status RocksDBDatabasePlugin::removeRange(const std::string& domain,
   } else {
     options.sync = false;
   }
+  // DeleteRange is exclusive of the high bound; explicitly delete the
+  // high key too so the overall range removed is inclusive of `high`,
+  // matching this method's documented/expected semantics. Preserve the
+  // first failing status instead of overwriting it.
   auto s = getDB()->DeleteRange(options, cfh, low, high);
-  if (low <= high) {
+  if (s.ok()) {
     s = getDB()->Delete(options, cfh, high);
   }
   return Status(s.code(), s.ToString());
@@ -466,3 +470,4 @@ Status RocksDBDatabasePlugin::scan(const std::string& domain,
   return Status::success();
 }
 } // namespace osquery
+

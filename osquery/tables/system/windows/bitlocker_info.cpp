@@ -41,7 +41,6 @@ static void fetchMethodResultLong(std::string& result,
 }
 
 QueryData genBitlockerInfo(QueryContext& context) {
-  Row r;
   QueryData results;
 
   const Expected<WmiRequest, WmiError> wmiSystemReq =
@@ -54,16 +53,32 @@ QueryData genBitlockerInfo(QueryContext& context) {
   }
   const std::vector<WmiResultItem>& wmiResults = wmiSystemReq->results();
   for (const auto& data : wmiResults) {
+    Row r;
     long status = 0;
     long emethod;
-    data.GetString("DeviceID", r["device_id"]);
-    data.GetString("DriveLetter", r["drive_letter"]);
-    data.GetString("PersistentVolumeID", r["persistent_volume_id"]);
-    data.GetLong("ConversionStatus", status);
-    r["conversion_status"] = INTEGER(status);
-    data.GetLong("ProtectionStatus", status);
-    r["protection_status"] = INTEGER(status);
-    data.GetLong("EncryptionMethod", emethod);
+    if (!data.GetString("DeviceID", r["device_id"]).ok()) {
+      r["device_id"] = "";
+    }
+    if (!data.GetString("DriveLetter", r["drive_letter"]).ok()) {
+      r["drive_letter"] = "";
+    }
+    if (!data.GetString("PersistentVolumeID", r["persistent_volume_id"])
+             .ok()) {
+      r["persistent_volume_id"] = "";
+    }
+    if (data.GetLong("ConversionStatus", status).ok()) {
+      r["conversion_status"] = INTEGER(status);
+    } else {
+      r["conversion_status"] = INTEGER(-1);
+    }
+    if (data.GetLong("ProtectionStatus", status).ok()) {
+      r["protection_status"] = INTEGER(status);
+    } else {
+      r["protection_status"] = INTEGER(-1);
+    }
+    if (!data.GetLong("EncryptionMethod", emethod).ok()) {
+      emethod = -1;
+    }
     std::string emethod_str;
     std::map<long, std::string> methods;
 
@@ -100,3 +115,4 @@ QueryData genBitlockerInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

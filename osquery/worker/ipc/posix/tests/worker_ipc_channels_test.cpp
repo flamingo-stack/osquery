@@ -43,6 +43,9 @@ class WorkerIPCChannelsTest : public testing::Test {
     std::string descriptors_path = "/dev/fd";
     boost::filesystem::directory_iterator it(descriptors_path), end;
     return std::distance(it, end) - 1;
+#else
+    // Unsupported platform for this test helper
+    return -1;
 #endif
   }
 
@@ -169,3 +172,4 @@ TEST_F(WorkerIPCChannelsTest, test_pipe_ticket_leak) {
   ASSERT_EQ(getFdsOpen(), fds_open + 4);
 }
 } // namespace osquery
+
