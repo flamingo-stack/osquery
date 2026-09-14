@@ -101,20 +101,22 @@ int DynamicTableRow::get_column(sqlite3_context* ctx,
   }
 
   // Attempt to cast each xFilter-populated row/column to the SQLite type.
-  const auto& value = row[column_name];
-  if (this->row.count(column_name) == 0) {
+  auto row_it = this->row.find(column_name);
+  if (row_it == this->row.end()) {
     // Missing content.
     VLOG(1) << "Error " << column_name << " is empty";
     sqlite3_result_null(ctx);
-  } else if (type == TEXT_TYPE || type == BLOB_TYPE) {
+  } else if (const auto& value = row_it->second;
+             type == TEXT_TYPE || type == BLOB_TYPE) {
     sqlite3_result_text(
         ctx, value.c_str(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
-  } else if (value.empty() &&
+  } else if (const auto& value = row_it->second;
+             value.empty() &&
              (type == INTEGER_TYPE || type == BIGINT_TYPE ||
               type == UNSIGNED_BIGINT_TYPE || type == DOUBLE_TYPE)) {
     // Don't Log a casting error for a known type if the column row is empty
     sqlite3_result_null(ctx);
-  } else if (type == INTEGER_TYPE) {
+  } else if (const auto& value = row_it->second; type == INTEGER_TYPE) {
     auto afinite = tryTo<long>(value, 0);
     if (afinite.isError()) {
       VLOG(1) << "Error casting " << column_name << " (" << value
@@ -123,7 +125,8 @@ int DynamicTableRow::get_column(sqlite3_context* ctx,
     } else {
       sqlite3_result_int(ctx, afinite.take());
     }
-  } else if (type == BIGINT_TYPE || type == UNSIGNED_BIGINT_TYPE) {
+  } else if (const auto& value = row_it->second;
+             type == BIGINT_TYPE || type == UNSIGNED_BIGINT_TYPE) {
     auto afinite = tryTo<long long>(value, 0);
     if (afinite.isError()) {
       VLOG(1) << "Error casting " << column_name << " (" << value
@@ -132,7 +135,7 @@ int DynamicTableRow::get_column(sqlite3_context* ctx,
     } else {
       sqlite3_result_int64(ctx, afinite.take());
     }
-  } else if (type == DOUBLE_TYPE) {
+  } else if (const auto& value = row_it->second; type == DOUBLE_TYPE) {
     char* end = nullptr;
     double afinite = strtod(value.c_str(), &end);
     if (end == nullptr || end == value.c_str() || *end != '\0') {
@@ -163,3 +166,4 @@ TableRowHolder DynamicTableRow::clone() const {
 }
 
 } // namespace osquery
+
