@@ -64,7 +64,7 @@ void genControlConfigFromPath(const std::string& path,
 
   for (auto& line : osquery::split(content, "\n")) {
     boost::trim(line);
-    if (line[0] == '#' || line[0] == ';') {
+    if (line.empty() || line[0] == '#' || line[0] == ';') {
       continue;
     }
 
@@ -123,3 +123,4 @@ QueryData genSystemControls(QueryContext& context) {
 }
 }
 }
+
