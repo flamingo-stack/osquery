@@ -137,7 +137,9 @@ LinuxTableContainerIPC::LinuxTableContainerIPC(PipeChannelFactory& factory)
     : ipc_(factory, *this) {}
 
 LinuxTableContainerIPC::~LinuxTableContainerIPC() {
-  close(original_mnt_fd_);
+  if (original_mnt_fd_ > 0) {
+    close(original_mnt_fd_);
+  }
 }
 
 Status LinuxTableContainerIPC::connectToContainer(
