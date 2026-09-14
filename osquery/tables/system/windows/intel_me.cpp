@@ -271,7 +271,7 @@ osquery::Status getDeviceInformationSet(DeviceInformationSet& dev_info_set,
                                         const GUID* guid_filter) {
   dev_info_set.reset();
 
-  auto filter = const_cast<LPGUID>(&HECI_INTERFACE_GUID);
+  auto filter = const_cast<LPGUID>(guid_filter);
 
   HDEVINFO handle = SetupDiGetClassDevs(
       filter, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);

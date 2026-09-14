@@ -233,9 +233,6 @@ void FSEventsEventPublisher::configure() {
     paths_.clear();
     for (auto& sub : subscriptions_) {
       auto sc = getSubscriptionContext(sub->context);
-      if (sc->discovered_.size() > 0) {
-        continue;
-      }
       auto paths = transformSubscription(sc);
       paths_.insert(paths.begin(), paths.end());
     }
