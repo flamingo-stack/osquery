@@ -188,15 +188,17 @@ PrefetchFileInfo parseFileInfo(
   // Size is given in bytes.
   const auto size = prefetch_file_info->FileNameStringsSize;
   const auto offset = prefetch_file_info->FileNameStringsOffset;
-  if (offset > data.size()) {
-    // Unexpected offset.
+  if (offset > data.size() || size > data.size() ||
+      static_cast<uint64_t>(offset) + static_cast<uint64_t>(size) >
+          data.size()) {
+    // Unexpected offset or size.
     return result;
   }
 
   size_t total_length{0};
   std::vector<std::string> filenames;
   auto next = (PWCHAR)(&data[0] + offset);
-  while (*next != L'\0') {
+  while (total_length < size && *next != L'\0') {
     auto length = wcsnlen_s(next, (size - total_length) / sizeof(WCHAR));
     if (length == 0 || length == (size - total_length) / sizeof(WCHAR)) {
       // A null wide character was not found.
@@ -229,8 +231,11 @@ PrefetchVolumeInfo parseVolumeInfo(
   const auto volume_offset = prefetch_file_info->VolumeInformationOffset;
   // Size is given in bytes.
   const auto volume_size = prefetch_file_info->VolumesInformationSize;
-  if (volume_offset > data.size()) {
-    // Unexpected offset.
+  if (volume_offset > data.size() || volume_size > data.size() ||
+      static_cast<uint64_t>(volume_offset) +
+              static_cast<uint64_t>(volume_size) >
+          data.size()) {
+    // Unexpected offset or size.
     return result;
   }
 
@@ -262,8 +267,9 @@ PrefetchVolumeInfo parseVolumeInfo(
     }
 
     for (size_t j = 0; j < dir_count; j++) {
-      if (volume_offset + dir_offset + sizeof(PDIRECTORY_STRING) >
-          data.size()) {
+      if (dir_offset >= volume_size ||
+          volume_offset + dir_offset + sizeof(PDIRECTORY_STRING) >
+              data.size()) {
         // Unexpected offset.
         break;
       }
@@ -271,6 +277,12 @@ PrefetchVolumeInfo parseVolumeInfo(
       const auto prefetch_directory =
           (PDIRECTORY_STRING)(&data[0] + volume_offset + dir_offset);
       dir_offset += sizeof(DIRECTORY_STRING);
+
+      if (dir_offset >= volume_size ||
+          volume_offset + dir_offset > data.size()) {
+        // Not enough remaining space for a directory string.
+        break;
+      }
 
       auto length = wcsnlen_s(prefetch_directory->Directory,
                               (volume_size - dir_offset) / sizeof(WCHAR));
@@ -414,3 +426,4 @@ void genPrefetch(RowYield& yield, QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
