@@ -52,7 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           v="${INPUT_VERSION:-}"
-          [ -n "$v" ] || v="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          [ -n "$v" ] || v="$(git describe --tags --abbrev=0 --exclude latest 2>/dev/null || true)"
           v="${v#v}"
           case "$v" in
             [0-9]*.[0-9]*.[0-9]*) ;;
@@ -310,8 +310,11 @@ jobs:
     needs: [build_macos, create_universal_macos, build_windows]
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'workflow_dispatch' && 
-      inputs.version != ''
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.version != '')
+    concurrency:
+      group: ${{ github.event_name == 'push' && 'release-latest' || github.run_id }}
+      queue: max
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -355,13 +358,19 @@ jobs:
           - **Windows** (amd64): \`osquery-windows-amd64.zip\`
           EOF
 
+      - name: Delete existing latest release
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete latest --yes --cleanup-tag || true
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version }}
-          name: "🦩 ${{ inputs.version }}"
+          tag_name: ${{ inputs.version || 'latest' }}
+          name: "🦩 ${{ inputs.version || 'latest' }}"
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: RELEASE_HEADER.md
           files: |
