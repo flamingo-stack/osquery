@@ -312,6 +312,9 @@ jobs:
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.version != '')
+    concurrency:
+      group: ${{ github.event_name == 'push' && 'release-latest' || github.run_id }}
+      queue: max
     steps:
       - name: Checkout
         uses: actions/checkout@v4
