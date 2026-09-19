@@ -40,7 +40,9 @@ bool enforceEventsDenylist(const std::string& query) {
   // Check if the query only operates on event subscribers.
   // If it does, skip the denylist enforcement.
   std::set<std::string> table_set(tables.begin(), tables.end());
-  auto event_tables = EventFactory::subscriberNames();
+  auto subscriber_names = EventFactory::subscriberNames();
+  std::set<std::string> event_tables(subscriber_names.begin(),
+                                     subscriber_names.end());
 
   std::set<std::string> overlap;
   std::set_intersection(table_set.begin(),
