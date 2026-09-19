@@ -153,6 +153,7 @@ void UserEtwSessionRunnable::resume() {
 void UserEtwSessionRunnable::initUserTraceSession(
     const std::string& sessionName) {
   if (sessionName.empty()) {
+    LOG(ERROR) << "UserTraceSession does not have a name.";
     return;
   }
 
@@ -176,6 +177,7 @@ void UserEtwSessionRunnable::initUserTraceSession(
 void UserEtwSessionRunnable::stopUserTraceSession(
     const std::string& sessionName) {
   if (sessionName.empty()) {
+    LOG(ERROR) << "Failed to stop user trace session, session name is empty.";
     return;
   }
 
