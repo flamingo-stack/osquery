@@ -27,21 +27,19 @@ TEST_F(extendedAttributes, test_sanity) {
   auto const data =
       execute_query("select * from extended_attributes where path = ''");
   // 2. Check size before validation
-  // ASSERT_GE(data.size(), 0ul);
-  // ASSERT_EQ(data.size(), 1ul);
-  // ASSERT_EQ(data.size(), 0ul);
+  ASSERT_EQ(data.size(), 0ul);
   // 3. Build validation map
   // See helper.h for available flags
   // Or use custom DataCheck object
-  // ValidationMap row_map = {
-  //      {"path", NormalType}
-  //      {"directory", NormalType}
-  //      {"key", NormalType}
-  //      {"value", NormalType}
-  //      {"base64", IntType}
-  //}
+  ValidationMap row_map = {
+      {"path", NormalType},
+      {"directory", NormalType},
+      {"key", NormalType},
+      {"value", NormalType},
+      {"base64", IntType},
+  };
   // 4. Perform validation
-  // validate_rows(data, row_map);
+  validate_rows(data, row_map);
 }
 
 } // namespace table_tests
