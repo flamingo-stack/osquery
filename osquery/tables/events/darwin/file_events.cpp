@@ -84,7 +84,7 @@ Status FileEventSubscriber::Callback(const FSEventsEventContextRef& ec,
   // Need to call configure on the publisher, not the subscriber
   if (ec->fsevent_flags & kFSEventStreamEventFlagMount) {
     // Should we add listening to the mount point
-    auto subscriber = ([this, &ec]() {
+    auto subscriber = ([this, ec]() {
       auto msc = createSubscriptionContext();
       msc->path = ec->path + "/*";
       msc->category = "tmp";
@@ -109,3 +109,4 @@ Status FileEventSubscriber::Callback(const FSEventsEventContextRef& ec,
   return Status::success();
 }
 }
+

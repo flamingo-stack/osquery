@@ -41,14 +41,14 @@ def main(argc, argv):
 def get_file_hash(path):
   try:
     hasher = hashlib.sha256()
-    input_file = open(path, "rb")
+    with open(path, "rb") as input_file:
 
-    while True:
-      buffer = input_file.read(1048576)
-      if not buffer:
-        break
+      while True:
+        buffer = input_file.read(1048576)
+        if not buffer:
+          break
 
-      hasher.update(buffer)
+        hasher.update(buffer)
 
     return hasher.hexdigest()
 

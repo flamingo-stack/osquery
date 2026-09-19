@@ -65,8 +65,6 @@ QueryData genGroups(QueryContext& context) {
     }
 
   } else if (!selected_gids.empty()) {
-    auto selected_gids = gid_it->second.getAll(EQUALS);
-
     for (const auto& selected_gid_str : selected_gids) {
       auto selected_gid_res = tryTo<std::uint32_t>(selected_gid_str);
 
@@ -94,3 +92,4 @@ QueryData genGroups(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

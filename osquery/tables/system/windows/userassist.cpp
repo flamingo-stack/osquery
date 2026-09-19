@@ -24,10 +24,10 @@ constexpr auto kFullRegPath =
     "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist";
 
 // Get execution count
-std::size_t executionNum(const std::string& assist_data) {
+long long executionNum(const std::string& assist_data) {
   if (assist_data.length() <= 16) {
     LOG(WARNING) << "Userassist execution count format is incorrect";
-    return -1;
+    return -1LL;
   }
 
   std::string execution_count = assist_data.substr(8, 8);
@@ -43,9 +43,9 @@ std::size_t executionNum(const std::string& assist_data) {
   auto count = tryTo<std::size_t>(execution_count, 16);
   if (count.isError()) {
     LOG(WARNING) << "Error getting execution count: " << count.takeError();
-    return -1;
+    return -1LL;
   }
-  return count.get();
+  return static_cast<long long>(count.get());
 }
 
 QueryData genUserAssist(QueryContext& context) {
