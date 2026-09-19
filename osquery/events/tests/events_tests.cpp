@@ -375,7 +375,7 @@ class FakeEventSubscriber : public EventSubscriber<FakeEventPublisher> {
 
   explicit FakeEventSubscriber(bool skip_name) {
     if (!skip_name) {
-      FakeEventSubscriber();
+      setName("fake_events");
     }
   }
 

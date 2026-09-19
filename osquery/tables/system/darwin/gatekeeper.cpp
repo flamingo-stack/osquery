@@ -172,6 +172,14 @@ QueryData genGateKeeperApprovedApps(QueryContext& context) {
       "label is NULL";
   sqlite3_stmt* stmt = nullptr;
   rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+  if (rc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    sqlite3_close(db);
+    return results;
+  }
+
   while ((sqlite3_step(stmt)) == SQLITE_ROW) {
     Row r;
     genGateKeeperApprovedAppRow(stmt, r);
@@ -186,3 +194,4 @@ QueryData genGateKeeperApprovedApps(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

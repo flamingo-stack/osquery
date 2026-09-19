@@ -111,6 +111,7 @@ std::vector<User> UsersCache::getAllUsers() const {
 }
 
 void GroupsCache::initializeCache(std::vector<Group> initial_groups) {
+  std::lock_guard<std::mutex> lock(cache_mutex_);
   cached_groups_ = std::move(initial_groups);
 
   if (cached_groups_.size() > 0) {
