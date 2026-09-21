@@ -37,6 +37,12 @@ typedef NTSTATUS(WINAPI* RTLGETCOMPRESSIONWORKSPACESIZE)(
 
 ExpectedDecompressData decompressLZxpress(std::vector<UCHAR>& prefetch_data,
                                           unsigned long size) {
+  if (prefetch_data.size() < 8) {
+    return ExpectedDecompressData::failure(
+        ConversionError::InvalidArgument,
+        "Prefetch data too small to decompress");
+  }
+
   RTLGETCOMPRESSIONWORKSPACESIZE RtlGetCompressionWorkSpaceSize;
   RTLDECOMPRESSBUFFEREX RtlDecompressBufferEx;
 
