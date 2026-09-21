@@ -202,12 +202,8 @@ Status EventFactory::addSubscription(const std::string& type_id,
 }
 
 size_t EventFactory::numSubscriptions(const std::string& type_id) {
-  EventPublisherRef publisher;
-  try {
-    publisher = EventFactory::getInstance().getEventPublisher(type_id);
-  } catch (std::out_of_range& /* e */) {
-    return 0;
-  }
+  EventPublisherRef publisher =
+      EventFactory::getInstance().getEventPublisher(type_id);
   if (publisher == nullptr) {
     return 0;
   }
