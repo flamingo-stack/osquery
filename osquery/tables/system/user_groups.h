@@ -20,7 +20,7 @@
 #include <osquery/filesystem/filesystem.h>
 #include <osquery/logger/logger.h>
 
-#define EXPECTED_GROUPS_MAX 64
+constexpr int kExpectedGroupsMax = 64;
 
 #ifdef __APPLE__
 // This symbol is exported from libSystem.B and has been since 10.6.
@@ -65,14 +65,14 @@ static void getGroupsForUser(QueryData& results,
   }
   delete[] groups;
 #else
-  gid_type groups_buf[EXPECTED_GROUPS_MAX];
+  gid_type groups_buf[kExpectedGroupsMax];
   gid_type* groups = groups_buf;
-  int ngroups = EXPECTED_GROUPS_MAX;
+  int ngroups = kExpectedGroupsMax;
 
   // GLIBC version before 2.3.3 may have a buffer overrun:
   // http://man7.org/linux/man-pages/man3/getgrouplist.3.html
   if (getgrouplist(user.name, user.gid, groups, &ngroups) < 0) {
-    // EXPECTED_GROUPS_MAX was probably not large enough.
+    // kExpectedGroupsMax was probably not large enough.
     // Try a larger size buffer.
     groups = new gid_type[ngroups];
     if (groups == nullptr) {
@@ -96,3 +96,4 @@ static void getGroupsForUser(QueryData& results,
 }
 } // namespace tables
 } // namespace osquery
+
