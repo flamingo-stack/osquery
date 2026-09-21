@@ -120,10 +120,10 @@ int getPrinterSharingStatus() {
   int ret = cupsAdminGetServerSettings(cups, &num_settings, &settings);
   if (ret != 0) {
     value = cupsGetOption("_share_printers", num_settings, settings);
-    cupsFreeOptions(num_settings, settings);
   } else {
     VLOG(1) << "Unable to get CUPS server settings: " << cupsLastErrorString();
   }
+  cupsFreeOptions(num_settings, settings);
   httpClose(cups);
 
   if (value != nullptr) {
