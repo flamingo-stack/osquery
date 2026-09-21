@@ -179,7 +179,7 @@ void genProcessEnvironment(const std::string& pid, QueryData& results) {
   const char* variable = content.c_str();
 
   // Stop at the end of nul-delimited string content.
-  while (*variable > 0) {
+  while (*variable != '\0') {
     auto buf = std::string(variable);
     size_t idx = buf.find_first_of("=");
 
@@ -585,3 +585,4 @@ QueryData genProcessNamespaces(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
