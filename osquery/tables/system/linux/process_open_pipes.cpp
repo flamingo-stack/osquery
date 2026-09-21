@@ -50,13 +50,20 @@ bool isUnconnectedPipe(ino_t inode, const InodeToPipesMap& pipe_partners) {
   return (pipe_partners.at(inode).size() == 1);
 }
 
-int parseInode(const std::string& pipe_str) {
+Status parseInode(const std::string& pipe_str, unsigned long& inode) {
   std::smatch match;
   if (std::regex_search(pipe_str, match, std::regex("\\d+"))) {
-    return std::stoul(match[0]);
+    try {
+      inode = std::stoul(match[0]);
+    } catch (const std::exception& e) {
+      inode = 0;
+      return Status::failure(std::string("Failed to parse inode: ") +
+                              e.what());
+    }
   } else {
-    return 0;
+    inode = 0;
   }
+  return Status::success();
 }
 
 std::string getMode(const std::string& pid, const std::string& fd) {
@@ -112,10 +119,16 @@ std::unique_ptr<pipe_info> getPipeInfo(
     const std::string& process,
     const std::pair<std::string, std::string>& desc) {
   if (desc.second.find("pipe:") != std::string::npos) { // found unnamed pipe
+    unsigned long inode = 0;
+    auto status = parseInode(desc.second, inode);
+    if (!status.ok()) {
+      LOG(WARNING) << "Failed to parse inode for pid " << process << ": "
+                   << status.getMessage();
+    }
     return createPipeInfoStruct(std::stoi(process),
                                 std::stoi(desc.first),
                                 getMode(process, desc.first),
-                                parseInode(desc.second),
+                                inode,
                                 "anonymous");
   } else { // check for potential named pipe
     return getNamedPipeInfo(process, desc);
@@ -218,3 +231,4 @@ QueryData genPipes(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
