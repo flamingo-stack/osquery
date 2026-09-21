@@ -48,9 +48,14 @@ void SCNetworkEventPublisher::addTarget(
     const SCNetworkReachabilityRef& target) {
   targets_.push_back(target);
 
+  // Keep a stable, heap-allocated copy of the subscription context pointer
+  // alive for the lifetime of the callback registration.
+  auto sc_holder = new SCNetworkSubscriptionContextRef(sc);
+  subscription_refs_.push_back(sc_holder);
+
   // Assign a context (the subscription context) to the target.
   SCNetworkReachabilityContext* context = new SCNetworkReachabilityContext();
-  context->info = (void*)&sc;
+  context->info = (void*)sc_holder;
   context->retain = nullptr;
   context->release = nullptr;
   contexts_.push_back(context);
@@ -97,6 +102,11 @@ void SCNetworkEventPublisher::clearAll() {
     delete context;
   }
   contexts_.clear();
+
+  for (auto& sc_holder : subscription_refs_) {
+    delete sc_holder;
+  }
+  subscription_refs_.clear();
 
   target_names_.clear();
   target_addresses_.clear();
@@ -183,3 +193,4 @@ Status SCNetworkEventPublisher::run() {
   return Status::success();
 }
 };
+
