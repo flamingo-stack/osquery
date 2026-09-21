@@ -20,6 +20,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
 
 #include <osquery/core/flags.h>
 #include <osquery/core/tables.h>
@@ -54,6 +55,7 @@ const std::string kMountNamespace = "/ns/mnt";
 const int kMaxNamespaceIdLinkChars = 16;
 
 PlatformProcess current_running_process;
+std::mutex current_running_process_mutex;
 
 Status extractMountNamespaceId(const std::string& mount_namespace_path,
                                std::string& mount_namespace_id) {
@@ -150,7 +152,7 @@ Status LinuxTableContainerIPC::connectToContainer(
   std::string original_mnt_path =
       kProc + "/" + std::to_string(current_pid) + kMountNamespace;
 
-  if (original_mnt_fd_ > 0) {
+  if (original_mnt_fd_ >= 0) {
     close(original_mnt_fd_);
   }
 
@@ -196,7 +198,10 @@ Status LinuxTableContainerIPC::connectToContainer(
       return Status::failure("Failed to start container worker to table " +
                              table_name);
     } else {
-      current_running_process = PlatformProcess(pid);
+      {
+        std::lock_guard<std::mutex> lock(current_running_process_mutex);
+        current_running_process = PlatformProcess(pid);
+      }
       ipc_.connectToChild(table_name, std::move(channel_ticket), pid);
     }
   }
@@ -204,7 +209,11 @@ Status LinuxTableContainerIPC::connectToContainer(
   return Status::success();
 }
 void LinuxTableContainerIPC::stopContainerWorker() {
-  PlatformProcess child_process(std::move(current_running_process));
+  PlatformProcess child_process(kInvalidPid);
+  {
+    std::lock_guard<std::mutex> lock(current_running_process_mutex);
+    child_process = PlatformProcess(std::move(current_running_process));
+  }
 
   if (child_process.pid() == kInvalidPid) {
     return;
@@ -348,6 +357,13 @@ Status LinuxTableContainerIPC::handleJob(QueryContext& context) {
     int result = static_cast<int>(syscall(SYS_setns, original_mnt_fd_, 0));
 
     if (result < 0) {
+      // We failed to restore the original mount namespace. Since this
+      // worker process may be reused for subsequent queries while
+      // keep_process_open_ is still true, force it to be treated as
+      // unusable so the caller will not keep it around in a stale
+      // namespace.
+      keep_process_open_ = false;
+
       auto status = Status::failure(
           "Failed to restore the original mount namespace, due to error: " +
           std::to_string(errno));
@@ -372,6 +388,10 @@ void LinuxTableContainerIPC::executeQueryJobs() {
         if (exit_status_code != 2 || FLAGS_verbose) {
           syslog(LOG_NOTICE, "%s", status.getMessage().c_str());
         }
+        break;
+      }
+
+      if (!keep_process_open_) {
         break;
       }
     }
