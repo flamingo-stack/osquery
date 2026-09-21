@@ -76,7 +76,7 @@ Status EtwProcessEventSubscriber::eventCallback(
     newRow["token_elevation_status"] = INTEGER(eventPayload->TokenIsElevated);
     newRow["mandatory_label"] = SQL_TEXT(eventPayload->MandatoryLabelSid);
     newRow["process_sequence_number"] =
-        BIGINT(eventPayload->ParentProcessSequenceNumber);
+        BIGINT(eventPayload->ProcessSequenceNumber);
     newRow["parent_process_sequence_number"] =
         BIGINT(eventPayload->ParentProcessSequenceNumber);
 
@@ -118,3 +118,4 @@ Status EtwProcessEventSubscriber::eventCallback(
 }
 
 } // namespace osquery
+
