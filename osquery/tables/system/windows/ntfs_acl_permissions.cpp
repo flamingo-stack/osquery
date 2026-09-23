@@ -154,6 +154,7 @@ QueryData genNtfsAclPerms(QueryContext& context) {
     std::wstring wsPath(stringToWstring(pathString));
     // Get a pointer to the existing DACL.
     PACL dacl = nullptr;
+    PSECURITY_DESCRIPTOR pSecurityDescriptor = nullptr;
     auto result = GetNamedSecurityInfoW(wsPath.c_str(),
                                         SE_FILE_OBJECT,
                                         DACL_SECURITY_INFORMATION,
@@ -161,9 +162,21 @@ QueryData genNtfsAclPerms(QueryContext& context) {
                                         nullptr,
                                         &dacl,
                                         nullptr,
-                                        nullptr);
+                                        &pSecurityDescriptor);
     if (ERROR_SUCCESS != result) {
       VLOG(1) << "GetNamedSecurityInfo Error " << result;
+      continue;
+    }
+
+    if (pSecurityDescriptor == nullptr) {
+      VLOG(1) << "GetNamedSecurityInfo returned a null security descriptor";
+      continue;
+    }
+
+    if (dacl == nullptr) {
+      // A null DACL means the object has no discretionary protection and
+      // grants full access to everyone. There is nothing to enumerate.
+      LocalFree(pSecurityDescriptor);
       continue;
     }
 
@@ -188,9 +201,12 @@ QueryData genNtfsAclPerms(QueryContext& context) {
       r["inherited_from"] = SQL_TEXT(aceFlags);
       results.push_back(std::move(r));
     }
+
+    LocalFree(pSecurityDescriptor);
   }
   return results;
 }
 
 } // namespace tables
 } // namespace osquery
+
