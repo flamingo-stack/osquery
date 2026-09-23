@@ -18,9 +18,10 @@
 
 namespace osquery {
 
-DEFINE_string(events_streaming_plugin,
-              "",
-              "Experimental events streaming plugin");
+FLAG(string,
+     events_streaming_plugin,
+     "",
+     "Experimental events streaming plugin");
 
 namespace events {
 
@@ -42,3 +43,4 @@ void dispatchSerializedEvent(const std::string& serialized_event) {
 
 } // namespace events
 } // namespace osquery
+
