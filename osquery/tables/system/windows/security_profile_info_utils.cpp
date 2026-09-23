@@ -47,10 +47,13 @@ Status SceClientHelper::initialize() {
   }
 
   // Sanity check to ensure that function pointers are not initialized if
-  // running process is a WoW64 process
+  // running process is a WoW64 process. isWow64Process() returns
+  // Status::success() when the current process IS a WoW64 process, so that
+  // condition must be treated as an initialization failure here.
   Status wow64Status = isWow64Process();
   if (wow64Status.ok()) {
-    return Status::failure("Init failed: " + wow64Status.getMessage());
+    return Status::failure(
+        "Init failed: current process is a WoW64 process.");
   }
 
   // Checking if the input DLL is already mapped to memory before loading it.
@@ -139,16 +142,17 @@ Status SceClientHelper::releaseSceProfileData(const PVOID& profileData) {
     return Status::failure(kSceFreeMemoryFn + " cannot be used");
   }
 
-  // Calling the runtime-linked function and checking return code
+  // Calling the runtime-linked function and checking return code. This
+  // function is responsible for releasing the RPC-allocated buffer, so no
+  // additional free (e.g. LocalFree) must be performed on profileData here,
+  // as that buffer was not allocated via LocalAlloc and doing so would risk
+  // a double-free.
   DWORD retCode = sceFreeMemory_(profileData, kSceAreaAllFlag);
   if (retCode != ERROR_SUCCESS) {
     return Status::failure(
         kSceGetSecProfileInfoFn +
         " call failed with error: " + std::to_string(retCode));
   }
-
-  // freeing RPC related data
-  LocalFree(profileData);
 
   return Status::success();
 }
