@@ -144,7 +144,7 @@ std::optional<std::uint32_t> getAarch64MaxCPUFreq() {
 
     // The frequencies are in hz, saved in an array
     // as little endian 4 byte integers
-    for (std::size_t i = 0; i < length - 3; i += 4) {
+    for (std::size_t i = 0; i + 4 <= length; i += 4) {
       std::uint32_t cur_freq = 0;
       CFDataGetBytes(p_cores_freq_property,
                      CFRangeMake(i, sizeof(uint32_t)),
@@ -315,3 +315,4 @@ QueryData genCpuInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
