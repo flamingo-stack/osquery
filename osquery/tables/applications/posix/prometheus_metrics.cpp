@@ -50,11 +50,12 @@ void parseScrapeResults(
   }
 }
 
-void scrapeTargets(std::map<std::string, PrometheusResponseData>& scrapeResults,
+Status scrapeTargets(std::map<std::string, PrometheusResponseData>& scrapeResults,
                    size_t timeoutS) {
   http::Client client(
       http::Client::Options().follow_redirects(true).timeout(timeoutS));
 
+  Status status;
   for (auto& target : scrapeResults) {
     try {
       http::Request request(target.first);
@@ -68,8 +69,11 @@ void scrapeTargets(std::map<std::string, PrometheusResponseData>& scrapeResults,
     } catch (std::exception& e) {
       LOG(ERROR) << "Failed on scrape of target " << target.first << ": "
                  << e.what();
+      status = Status::failure("Failed on scrape of target " + target.first +
+                                ": " + e.what());
     }
   }
+  return status;
 }
 
 QueryData genPrometheusMetrics(QueryContext& context) {
@@ -108,7 +112,11 @@ QueryData genPrometheusMetrics(QueryContext& context) {
 
   size_t timeout =
       (!config.HasMember("timeout")) ? 1 : config["timeout"].GetUint64();
-  scrapeTargets(sr, timeout);
+  auto status = scrapeTargets(sr, timeout);
+  if (!status.ok()) {
+    LOG(WARNING) << "One or more prometheus targets failed to scrape: "
+                 << status.getMessage();
+  }
   parseScrapeResults(sr, result);
 
   return result;
