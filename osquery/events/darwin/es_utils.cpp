@@ -157,7 +157,9 @@ void getProcessProperties(const es_process_t* p,
   ec->codesigning_flags = getCodesigningFlags(p);
 
   auto user = getpwuid(ec->uid);
-  ec->username = user->pw_name != nullptr ? std::string(user->pw_name) : "";
+  ec->username = (user != nullptr && user->pw_name != nullptr)
+                     ? std::string(user->pw_name)
+                     : "";
 
   ec->cwd = getCwdPathFromPid(ec->pid);
 }
@@ -171,3 +173,4 @@ void appendQuotedString(std::ostream& out, std::string s, char delim) {
 }
 
 } // namespace osquery
+
