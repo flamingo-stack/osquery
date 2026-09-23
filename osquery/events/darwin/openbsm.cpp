@@ -188,7 +188,7 @@ void OpenBSMEventPublisher::acquireMessages() {
   // We probably don't need a lambda here but it's useful to put debug
   // lines in to validate destruction.
   std::shared_ptr<unsigned char> sp_buffer(buffer,
-                                           [](unsigned char* p) { delete p; });
+                                           [](unsigned char* p) { free(p); });
   {
     ReadLock lock(event_ids_mutex_);
     if (event_ids_.find(event_id) == event_ids_.end()) {
