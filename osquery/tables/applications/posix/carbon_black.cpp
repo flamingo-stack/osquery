@@ -92,7 +92,6 @@ void getSensorSettings(Row& r) {
   boost::replace_all(server, "%3A", ":");
   r["sensor_backend_server"] = SQL_TEXT(server);
   r["collect_data_file_writes"] = INTEGER(0);
-  r["collect_processes"] = INTEGER(0);
   r["collect_sensor_operations"] = INTEGER(0);
   r["log_file_disk_quota_mb"] = INTEGER(0);
   r["log_file_disk_quota_percentage"] = INTEGER(0);
@@ -135,3 +134,4 @@ QueryData genCarbonBlackInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
