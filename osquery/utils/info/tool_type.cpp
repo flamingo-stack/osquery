@@ -14,23 +14,24 @@ namespace osquery {
 namespace {
 
 /// Current tool type.
-ToolType kToolType{ToolType::UNKNOWN};
+ToolType gToolType{ToolType::UNKNOWN};
 
 } // namespace
 
 void setToolType(ToolType tool) {
-  kToolType = tool;
+  gToolType = tool;
 }
 
 ToolType getToolType() {
-  return kToolType;
+  return gToolType;
 }
 
 bool isDaemon() {
-  return kToolType == ToolType::DAEMON;
+  return gToolType == ToolType::DAEMON;
 }
 
 bool isShell() {
-  return kToolType == ToolType::SHELL;
+  return gToolType == ToolType::SHELL;
 }
 } // namespace osquery
+
