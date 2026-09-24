@@ -170,7 +170,7 @@ PrefetchFileInfo parseFileInfo(
   case kPrefetchVersionWindows8:
     last_run_time = prefetch_file_info->ext.v26.LastRunTime;
     result.run_count = prefetch_file_info->ext.v26.RunCount;
-    for (const auto& entry : prefetch_file_info->ext.v30v2.OtherRunTimes) {
+    for (const auto& entry : prefetch_file_info->ext.v26.OtherRunTimes) {
       run_times.push_back(std::to_string(filetimeToUnixtime(entry)));
     }
     result.run_times = osquery::join(run_times, ",");
@@ -414,3 +414,4 @@ void genPrefetch(RowYield& yield, QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
