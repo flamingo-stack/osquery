@@ -219,12 +219,12 @@ void initOpenFrame() {
 
   try {
     // Create openframe token services
-    auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
-    auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
+    auto encryption_service = std::make_shared<::OpenframeEncryptionService>(FLAGS_openframe_secret);
+    auto token_extractor = std::make_shared<::OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
     
     auto initial_token = token_extractor->extractToken();
     if (!initial_token.empty()) {
-      auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
+      auto& auth_manager = ::OpenframeAuthorizationManagerProvider::getInstance();
       auth_manager.updateToken(initial_token);
       LOG(INFO) << "OpenFrame token extracted successfully";
     } else {
@@ -232,7 +232,7 @@ void initOpenFrame() {
     }
     
     // Create and start token refresher
-    static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
+    static auto token_refresher = std::make_shared<::OpenframeTokenRefresher>(token_extractor);
     token_refresher->start();
   } catch (const std::exception& e) {
     LOG(ERROR) << "Failed to initialize OpenFrame components: " << e.what();
@@ -954,3 +954,4 @@ void Initializer::shutdownNow(int retcode) {
   _Exit(retcode);
 }
 } // namespace osquery
+
