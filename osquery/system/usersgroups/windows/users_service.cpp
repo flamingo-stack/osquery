@@ -260,7 +260,7 @@ void UsersService::processLocalAccounts(
     }
 
   } while (ret == ERROR_MORE_DATA);
-} // namespace
+}
 
 // Enumerate the users from the profiles key in the Registry, matching only
 // the UIDs/RIDs (if any) and skipping any SIDs of local-only users that
@@ -318,7 +318,7 @@ void UsersService::processRoamingProfiles(
         then we use the uid of the user. */
         new_user.gid = getGidFromUsername(account_name).value_or(new_user.uid);
       } else {
-        new_user.gid = -1;
+        new_user.gid = std::numeric_limits<std::uint32_t>::max();
       }
 
       // Also attempt to get the user account description comment. Move on if
@@ -340,3 +340,4 @@ void UsersService::processRoamingProfiles(
   }
 }
 }; // namespace osquery
+
