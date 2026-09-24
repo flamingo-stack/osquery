@@ -206,19 +206,25 @@ QueryData genBatteryInfo(QueryContext& context) {
                           &dwOut,
                           nullptr)) {
         // https://learn.microsoft.com/en-us/windows/win32/power/battery-wait-status-str
+        bool isDischarging = false;
         if (bs.PowerState & BATTERY_POWER_ON_LINE) {
           row["state"] = "AC Power";
           row["charging"] = INTEGER((bs.PowerState & BATTERY_CHARGING) > 0);
         } else if (bs.PowerState & BATTERY_DISCHARGING) {
           row["state"] = "Battery Power";
           row["charging"] = INTEGER(0);
+          isDischarging = true;
         }
         row["charged"] = INTEGER(bs.Capacity == bi.FullChargedCapacity);
         row["current_capacity"] = INTEGER(bs.Capacity / designedVoltage);
         row["voltage"] = INTEGER(bs.Voltage);
         if (bs.Voltage > 0) {
-          row["amperage"] = INTEGER((1000 * static_cast<int>(bs.Rate)) /
-                                    static_cast<int>(bs.Voltage));
+          int amperage = (1000 * static_cast<int>(bs.Rate)) /
+                         static_cast<int>(bs.Voltage);
+          if (isDischarging) {
+            amperage = -amperage;
+          }
+          row["amperage"] = INTEGER(amperage);
         } else {
           LOG(WARNING) << "Battery table read a voltage of 0.";
         }

@@ -141,10 +141,18 @@ Status SQLPlugin::call(const PluginRequest& request, PluginResponse& response) {
     return Status(1, "SQL plugin must include a request action");
   }
 
-  if (request.at("action") == "query") {
+  const auto& action = request.at("action");
+
+  if (action == "query") {
+    if (request.count("query") == 0) {
+      return Status(1, "SQL plugin query action requires a query");
+    }
     bool use_cache = (request.count("cache") && request.at("cache") == "1");
     return this->query(request.at("query"), response, use_cache);
-  } else if (request.at("action") == "columns") {
+  } else if (action == "columns") {
+    if (request.count("query") == 0) {
+      return Status(1, "SQL plugin columns action requires a query");
+    }
     TableColumns columns;
     auto status = this->getQueryColumns(request.at("query"), columns);
     // Convert columns to response
@@ -155,12 +163,21 @@ Status SQLPlugin::call(const PluginRequest& request, PluginResponse& response) {
            {"o", INTEGER(static_cast<size_t>(std::get<2>(column)))}});
     }
     return status;
-  } else if (request.at("action") == "attach") {
+  } else if (action == "attach") {
+    if (request.count("table") == 0) {
+      return Status(1, "SQL plugin attach action requires a table");
+    }
     // Attach a virtual table name using an optional included definition.
     return this->attach(request.at("table"));
-  } else if (request.at("action") == "detach") {
+  } else if (action == "detach") {
+    if (request.count("table") == 0) {
+      return Status(1, "SQL plugin detach action requires a table");
+    }
     return this->detach(request.at("table"));
-  } else if (request.at("action") == "tables") {
+  } else if (action == "tables") {
+    if (request.count("query") == 0) {
+      return Status(1, "SQL plugin tables action requires a query");
+    }
     std::vector<std::string> tables;
     auto status = this->getQueryTables(request.at("query"), tables);
     if (status.ok()) {

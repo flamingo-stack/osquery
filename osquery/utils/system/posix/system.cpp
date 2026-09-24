@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <osquery/logger/logger.h>
 #include <osquery/utils/system/system.h>
 
 #include <boost/algorithm/string.hpp>
@@ -24,7 +25,11 @@ std::string getHostname() {
   std::size_t max_size = 256;
 
   std::vector<char> hostname(max_size, 0);
-  gethostname(hostname.data(), max_size);
+  if (gethostname(hostname.data(), max_size) != 0) {
+    LOG(ERROR) << "Failed to retrieve hostname with error: "
+               << strerror(errno);
+    return std::string("");
+  }
 
   std::string hostname_string(hostname.data());
   boost::algorithm::trim(hostname_string);

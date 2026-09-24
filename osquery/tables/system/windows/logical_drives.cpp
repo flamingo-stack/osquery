@@ -28,7 +28,9 @@ QueryData genLogicalDrives(QueryContext& context) {
     for (const auto& bootConfiguration : bootConfigurations) {
       std::string bootDirectory;
       bootConfiguration.GetString("BootDirectory", bootDirectory);
-      bootDeviceIds.insert(bootDirectory.at(0));
+      if (!bootDirectory.empty()) {
+        bootDeviceIds.insert(bootDirectory.at(0));
+      }
     }
   } else {
     LOG(WARNING) << "Failed to query BootConfiguration via WMI";
@@ -67,7 +69,8 @@ QueryData genLogicalDrives(QueryContext& context) {
     // return "Unknown". That behavior is preserved here.
     r["type"] = "Unknown";
     r["device_id"] = deviceId;
-    r["boot_partition"] = INTEGER(bootDeviceIds.count(deviceId.at(0)));
+    r["boot_partition"] =
+        INTEGER(!deviceId.empty() && bootDeviceIds.count(deviceId.at(0)));
 
     results.push_back(std::move(r));
   }
@@ -75,3 +78,4 @@ QueryData genLogicalDrives(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

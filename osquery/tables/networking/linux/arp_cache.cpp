@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
+#include <cstdlib>
 #include <fstream>
 
 #include <boost/algorithm/string/split.hpp>
@@ -20,6 +21,10 @@ namespace osquery {
 namespace tables {
 
 const std::string kLinuxArpTable = "/proc/net/arp";
+
+// ARP flag bits as defined by the kernel (see <linux/if_arp.h>).
+static const unsigned long kAtfCom = 0x02;
+static const unsigned long kAtfPerm = 0x04;
 
 QueryData genArpCache(QueryContext& context) {
   QueryData results;
@@ -62,8 +67,8 @@ QueryData genArpCache(QueryContext& context) {
     r["interface"] = fields[5];
 
     // Note: it's also possible to detect publish entries (ATF_PUB).
-    if (fields[2] == "0x6") {
-      // The string representation of ATF_COM | ATF_PERM.
+    unsigned long flags = strtoul(fields[2].c_str(), nullptr, 16);
+    if ((flags & (kAtfCom | kAtfPerm)) == (kAtfCom | kAtfPerm)) {
       r["permanent"] = "1";
     } else {
       r["permanent"] = "0";

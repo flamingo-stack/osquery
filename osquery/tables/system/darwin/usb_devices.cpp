@@ -28,9 +28,12 @@ void genUSBDevice(const io_service_t& device, QueryData& results) {
   Row r;
 
   // Get the device details
-  CFMutableDictionaryRef details;
-  IORegistryEntryCreateCFProperties(
+  CFMutableDictionaryRef details = nullptr;
+  auto ret = IORegistryEntryCreateCFProperties(
       device, &details, kCFAllocatorDefault, kNilOptions);
+  if (ret != KERN_SUCCESS || details == nullptr) {
+    return;
+  }
 
   r["usb_address"] = getIOKitProperty(details, "USB Address");
   r["usb_port"] = getIOKitProperty(details, "PortNum");
