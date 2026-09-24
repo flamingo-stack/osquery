@@ -184,17 +184,6 @@ typedef struct _PS_PROTECTION {
 Status genMemoryMap(unsigned long pid, QueryData& results) {
   auto proc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
   if (proc == nullptr) {
-    Row r;
-    r["pid"] = INTEGER(pid);
-    r["start"] = INTEGER(-1);
-    r["end"] = INTEGER(-1);
-    r["permissions"] = "";
-    r["offset"] = INTEGER(-1);
-    r["device"] = INTEGER(-1);
-    r["inode"] = INTEGER(-1);
-    r["path"] = "";
-    r["pseudo"] = INTEGER(-1);
-    results.push_back(r);
     return Status::failure("Failed to open handle to process " +
                            std::to_string(pid));
   }
@@ -775,3 +764,4 @@ QueryData genProcessMemoryMap(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+
