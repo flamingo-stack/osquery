@@ -24,7 +24,13 @@ class KernelKeys : public testing::Test {
 
 TEST_F(KernelKeys, test_sanity) {
   QueryData data = execute_query("select * from kernel_keys");
+  ValidationMap row_map = {
+      {"serial_number", NonEmptyString},
+      {"description", NormalType},
+  };
+  validate_rows(data, row_map);
 }
 
 } // namespace table_tests
 } // namespace osquery
+
