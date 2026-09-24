@@ -29,7 +29,7 @@ const std::vector<std::string> kFormFactors = {
 };
 
 std::string getFormFactor(long id) {
-  if (id < kFormFactors.size()) {
+  if (id >= 0 && static_cast<size_t>(id) < kFormFactors.size()) {
     return kFormFactors[id];
   }
   return std::to_string(id);
@@ -45,7 +45,7 @@ const std::vector<std::string> kMemoryTypes = {
     "DDR3",       "FBD2",   "DDR4"};
 
 std::string getMemoryType(int id) {
-  if (id < kMemoryTypes.size()) {
+  if (id >= 0 && static_cast<size_t>(id) < kMemoryTypes.size()) {
     return kMemoryTypes[id];
   }
   return std::to_string(id);
@@ -223,3 +223,4 @@ QueryData genMemoryDevices(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
