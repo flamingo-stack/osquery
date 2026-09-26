@@ -128,7 +128,14 @@ bool Filesystem::enumFiles(int dirfd, EnumFilesCallback callback) const {
     bool directory;
     if (entry->d_type == DT_DIR) {
       directory = true;
-    } else if (entry->d_type == DT_LNK || entry->d_type == DT_REG) {
+    } else if (entry->d_type == DT_LNK) {
+      struct stat file_stats {};
+      if (fstatat(dirfd, string_fd, &file_stats, 0) != 0) {
+        continue;
+      }
+
+      directory = S_ISDIR(file_stats.st_mode);
+    } else if (entry->d_type == DT_REG) {
       directory = false;
     } else {
       continue;
@@ -171,3 +178,4 @@ Status IFilesystem::create(Ref& obj) {
 }
 
 } // namespace osquery
+

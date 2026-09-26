@@ -136,7 +136,9 @@ void KernelEtwSessionRunnable::start() {
   std::unique_lock<std::mutex> lock(mutex_);
   if (kernelTraceSession_) {
     while (!endTraceSession_) {
+      lock.unlock();
       kernelTraceSession_->start();
+      lock.lock();
       traceSessionStopped_ = true;
 
       if (!endTraceSession_) {
@@ -156,8 +158,11 @@ void KernelEtwSessionRunnable::stop() {
 void KernelEtwSessionRunnable::pause() {
   if (kernelTraceSession_) {
     kernelTraceSession_->stop();
+    std::unique_lock<std::mutex> lock(mutex_);
     while (!traceSessionStopped_) {
+      lock.unlock();
       Sleep(500);
+      lock.lock();
     }
     traceSessionStopped_ = false;
   }
@@ -165,6 +170,7 @@ void KernelEtwSessionRunnable::pause() {
 
 void KernelEtwSessionRunnable::resume() {
   if (kernelTraceSession_) {
+    std::unique_lock<std::mutex> lock(mutex_);
     condition_.notify_one();
   }
 }

@@ -133,25 +133,47 @@ std::string dnsTypeToString(unsigned short wType) {
 QueryData genDnsCache(QueryContext& context) {
   QueryData results;
 
-  PDNSCACHEENTRY pEntry = (PDNSCACHEENTRY)malloc(sizeof(DNSCACHEENTRY));
   HINSTANCE hLib =
       LoadLibraryExW(L"DNSAPI.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (hLib == nullptr) {
+    LOG(WARNING) << "Failed to load DNSAPI.dll";
+    return results;
+  }
+
   DNS_GET_CACHE_DATA_TABLE DnsGetCacheDataTable =
       (DNS_GET_CACHE_DATA_TABLE)GetProcAddress(hLib, "DnsGetCacheDataTable");
+  if (DnsGetCacheDataTable == nullptr) {
+    LOG(WARNING) << "Failed to resolve DnsGetCacheDataTable";
+    FreeLibrary(hLib);
+    return results;
+  }
+
+  PDNSCACHEENTRY pEntry = (PDNSCACHEENTRY)malloc(sizeof(DNSCACHEENTRY));
+  if (pEntry == nullptr) {
+    FreeLibrary(hLib);
+    return results;
+  }
 
   int stat = DnsGetCacheDataTable(pEntry);
-  pEntry = pEntry->pNext;
-  while (pEntry != nullptr) {
+  if (stat == 0) {
+    free(pEntry);
+    FreeLibrary(hLib);
+    return results;
+  }
+
+  PDNSCACHEENTRY pCurrent = pEntry->pNext;
+  while (pCurrent != nullptr) {
     Row r;
 
-    r["name"] = wstringToString(pEntry->pszName);
-    r["type"] = dnsTypeToString(pEntry->wType);
-    r["flags"] = INTEGER(pEntry->dwFlags);
+    r["name"] = wstringToString(pCurrent->pszName);
+    r["type"] = dnsTypeToString(pCurrent->wType);
+    r["flags"] = INTEGER(pCurrent->dwFlags);
 
     results.push_back(r);
-    pEntry = pEntry->pNext;
+    pCurrent = pCurrent->pNext;
   }
   free(pEntry);
+  FreeLibrary(hLib);
 
   return results;
 }

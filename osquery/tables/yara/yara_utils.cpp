@@ -195,7 +195,7 @@ YaraCompilerResult compileSingleFile(const std::string& file) {
 
   return YaraCompilerResult::success(tmp_rules);
 
-} // namespace osquery
+}
 
 /**
  * Compile yara rules from string and load it into rule pointer.
@@ -472,3 +472,4 @@ Status YARAConfigParserPlugin::update(const std::string& source,
 /// Call the simple YARA ConfigParserPlugin "yara".
 REGISTER(YARAConfigParserPlugin, "config_parser", "yara");
 } // namespace osquery
+

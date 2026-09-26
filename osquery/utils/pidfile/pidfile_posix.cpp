@@ -114,8 +114,6 @@ boost::optional<Pidfile::Error> Pidfile::writeFile(
   auto buffer_size = static_cast<ssize_t>(buffer.size());
   auto remaining_bytes = buffer_size;
 
-  buffer_size = remaining_bytes = {static_cast<ssize_t>(buffer.size())};
-
   for (int retry = 0; retry < 5 && remaining_bytes > 0; ++retry) {
     auto buffer_ptr = buffer.data() + buffer_size - remaining_bytes;
 
@@ -187,3 +185,4 @@ void Pidfile::destroyFile(FileHandle file_handle,
 }
 
 } // namespace osquery
+
