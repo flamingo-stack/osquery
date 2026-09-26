@@ -11,6 +11,7 @@
 
 #include <osquery/core/tables.h>
 #include <osquery/filesystem/filesystem.h>
+#include <osquery/logger/logger.h>
 #include <osquery/utils/conversions/split.h>
 #include <osquery/utils/expected/expected.h>
 
@@ -26,7 +27,12 @@ QueryData genMemoryMap(QueryContext& context) {
 
   std::vector<std::string> regions;
   std::string content;
-  readFile(kIOMemLocation, content);
+  auto status = readFile(kIOMemLocation, content);
+  if (!status.ok()) {
+    VLOG(1) << "Could not read " << kIOMemLocation << ": "
+            << status.getMessage();
+    return results;
+  }
 
   regions = osquery::split(content, "\n");
   for (const auto& line : regions) {

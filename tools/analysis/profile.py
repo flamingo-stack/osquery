@@ -90,6 +90,9 @@ def check_leaks_darwin(shell, query, count=1):
         except:
             print("Encountered exception while running leaks:")
             print(stdout)
+    if leak_checks is None:
+        print("Could not determine leaks output; reporting failure.")
+        return {"definitely": "unknown"}
     return {"definitely": leak_checks.decode("utf-8")}
 
 
