@@ -56,13 +56,15 @@ static void executeCarve(sqlite3_context* ctx) {
   if (!FLAGS_carver_disable_function) {
     std::string new_carve_guid;
     carvePaths(kFunctionCarvePaths, createCarveGuid(), new_carve_guid);
+    std::string message = std::string("Carve Started: " + new_carve_guid);
     sqlite3_result_text(ctx,
-                        std::string("Carve Started: " + new_carve_guid).c_str(),
-                        13,
+                        message.c_str(),
+                        static_cast<int>(message.size()),
                         SQLITE_TRANSIENT);
   } else {
+    std::string message = "Carve Failed: function disabled";
     sqlite3_result_text(
-        ctx, "Carve Failed: function disabled", 13, SQLITE_TRANSIENT);
+        ctx, message.c_str(), static_cast<int>(message.size()), SQLITE_TRANSIENT);
   }
   kFunctionCarvePaths.clear();
 }
@@ -97,3 +99,4 @@ void registerOperationExtensions(sqlite3* db) {
       db, "sleep", 1, SQLITE_UTF8, nullptr, sqlSleep, nullptr, nullptr);
 }
 } // namespace osquery
+
