@@ -65,9 +65,10 @@ std::string getManufacturer(std::string manufacturer) {
     // If it's a Dell machine, we check if the legacy class exists or not and
     // accordingly return the corresponding manufacturer name.
     auto it = kVendorSpecificQueryMap.find("dell-legacy");
-    const auto wmiBiosReq = WmiRequest::CreateWmiRequest(
+    auto exp_wmi_bios_req = WmiRequest::CreateWmiRequest(
         std::get<0>(it->second), std::get<1>(it->second));
-    if (wmiBiosReq && !wmiBiosReq->results().empty()) {
+    if (!exp_wmi_bios_req.isError() &&
+        !exp_wmi_bios_req.get().results().empty()) {
       manufacturer = "dell-legacy";
     } else {
       manufacturer = "dell";
@@ -466,3 +467,4 @@ QueryData genBiosInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
