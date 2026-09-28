@@ -297,7 +297,7 @@ Expected<WindowsUpdateHistoryEntry, WindowsUpdateHistoryError> getAt(
 
   std::unique_ptr<IUpdateHistoryEntry, InterfaceReleaser<IUpdateHistoryEntry>>
       entry(pEntry, InterfaceReleaser<IUpdateHistoryEntry>());
-  return populateWindowsUpdateHistoryEntry(pEntry);
+  return populateWindowsUpdateHistoryEntry(entry.get());
 }
 
 Expected<WindowsUpdateHistory, WindowsUpdateHistoryError>
@@ -379,3 +379,4 @@ QueryData genWindowsUpdateHistory(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+
