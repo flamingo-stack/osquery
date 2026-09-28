@@ -76,8 +76,13 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
   }
 
   long numTasks = 0;
-  pTaskCollection->get_Count(&numTasks);
-  for (size_t i = 0; i < numTasks; i++) {
+  ret = pTaskCollection->get_Count(&numTasks);
+  if (FAILED(ret) || numTasks < 0) {
+    VLOG(1) << "Failed to get task count for root folder " << ret;
+    pTaskCollection->Release();
+    return;
+  }
+  for (long i = 0; i < numTasks; i++) {
     IRegisteredTask* pRegisteredTask = nullptr;
     // Collections are 1-based lists
     ret = pTaskCollection->get_Item(_variant_t(i + 1), &pRegisteredTask);
@@ -231,3 +236,4 @@ QueryData genScheduledTasks(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
