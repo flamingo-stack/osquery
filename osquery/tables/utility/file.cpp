@@ -207,22 +207,24 @@ const std::map<fs::file_type, std::string> kTypeNames{
 };
 #endif
 
-std::set<std::string> getPathsFromConstraints(const QueryContext& context) {
-  auto constraint_it = context.constraints.find("path");
+std::set<std::string> getPathsOrDirsFromConstraints(
+    const QueryContext& context,
+    const std::string& column_name,
+    int glob_flags) {
+  auto constraint_it = context.constraints.find(column_name);
 
   if (constraint_it == context.constraints.end()) {
     return {};
   }
 
-  auto paths = constraint_it->second.getAll(EQUALS);
+  auto results = constraint_it->second.getAll(EQUALS);
   context.expandConstraints(
-      "path",
+      column_name,
       LIKE,
-      paths,
+      results,
       ([&](const std::string& pattern, std::set<std::string>& out) {
         std::vector<std::string> patterns;
-        auto status =
-            resolveFilePattern(pattern, patterns, GLOB_ALL | GLOB_NO_CANON);
+        auto status = resolveFilePattern(pattern, patterns, glob_flags);
         if (status.ok()) {
           for (const auto& resolved : patterns) {
             out.insert(resolved);
@@ -231,34 +233,17 @@ std::set<std::string> getPathsFromConstraints(const QueryContext& context) {
         return status;
       }));
 
-  return paths;
+  return results;
+}
+
+std::set<std::string> getPathsFromConstraints(const QueryContext& context) {
+  return getPathsOrDirsFromConstraints(
+      context, "path", GLOB_ALL | GLOB_NO_CANON);
 }
 
 std::set<std::string> getDirsFromConstraints(const QueryContext& context) {
-  auto constraint_it = context.constraints.find("directory");
-
-  if (constraint_it == context.constraints.end()) {
-    return {};
-  }
-
-  auto directories = constraint_it->second.getAll(EQUALS);
-  context.expandConstraints(
-      "directory",
-      LIKE,
-      directories,
-      ([&](const std::string& pattern, std::set<std::string>& out) {
-        std::vector<std::string> patterns;
-        auto status =
-            resolveFilePattern(pattern, patterns, GLOB_FOLDERS | GLOB_NO_CANON);
-        if (status.ok()) {
-          for (const auto& resolved : patterns) {
-            out.insert(resolved);
-          }
-        }
-        return status;
-      }));
-
-  return directories;
+  return getPathsOrDirsFromConstraints(
+      context, "directory", GLOB_FOLDERS | GLOB_NO_CANON);
 }
 
 } // namespace
@@ -497,3 +482,4 @@ QueryData genFile(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

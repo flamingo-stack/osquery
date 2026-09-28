@@ -68,6 +68,26 @@ Status checkFileReadLimit(std::size_t file_size,
 
   return Status::success();
 }
+
+Status checkPathAccess(const fs::path& path,
+                       bool effective,
+                       int open_mode,
+                       int access_mode,
+                       const char* denied_message) {
+  auto path_exists = pathExists(path);
+  if (!path_exists.ok()) {
+    return path_exists;
+  }
+
+  if (effective) {
+    PlatformFile fd(path, PF_OPEN_EXISTING | open_mode);
+    return Status(fd.isValid() ? 0 : 1);
+  } else if (platformAccess(path.string(), access_mode) == 0) {
+    return Status::success();
+  }
+
+  return Status(1, std::string(denied_message) + path.string());
+}
 } // namespace
 
 Status writeTextFile(const fs::path& path,
@@ -242,35 +262,13 @@ Status readFile(const fs::path& path, std::string& content, bool shouldLog) {
 }
 
 Status isWritable(const fs::path& path, bool effective) {
-  auto path_exists = pathExists(path);
-  if (!path_exists.ok()) {
-    return path_exists;
-  }
-
-  if (effective) {
-    PlatformFile fd(path, PF_OPEN_EXISTING | PF_WRITE);
-    return Status(fd.isValid() ? 0 : 1);
-  } else if (platformAccess(path.string(), W_OK) == 0) {
-    return Status::success();
-  }
-
-  return Status(1, "Path is not writable: " + path.string());
+  return checkPathAccess(
+      path, effective, PF_WRITE, W_OK, "Path is not writable: ");
 }
 
 Status isReadable(const fs::path& path, bool effective) {
-  auto path_exists = pathExists(path);
-  if (!path_exists.ok()) {
-    return path_exists;
-  }
-
-  if (effective) {
-    PlatformFile fd(path, PF_OPEN_EXISTING | PF_READ);
-    return Status(fd.isValid() ? 0 : 1);
-  } else if (platformAccess(path.string(), R_OK) == 0) {
-    return Status::success();
-  }
-
-  return Status(1, "Path is not readable: " + path.string());
+  return checkPathAccess(
+      path, effective, PF_READ, R_OK, "Path is not readable: ");
 }
 
 Status pathExists(const fs::path& path) {
@@ -665,3 +663,4 @@ std::string lsperms(int mode) {
   return bits;
 }
 } // namespace osquery
+

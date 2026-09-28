@@ -331,6 +331,7 @@ Status RocksDBDatabasePlugin::get(const std::string& domain,
   }
   return s;
 }
+
 Status RocksDBDatabasePlugin::put(const std::string& domain,
                                   const std::string& key,
                                   const std::string& value) {
@@ -381,7 +382,7 @@ Status RocksDBDatabasePlugin::putBatch(const std::string& domain,
 Status RocksDBDatabasePlugin::put(const std::string& domain,
                                   const std::string& key,
                                   int value) {
-  return putBatch(domain, {std::make_pair(key, std::to_string(value))});
+  return put(domain, key, std::to_string(value));
 }
 
 Status RocksDBDatabasePlugin::remove(const std::string& domain,
