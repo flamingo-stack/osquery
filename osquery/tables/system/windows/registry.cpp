@@ -471,7 +471,7 @@ static inline Status populateAllKeysRecursive(
   }
 
   auto size_pre = rKeys.size();
-  auto ret = populateSubkeys(rKeys);
+  auto ret = populateSubkeys(rKeys, false);
   if (!ret.ok()) {
     return ret;
   }
