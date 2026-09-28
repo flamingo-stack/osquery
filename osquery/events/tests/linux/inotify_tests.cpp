@@ -29,7 +29,9 @@ namespace fs = boost::filesystem;
 namespace osquery {
 DECLARE_bool(enable_file_events);
 
+namespace {
 const int kMaxEventLatency = 3000;
+} // namespace
 
 class INotifyTests : public testing::Test {
   bool enable_file_events_backup{false};
