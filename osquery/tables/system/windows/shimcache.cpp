@@ -22,6 +22,11 @@
 #include <algorithm>
 #include <string>
 
+namespace osquery {
+namespace tables {
+
+namespace {
+
 const int kWin8 = 256;
 const int kWin10PreCreator = 96;
 const int kWin10Creator = 104;
@@ -44,8 +49,7 @@ struct ShimcacheData {
   boost::optional<bool> execution_flag;
 };
 
-namespace osquery {
-namespace tables {
+} // namespace
 
 auto parseShimcacheData(const std::string& token,
                         const boost::optional<bool>& execution_flag_exists) {
@@ -227,3 +231,4 @@ QueryData genShimcache(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+
