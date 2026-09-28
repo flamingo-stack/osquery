@@ -100,7 +100,7 @@ void Client::readHandler(boost::system::error_code const& ec, size_t) {
   postResponseHandler(ec);
 }
 
-void Client::createConnection() {
+Status Client::createConnection() {
   std::string port = (client_options_.proxy_hostname_)
                          ? kProxyDefaultPort
                          : *client_options_.remote_port_;
@@ -134,7 +134,8 @@ void Client::createConnection() {
       error += "proxy host ";
     }
     error += connect_host + ':' + port;
-    throw std::system_error(ec_, error);
+    error += ": " + ec_.message();
+    return Status::failure(error);
   }
 
   if (client_options_.keep_alive_) {
@@ -162,7 +163,7 @@ void Client::createConnection() {
     });
 
     if (ec_) {
-      throw std::system_error(ec_);
+      return Status::failure(ec_.message());
     }
 
     boost::beast::flat_buffer b;
@@ -180,17 +181,19 @@ void Client::createConnection() {
     });
 
     if (ec_) {
-      throw std::system_error(ec_);
+      return Status::failure(ec_.message());
     }
 
     if (beast_http::to_status_class(rp.get().result()) !=
         beast_http::status_class::successful) {
-      throw std::runtime_error(rp.get().reason().data());
+      return Status::failure(rp.get().reason().data());
     }
   }
+
+  return Status::success();
 }
 
-void Client::encryptConnection() {
+Status Client::encryptConnection() {
   boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
 
   if (client_options_.always_verify_peer_) {
@@ -241,14 +244,16 @@ void Client::encryptConnection() {
   });
 
   if (ec_) {
-    throw std::system_error(ec_);
+    return Status::failure(ec_.message());
   }
+
+  return Status::success();
 }
 
 template <typename STREAM_TYPE>
-void Client::sendRequest(STREAM_TYPE& stream,
-                         Request& req,
-                         beast_http_response_parser& resp) {
+Status Client::sendRequest(STREAM_TYPE& stream,
+                           Request& req,
+                           beast_http_response_parser& resp) {
   req.target((req.remotePath()) ? *req.remotePath() : "/");
   req.version(11);
 
@@ -284,7 +289,7 @@ void Client::sendRequest(STREAM_TYPE& stream,
   });
 
   if (ec_) {
-    throw std::system_error(ec_);
+    return Status::failure(ec_.message());
   }
 
   boost::beast::flat_buffer b;
@@ -300,7 +305,7 @@ void Client::sendRequest(STREAM_TYPE& stream,
   });
 
   if (ec_) {
-    throw std::system_error(ec_);
+    return Status::failure(ec_.message());
   }
 
   if (resp.get()["Connection"] == "close") {
@@ -310,10 +315,12 @@ void Client::sendRequest(STREAM_TYPE& stream,
   if (!client_options_.keep_alive_) {
     closeSocket();
   }
+
+  return Status::success();
 }
 
-bool Client::initHTTPRequest(Request& req) {
-  bool create_connection = true;
+Status Client::initHTTPRequest(Request& req, bool& create_connection) {
+  create_connection = true;
   if (req.remoteHost()) {
     std::string hostname = *req.remoteHost();
     std::string port;
@@ -349,7 +356,7 @@ bool Client::initHTTPRequest(Request& req) {
     }
   } else {
     if (!client_options_.remote_hostname_) {
-      throw std::runtime_error("Remote hostname missing");
+      return Status::failure("Remote hostname missing");
     }
 
     if (!client_options_.remote_port_) {
@@ -361,10 +368,10 @@ bool Client::initHTTPRequest(Request& req) {
     }
     closeSocket();
   }
-  return create_connection;
+  return Status::success();
 }
 
-Response Client::sendHTTPRequest(Request& req) {
+Status Client::sendHTTPRequest(Request& req, Response& response) {
   if (client_options_.timeout_) {
     timer_.expires_from_now(
         boost::posix_time::seconds(client_options_.timeout_));
@@ -375,140 +382,168 @@ Response Client::sendHTTPRequest(Request& req) {
   do {
     bool create_connection = true;
     if (init_request) {
-      create_connection = initHTTPRequest(req);
+      auto status = initHTTPRequest(req, create_connection);
+      if (!status.ok()) {
+        return status;
+      }
     }
 
-    try {
-      beast_http_response_parser resp;
-      if (create_connection) {
-        createConnection();
-
-        if (client_options_.ssl_connection_) {
-          encryptConnection();
+    beast_http_response_parser resp;
+    if (create_connection) {
+      auto status = createConnection();
+      if (!status.ok()) {
+        closeSocket();
+        if (init_request && ec_ != boost::asio::error::timed_out) {
+          init_request = false;
+          continue;
         }
+        ec_.clear();
+        return status;
       }
 
       if (client_options_.ssl_connection_) {
-        sendRequest(*ssl_sock_, req, resp);
-      } else {
-        sendRequest(sock_, req, resp);
-      }
-
-      switch (resp.get().result()) {
-      case beast_http::status::moved_permanently:
-      case beast_http::status::found:
-      case beast_http::status::see_other:
-      case beast_http::status::not_modified:
-      case beast_http::status::use_proxy:
-      case beast_http::status::temporary_redirect:
-      case beast_http::status::permanent_redirect: {
-        if (!client_options_.follow_redirects_) {
-          return Response(resp.release());
-        }
-
-        if (redirect_attempts++ >= 10) {
-          throw std::runtime_error("Exceeded max of 10 redirects");
-        }
-
-        std::string redir_url = Response(resp.release()).headers()["Location"];
-        if (!redir_url.size()) {
-          throw std::runtime_error(
-              "Location header missing in redirect response");
-        }
-
-        VLOG(1) << "HTTP(S) request re-directed to: " << redir_url;
-        if (redir_url[0] == '/') {
-          // Relative URI.
-          if (req.remotePort()) {
-            redir_url.insert(0, *req.remotePort());
-            redir_url.insert(0, ":");
+        auto status2 = encryptConnection();
+        if (!status2.ok()) {
+          closeSocket();
+          if (init_request && ec_ != boost::asio::error::timed_out) {
+            init_request = false;
+            continue;
           }
-          if (req.remoteHost()) {
-            redir_url.insert(0, *req.remoteHost());
-          }
-          if (req.protocol()) {
-            redir_url.insert(0, "://");
-            redir_url.insert(0, *req.protocol());
-          }
-        } else {
-          // Absolute URI.
-          init_request = true;
+          ec_.clear();
+          return status2;
         }
-        req.uri(redir_url);
-        break;
       }
-      default:
-        return Response(resp.release());
-      }
-    } catch (std::exception const& /* e */) {
+    }
+
+    Status send_status;
+    if (client_options_.ssl_connection_) {
+      send_status = sendRequest(*ssl_sock_, req, resp);
+    } else {
+      send_status = sendRequest(sock_, req, resp);
+    }
+
+    if (!send_status.ok()) {
       closeSocket();
       if (init_request && ec_ != boost::asio::error::timed_out) {
         init_request = false;
-      } else {
-        ec_.clear();
-        throw;
+        continue;
       }
+      ec_.clear();
+      return send_status;
+    }
+
+    switch (resp.get().result()) {
+    case beast_http::status::moved_permanently:
+    case beast_http::status::found:
+    case beast_http::status::see_other:
+    case beast_http::status::not_modified:
+    case beast_http::status::use_proxy:
+    case beast_http::status::temporary_redirect:
+    case beast_http::status::permanent_redirect: {
+      if (!client_options_.follow_redirects_) {
+        response = Response(resp.release());
+        return Status::success();
+      }
+
+      if (redirect_attempts++ >= 10) {
+        return Status::failure("Exceeded max of 10 redirects");
+      }
+
+      std::string redir_url = Response(resp.release()).headers()["Location"];
+      if (!redir_url.size()) {
+        return Status::failure("Location header missing in redirect response");
+      }
+
+      VLOG(1) << "HTTP(S) request re-directed to: " << redir_url;
+      if (redir_url[0] == '/') {
+        // Relative URI.
+        if (req.remotePort()) {
+          redir_url.insert(0, *req.remotePort());
+          redir_url.insert(0, ":");
+        }
+        if (req.remoteHost()) {
+          redir_url.insert(0, *req.remoteHost());
+        }
+        if (req.protocol()) {
+          redir_url.insert(0, "://");
+          redir_url.insert(0, *req.protocol());
+        }
+      } else {
+        // Absolute URI.
+        init_request = true;
+      }
+      req.uri(redir_url);
+      break;
+    }
+    default:
+      response = Response(resp.release());
+      return Status::success();
     }
   } while (true);
 }
 
-Response Client::put(Request& req,
-                     std::string const& body,
-                     std::string const& content_type) {
+Status Client::put(Request& req,
+                   Response& response,
+                   std::string const& body,
+                   std::string const& content_type) {
   req.method(beast_http::verb::put);
   req.body() = body;
   if (!content_type.empty()) {
     req.set(beast_http::field::content_type, content_type);
   }
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::post(Request& req,
-                      std::string const& body,
-                      std::string const& content_type) {
+Status Client::post(Request& req,
+                    Response& response,
+                    std::string const& body,
+                    std::string const& content_type) {
   req.method(beast_http::verb::post);
   req.body() = body;
   if (!content_type.empty()) {
     req.set(beast_http::field::content_type, content_type);
   }
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::put(Request& req,
-                     std::string&& body,
-                     std::string const& content_type) {
+Status Client::put(Request& req,
+                   Response& response,
+                   std::string&& body,
+                   std::string const& content_type) {
   req.method(beast_http::verb::put);
   req.body() = std::move(body);
   if (!content_type.empty()) {
     req.set(beast_http::field::content_type, content_type);
   }
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::post(Request& req,
-                      std::string&& body,
-                      std::string const& content_type) {
+Status Client::post(Request& req,
+                    Response& response,
+                    std::string&& body,
+                    std::string const& content_type) {
   req.method(beast_http::verb::post);
   req.body() = std::move(body);
   if (!content_type.empty()) {
     req.set(beast_http::field::content_type, content_type);
   }
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::get(Request& req) {
+Status Client::get(Request& req, Response& response) {
   req.method(beast_http::verb::get);
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::head(Request& req) {
+Status Client::head(Request& req, Response& response) {
   req.method(beast_http::verb::head);
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 
-Response Client::delete_(Request& req) {
+Status Client::delete_(Request& req, Response& response) {
   req.method(beast_http::verb::delete_);
-  return sendHTTPRequest(req);
+  return sendHTTPRequest(req, response);
 }
 } // namespace http
 } // namespace osquery
+
