@@ -49,8 +49,8 @@ TEST_F(ETWProcessEventsTests, test_subscriber_exists) {
   ASSERT_TRUE(Registry::get().exists("event_subscriber", ETW_SUBSCRIBER_NAME));
 
   auto plugin = Registry::get().plugin("event_subscriber", ETW_SUBSCRIBER_NAME);
-  auto* subscriber =
-      reinterpret_cast<std::shared_ptr<EtwProcessEventSubscriber>*>(&plugin);
+  auto subscriber =
+      std::dynamic_pointer_cast<EtwProcessEventSubscriber>(plugin);
   EXPECT_NE(subscriber, nullptr);
 }
 
@@ -58,8 +58,8 @@ TEST_F(ETWProcessEventsTests, test_publisher_exists) {
   ASSERT_TRUE(Registry::get().exists("event_publisher", ETW_PUBLISHER_NAME));
 
   auto plugin = Registry::get().plugin("event_publisher", ETW_PUBLISHER_NAME);
-  auto* publisher =
-      reinterpret_cast<std::shared_ptr<EtwPublisherProcesses>*>(&plugin);
+  auto publisher =
+      std::dynamic_pointer_cast<EtwPublisherProcesses>(plugin);
   EXPECT_NE(publisher, nullptr);
 }
 
