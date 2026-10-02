@@ -32,6 +32,16 @@ env:
 # =============================================================================
 
 jobs:
+  schema_test:
+    name: Test Release Schema Exporter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -B -m unittest discover -s tools/codegen -p test_release_schema.py -v
+
   build_macos:
     name: "Build C Client for (${{ matrix.os }} ${{ matrix.os_arch }})"
     runs-on: ${{ matrix.os }}
@@ -47,11 +57,13 @@ jobs:
             os: macos-15-intel
             os_arch: x86-64
             cmake_arch: x86_64
+            schema_arch: amd64
             artifact_name: osquery-macos-x64
           - name: "macOS ARM64"
             os: macos-15 # pinned: Xcode 26 on macos-latest fails to compile boost mpl
             os_arch: arm64
             cmake_arch: arm64
+            schema_arch: arm64
             artifact_name: osquery-macos-arm64
     steps:
       - name: Checkout
@@ -131,6 +143,17 @@ jobs:
           
           echo "Build completed successfully"
 
+      - name: Verify built table schema
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 tools/codegen/release_schema.py variant \
+            --native-specs build/specs/native_specs.txt \
+            --foreign-specs build/specs/foreign_specs.txt \
+            --platform darwin --architecture '${{ matrix.schema_arch }}' \
+            --release-tag pr-test --osquery-version 5.9.1 --source-commit "$SOURCE_COMMIT" \
+            --binary build/osquery/osqueryd --output schema/osquery-schema.json
+
       - name: ccache statistics
         if: always()
         run: ccache --show-stats
@@ -158,6 +181,10 @@ jobs:
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       
       - name: Setup Visual Studio Build Tools
         uses: ilammy/msvc-dev-cmd@v1
@@ -175,9 +202,21 @@ jobs:
           cd build
           cmake --build . --config RelWithDebInfo -j10
 
+      - name: Verify built table schema
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python tools/codegen/release_schema.py variant \
+            --native-specs build/specs/native_specs.txt \
+            --foreign-specs build/specs/foreign_specs.txt \
+            --platform windows --architecture amd64 \
+            --release-tag pr-test --osquery-version 5.9.1 --source-commit "$SOURCE_COMMIT" \
+            --binary build/osquery/RelWithDebInfo/osqueryd.exe --output schema/osquery-schema.json
+
   all-checks:
     name: "All Checks"
-    needs: [build_macos, build_windows]
+    needs: [schema_test, build_macos, build_windows]
     runs-on: ubuntu-latest
     if: always()
     steps:

@@ -118,6 +118,8 @@ function(generateTables category)
     list(APPEND table_spec_list "${CMAKE_SOURCE_DIR}/specs/${relative_table_spec}")
   endforeach()
 
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${category}_specs.txt" "${table_spec_list}")
+
   # Iterate through each table spec file
   set(output_folder "${CMAKE_CURRENT_BINARY_DIR}/${category}")
 

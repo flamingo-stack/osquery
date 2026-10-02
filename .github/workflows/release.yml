@@ -33,6 +33,16 @@ env:
 # =============================================================================
 
 jobs:
+  schema_test:
+    name: Test Release Schema Exporter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -B -m unittest discover -s tools/codegen -p test_release_schema.py -v
+
   # cmake needs 3 semver components and no leading "v"
   version:
     name: "Resolve Version"
@@ -79,11 +89,13 @@ jobs:
             os: macos-15-intel
             os_arch: x86-64
             cmake_arch: x86_64
+            schema_arch: amd64
             artifact_name: osquery-macos-x64
           - name: "macOS ARM64"
             os: macos-15 # pinned: Xcode 26 on macos-latest fails to compile boost mpl
             os_arch: arm64
             cmake_arch: arm64
+            schema_arch: arm64
             artifact_name: osquery-macos-arm64
 
     steps:
@@ -163,6 +175,27 @@ jobs:
           time cmake --build . -j $CPU_COUNT
           
           echo "Build completed successfully"
+
+      - name: Export and verify release schema
+        env:
+          RELEASE_TAG: ${{ inputs.version || 'latest' }}
+          OSQUERY_VERSION: ${{ needs.version.outputs.version }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 tools/codegen/release_schema.py variant \
+            --native-specs build/specs/native_specs.txt \
+            --foreign-specs build/specs/foreign_specs.txt \
+            --platform darwin --architecture '${{ matrix.schema_arch }}' \
+            --release-tag "$RELEASE_TAG" --osquery-version "$OSQUERY_VERSION" \
+            --source-commit "$SOURCE_COMMIT" --binary build/osquery/osqueryd \
+            --output schema/osquery-schema.json
+
+      - name: Upload schema variant
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-darwin-${{ matrix.schema_arch }}
+          path: schema/osquery-schema.json
+          if-no-files-found: error
 
       - name: ccache statistics
         if: always()
@@ -266,6 +299,10 @@ jobs:
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       
       - name: Setup Visual Studio Build Tools
         uses: ilammy/msvc-dev-cmd@v1
@@ -282,6 +319,28 @@ jobs:
         run: |
           cd build
           cmake --build . --config RelWithDebInfo -j10
+
+      - name: Export and verify release schema
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.version || 'latest' }}
+          OSQUERY_VERSION: ${{ needs.version.outputs.version }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python tools/codegen/release_schema.py variant \
+            --native-specs build/specs/native_specs.txt \
+            --foreign-specs build/specs/foreign_specs.txt \
+            --platform windows --architecture amd64 \
+            --release-tag "$RELEASE_TAG" --osquery-version "$OSQUERY_VERSION" \
+            --source-commit "$SOURCE_COMMIT" --binary build/osquery/RelWithDebInfo/osqueryd.exe \
+            --output schema/osquery-schema.json
+
+      - name: Upload schema variant
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-windows-amd64
+          path: schema/osquery-schema.json
+          if-no-files-found: error
 
       - name: Sign Windows package
         uses: ./.github/steps/sign-windows-package
@@ -307,7 +366,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [build_macos, create_universal_macos, build_windows]
+    needs: [schema_test, build_macos, create_universal_macos, build_windows]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'push' ||
@@ -323,6 +382,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Aggregate matching build schemas
+        run: |
+          python tools/codegen/release_schema.py aggregate \
+            --variants release-artifacts/schema-darwin-amd64/osquery-schema.json \
+              release-artifacts/schema-darwin-arm64/osquery-schema.json \
+              release-artifacts/schema-windows-amd64/osquery-schema.json \
+            --output final-artifacts/osquery-schema.json
 
       - name: Prepare release artifacts
         run: |
@@ -350,12 +421,20 @@ jobs:
 
           ls -lh final-artifacts/clients/
 
+      - name: Hash release artifacts
+        run: |
+          cd final-artifacts
+          sha256sum osquery-schema.json clients/* > SHA256SUMS
+
       - name: Generate release header
         run: |
           cat > RELEASE_HEADER.md <<EOF
           ## OSQuery Clients
           - **macOS** (Universal): \`osquery-macos-universal.tar.gz\`
           - **Windows** (amd64): \`osquery-windows-amd64.zip\`
+          - **Versioned table schema**: \`osquery-schema.json\`
+          - **Schema SHA-256**: \`osquery-schema.json.sha256\`
+          - **Checksums**: \`SHA256SUMS\`
           EOF
 
       - name: Delete existing latest release
@@ -373,5 +452,9 @@ jobs:
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: RELEASE_HEADER.md
+          fail_on_unmatched_files: true
           files: |
             final-artifacts/clients/*
+            final-artifacts/osquery-schema.json
+            final-artifacts/osquery-schema.json.sha256
+            final-artifacts/SHA256SUMS
