@@ -136,23 +136,25 @@ def gen_diff(api_old_path, api_new_path):
     columns_added = []
     columns_removed = []
     for name, table in new_tables.items():
+        category_name = name.split(":", 1)[0]
         if name not in old_tables:
             tables_added.append(name)
             continue
         for column in table["columns"]:
             old_columns = [c["name"] for c in old_tables[name]["columns"]]
             if column["name"] not in old_columns:
-                columns_added.append("%s:%s:%s:%s" % (category["name"],
+                columns_added.append("%s:%s:%s:%s" % (category_name,
                                                       table["name"], column["name"], column["type"]))
 
     for name, table in old_tables.items():
+        category_name = name.split(":", 1)[0]
         if name not in new_tables:
             tables_removed.append(name)
             continue
         for column in table["columns"]:
             new_columns = [c["name"] for c in new_tables[name]["columns"]]
             if column["name"] not in new_columns:
-                columns_removed.append("%s:%s:%s:%s" % (category["name"],
+                columns_removed.append("%s:%s:%s:%s" % (category_name,
                                                         table["name"], column["name"], column["type"]))
 
     # Sort then pretty print (md) the changes.

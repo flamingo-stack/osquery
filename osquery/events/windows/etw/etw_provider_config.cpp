@@ -22,7 +22,7 @@ Status EtwProviderConfig::isValid() const {
     return Status::failure("Empty list of Events to handle");
   }
 
-  if (getPostProcessor() == nullptr) {
+  if (getPreProcessor() == nullptr) {
     return Status::failure("Type handlers were not provided");
   }
 
