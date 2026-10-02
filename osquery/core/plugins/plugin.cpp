@@ -11,13 +11,14 @@
 
 namespace osquery {
 
-void Plugin::setName(const std::string& name) {
+Status Plugin::setName(const std::string& name) {
   if (!name_.empty() && name != name_) {
     std::string error = "Cannot rename plugin " + name_ + " to " + name;
-    throw std::runtime_error(error);
+    return Status(1, error);
   }
 
   name_ = name;
+  return Status::success();
 }
 
 PluginResponse tableRowsToPluginResponse(const TableRows& rows) {
@@ -29,3 +30,4 @@ PluginResponse tableRowsToPluginResponse(const TableRows& rows) {
 }
 
 } // namespace osquery
+

@@ -117,25 +117,28 @@ class DbusMethod final : public MethodHandler {
 };
 
 template <typename FieldType, int dbus_type_id>
-FieldType readDbusMessageField(DBusMessageIter& it, bool increment_iterator) {
+Status readDbusMessageField(FieldType& value,
+                            DBusMessageIter& it,
+                            bool increment_iterator) {
+  value = FieldType{};
+
   if (dbus_message_iter_get_arg_type(&it) != dbus_type_id) {
-    throw Status::failure("Unexpected type encountered");
+    return Status::failure("Unexpected type encountered");
   }
 
-  FieldType value{};
   dbus_message_iter_get_basic(&it, &value);
 
   if (increment_iterator) {
     if (!dbus_message_iter_has_next(&it)) {
-      throw Status::failure("Unexpected end of message encountered");
+      return Status::failure("Unexpected end of message encountered");
     }
 
     if (!dbus_message_iter_next(&it)) {
-      throw Status::failure("Failed to increment the field iterator");
+      return Status::failure("Failed to increment the field iterator");
     }
   }
 
-  return value;
+  return Status::success();
 }
 
 const auto readDbusMessageStringField{
@@ -147,3 +150,4 @@ const auto readDbusMessageObjectPathField{
 const auto readDbusMessageUint32Field{
     readDbusMessageField<std::uint32_t, DBUS_TYPE_UINT32>};
 } // namespace osquery
+

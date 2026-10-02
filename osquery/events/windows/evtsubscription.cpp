@@ -54,14 +54,18 @@ Status EvtSubscription::create(EvtSubscription::Ref& obj,
   obj.reset();
 
   try {
-    obj.reset(new EvtSubscription(channel));
+    std::unique_ptr<EvtSubscription> subscription(new EvtSubscription());
+
+    auto status = subscription->initialize(channel);
+    if (!status.ok()) {
+      return status;
+    }
+
+    obj = std::move(subscription);
     return Status::success();
 
   } catch (const std::bad_alloc&) {
     return Status::failure("Memory allocation failure");
-
-  } catch (const Status& status) {
-    return status;
   }
 }
 
@@ -93,8 +97,9 @@ EvtSubscription::EventList EvtSubscription::getEvents() {
   return event_list;
 }
 
-EvtSubscription::EvtSubscription(const std::string& channel)
-    : d_(new PrivateData) {
+EvtSubscription::EvtSubscription() : d_(new PrivateData) {}
+
+Status EvtSubscription::initialize(const std::string& channel) {
   d_->channel = channel;
   auto channel_utf16 = stringToWstring(channel);
 
@@ -109,11 +114,12 @@ EvtSubscription::EvtSubscription(const std::string& channel)
 
   if (subscription == nullptr) {
     auto error = GetLastError();
-    throw Status::failure("Failed to subscribe to the channel named " +
-                          channel + ". Error " + std::to_string(error));
+    return Status::failure("Failed to subscribe to the channel named " +
+                           channel + ". Error " + std::to_string(error));
   }
 
   d_->handle = subscription;
+  return Status::success();
 }
 
 void EvtSubscription::processEvent(EVT_HANDLE event) {

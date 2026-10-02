@@ -96,7 +96,7 @@ Status queryRpmDb(packageCallback predicate) {
   rpmInitCrypto();
   if (rpmReadConfigFiles(nullptr, nullptr) != 0) {
     rpmFreeCrypto();
-    Status::failure("Cannot read configuration");
+    return Status::failure("Cannot read configuration");
   }
 
   rpmts ts = rpmtsCreate();
