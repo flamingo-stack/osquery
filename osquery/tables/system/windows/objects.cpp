@@ -88,7 +88,7 @@ Status enumerateObjectNamespace(const std::wstring& directory,
   Handle kdo;
   auto status = kdo.openDirObj(directory);
   if (!status.ok()) {
-    VLOG(1) << L"Unable to open object directory: " << status.getCode();
+    VLOG(1) << "Unable to open object directory: " << status.getCode();
     return status;
   }
 
@@ -167,7 +167,7 @@ Status enumerateBaseNamedObjectsLinks(
   Handle slo;
   auto status = slo.openSymLinkObj(qualifiedpath);
   if (!status.ok()) {
-    VLOG(1) << L"Unable to open symbolic link object: " << status.getCode();
+    VLOG(1) << "Unable to open symbolic link object: " << status.getCode();
     return status;
   }
 
@@ -194,15 +194,19 @@ QueryData genBaseNamedObjects(QueryContext& context) {
   std::vector<obj_name_type_pair> sessions;
   auto status = enumerateObjectNamespace(kBnoLinks, sessions);
   if (!status.ok()) {
-    VLOG(1) << L"Unable to enumerate kBnoLinks: " << status.getCode();
+    VLOG(1) << "Unable to enumerate kBnoLinks: " << status.getCode();
     return results;
   }
 
   for (auto& session : sessions) {
     std::vector<obj_name_type_pair> objects;
 
-    auto status =
+    auto linkStatus =
         enumerateBaseNamedObjectsLinks(session.first, session.second, objects);
+    if (!linkStatus.ok()) {
+      VLOG(1) << "Unable to enumerate BNO links for session: "
+              << linkStatus.getMessage();
+    }
 
     for (auto& object : objects) {
       Row r;
@@ -218,3 +222,4 @@ QueryData genBaseNamedObjects(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

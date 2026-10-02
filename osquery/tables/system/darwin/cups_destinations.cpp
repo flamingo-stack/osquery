@@ -10,6 +10,7 @@
 #include <cups/cups.h>
 
 #include <osquery/core/tables.h>
+#include <osquery/logger/logger.h>
 
 namespace osquery {
 namespace tables {
@@ -21,6 +22,11 @@ class CupsDestinations {
 
   CupsDestinations() : destination_list(nullptr), num_destinations(0) {
     num_destinations = cupsGetDests(&destination_list);
+    if (num_destinations < 0) {
+      LOG(WARNING) << "cupsGetDests failed with error code "
+                    << num_destinations;
+      num_destinations = 0;
+    }
   }
 
   ~CupsDestinations() {
@@ -61,3 +67,4 @@ QueryData genCupsDestinations(QueryContext& request) {
 
 } // namespace tables
 } // namespace osquery
+

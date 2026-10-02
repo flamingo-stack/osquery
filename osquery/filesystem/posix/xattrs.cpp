@@ -195,6 +195,7 @@ XAttrGetResult getExtendedAttributes(const std::string& path) {
   auto name_list = list_result.take();
 
   bool had_value_error = false;
+  std::string last_value_error_message;
   for (const auto& name : name_list) {
     auto value_result = getExtendedAttributeValue(fd, name);
     if (value_result.isError()) {
@@ -204,8 +205,9 @@ XAttrGetResult getExtendedAttributes(const std::string& path) {
          without printing anything here, but then we would lose
          on important information about what exactly has gone wrong. */
       had_value_error = true;
-      VLOG(1) << xAttrValueErrorToString(
+      last_value_error_message = xAttrValueErrorToString(
           value_result.getErrorCode(), path, name);
+      VLOG(1) << last_value_error_message;
 
       continue;
     }
@@ -213,9 +215,11 @@ XAttrGetResult getExtendedAttributes(const std::string& path) {
   }
 
   if (had_value_error) {
-    LOG(ERROR) << "Failed to read some extended attributes from " << path;
+    LOG(ERROR) << "Failed to read some extended attributes from " << path
+               << ": " << last_value_error_message;
   }
 
   return xattr_map;
 }
 } // namespace osquery
+
