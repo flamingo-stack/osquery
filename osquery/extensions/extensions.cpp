@@ -184,7 +184,7 @@ Status extensionPathActive(const std::string& path, bool use_timeout = false) {
         // Create a client with a 10-second receive timeout.
         ExtensionManagerClient client(path, 10);
         auto status = client.ping();
-        return Status::success();
+        return status;
       } catch (const std::exception& /* e */) {
         // Path might exist without a connected extension or extension manager.
       }
@@ -319,7 +319,9 @@ void ExtensionManagerWatcher::watch() {
 
     // All extensions will have a single failure (and odd use of the counting).
     // If failures get to 2 then the extension will be removed.
-    failures_[uuid] = 1;
+    if (failures_[uuid] == 0) {
+      failures_[uuid] = 1;
+    }
     if (exists.ok()) {
       try {
         ExtensionClient client(path);

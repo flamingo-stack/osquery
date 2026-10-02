@@ -41,7 +41,7 @@ QueryData genWinOptionalFeatures(QueryContext& context) {
 
   for (const auto& wmiObj : wmiResults) {
     Row r;
-    uint32_t state;
+    uint32_t state = 0;
 
     wmiObj.GetString("Name", r["name"]);
     wmiObj.GetString("Caption", r["caption"]);
@@ -50,9 +50,11 @@ QueryData genWinOptionalFeatures(QueryContext& context) {
     // For whatever reason, I4 is accessed using GetLong().
 
     if (wmiObj.GetUnsignedInt32("InstallState", state).ok() == false) {
-      long state_long;
+      long state_long = 0;
       if (wmiObj.GetLong("InstallState", state_long).ok()) {
         state = static_cast<uint32_t>(state_long);
+      } else {
+        state = 0;
       }
     }
     r["state"] = INTEGER(state);
@@ -84,3 +86,4 @@ std::string getDismPackageFeatureStateName(uint32_t state) {
 
 } // namespace tables
 } // namespace osquery
+

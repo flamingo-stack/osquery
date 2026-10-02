@@ -245,6 +245,7 @@ QueryData generateCommonBiosRows() {
     LOG(ERROR) << "wmi_bios_info: The following WMI query returned an "
                   "unexpected number of items: "
                << kWin32BiosQuery;
+    return {};
   }
 
   const auto& wmi_item = wmi_item_list.back();
@@ -466,3 +467,4 @@ QueryData genBiosInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
