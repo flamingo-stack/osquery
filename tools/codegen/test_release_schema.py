@@ -119,13 +119,17 @@ class ReleaseSchemaTest(unittest.TestCase):
         self.assertEqual(json.loads(raw)["variants"][0]["tables"][0]["notes"], "Permissions — needed")
         self.assertEqual(json.loads(json.dumps(first))["formatVersion"], 1)
 
-    def binary_query(self, version="0.0.8", columns=("path", "windows_only"), missing_alias=False):
+    def binary_query(self, version="0.0.8", columns=("path", "windows_only"), missing_alias=False,
+                     table_alias_columns=None):
         def run(command, **kwargs):
             sql = command[-1]
             if sql == "select version from osquery_info;":
                 rows = [{"version": version}]
-            elif sql.startswith("select name from pragma_table_xinfo("):
+            elif sql == "select name from pragma_table_xinfo('sample');":
                 rows = [{"name": name} for name in columns]
+            elif sql == "select name from pragma_table_xinfo('sample_alias');":
+                rows = [{"name": name} for name in
+                        (columns if table_alias_columns is None else table_alias_columns)]
             elif sql == 'select [location] from "sample" limit 0;':
                 if missing_alias:
                     raise subprocess.CalledProcessError(1, command, stderr="no such column: location")
@@ -161,6 +165,19 @@ class ReleaseSchemaTest(unittest.TestCase):
     def test_binary_verification_accepts_registered_table_and_column_aliases(self):
         with patch.object(self.exporter.subprocess, "run", side_effect=self.binary_query()):
             self.exporter.verify_binary(self.variant(), self.root / "osqueryd")
+
+    def test_binary_verification_accepts_table_alias_without_hidden_columns(self):
+        with patch.object(self.exporter.subprocess, "run",
+                          side_effect=self.binary_query(table_alias_columns=("path",))):
+            self.exporter.verify_binary(self.variant(), self.root / "osqueryd")
+
+    def test_binary_verification_rejects_table_alias_missing_visible_columns(self):
+        for platform, columns in (("darwin", ()), ("windows", ("path",))):
+            with self.subTest(platform=platform):
+                with patch.object(self.exporter.subprocess, "run",
+                                  side_effect=self.binary_query(table_alias_columns=columns)):
+                    with self.assertRaisesRegex(ValueError, "sample_alias missing columns"):
+                        self.exporter.verify_binary(self.variant(platform, "amd64"), self.root / "osqueryd")
 
 
 if __name__ == "__main__":

@@ -134,8 +134,11 @@ def verify_binary(artifact, binary):
         for table in artifact["variants"][0]["tables"]:
             if table["availability"] != "native":
                 continue
-            expected = {column["name"] for column in table["columns"]}
+            all_columns = {column["name"] for column in table["columns"]}
+            visible_columns = {column["name"] for column in table["columns"]
+                               if not column["options"].get("hidden", False)}
             for name in [table["name"]] + table["aliases"]:
+                expected = all_columns if name == table["name"] else visible_columns
                 escaped = name.replace("'", "''")
                 columns = query("select name from pragma_table_xinfo('{}');".format(escaped))
                 names = {column["name"] for column in columns}
