@@ -94,10 +94,10 @@ bool PlatformFile::isSpecialFile() const {
   return (size() == 0);
 }
 
-static uid_t getFileOwner(PlatformHandle handle) {
+static boost::optional<uid_t> getFileOwner(PlatformHandle handle) {
   struct stat file;
   if (::fstat(handle, &file) < 0) {
-    return -1;
+    return boost::none;
   }
   return file.st_uid;
 }
@@ -107,12 +107,12 @@ Status PlatformFile::isOwnerRoot() const {
     return Status(-1, "Invalid handle_");
   }
 
-  uid_t owner_id = getFileOwner(handle_);
-  if (owner_id == (uid_t)-1) {
+  auto owner_id = getFileOwner(handle_);
+  if (!owner_id.is_initialized()) {
     return Status(-1, "fstat error");
   }
 
-  if (owner_id == 0) {
+  if (*owner_id == 0) {
     return Status::success();
   }
   return Status(1, "Owner is not root");
@@ -123,12 +123,12 @@ Status PlatformFile::isOwnerCurrentUser() const {
     return Status(-1, "Invalid handle_");
   }
 
-  uid_t owner_id = getFileOwner(handle_);
-  if (owner_id == (uid_t)-1) {
+  auto owner_id = getFileOwner(handle_);
+  if (!owner_id.is_initialized()) {
     return Status(-1, "fstat error");
   }
 
-  if (owner_id == ::getuid()) {
+  if (*owner_id == ::getuid()) {
     return Status::success();
   }
 
@@ -294,14 +294,16 @@ int platformAccess(const std::string& path, mode_t mode) {
 Status platformIsTmpDir(const fs::path& dir) {
   struct stat dir_stat;
   if (::stat(dir.c_str(), &dir_stat) < 0) {
-    return Status(-1, "");
+    return Status(-1, "Failed to stat directory: " + dir.string());
   }
 
   if (dir_stat.st_mode & (1 << 9)) {
     return Status::success();
   }
 
-  return Status(1, "");
+  return Status(1,
+                "Directory does not have the sticky bit set: " +
+                    dir.string());
 }
 
 // Reduce this to be a lstat check for symlink stuff
@@ -357,7 +359,7 @@ fs::path getSystemRoot() {
 
 Status platformLstat(const std::string& path, struct stat& d_stat) {
   if (::lstat(path.c_str(), &d_stat) < 0) {
-    return Status(1);
+    return Status(1, "Failed to lstat path: " + path);
   }
   return Status(0);
 }
@@ -381,3 +383,4 @@ Status platformFileno(FILE* file, int& fd) {
   return Status::success();
 }
 } // namespace osquery
+
