@@ -247,6 +247,11 @@ class WmiRequest {
     return status_;
   }
 
+  /// Code that ended result enumeration; WBEM_S_FALSE when all rows were read.
+  HRESULT getEnumerationResult() const {
+    return enum_result_;
+  }
+
   /**
    * @brief Windows WMI Helper function to execute a WMI method call on
    * the given object (wrapped in a result)
@@ -261,6 +266,7 @@ class WmiRequest {
  private:
   WmiRequest() = default;
   Status status_;
+  HRESULT enum_result_{S_OK};
   std::vector<WmiResultItem> results_;
 
   std::unique_ptr<IEnumWbemClassObject, impl::WmiObjectDeleter> enum_{nullptr};

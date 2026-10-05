@@ -8,6 +8,7 @@
  */
 
 #include <locale>
+#include <sstream>
 #include <string>
 
 #include <osquery/core/windows/wmi.h>
@@ -15,6 +16,16 @@
 #include <osquery/utils/conversions/windows/strings.h>
 
 namespace osquery {
+
+namespace {
+
+std::string hresultToHex(HRESULT hr) {
+  std::ostringstream stream;
+  stream << "0x" << std::hex << hr;
+  return stream.str();
+}
+
+} // namespace
 
 WmiMethodArgs::WmiMethodArgs(WmiMethodArgs&& src) {
   std::swap(arguments, src.arguments);
@@ -375,7 +386,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
                           (LPVOID*)&locator);
   if (hr != S_OK) {
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed after CoCreateInstance";
+           << "WmiRequest creation failed after CoCreateInstance: "
+           << hresultToHex(hr);
   }
   WmiRequest wmi_request;
   wmi_request.locator_.reset(locator);
@@ -399,7 +411,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
 
   if (hr != S_OK) {
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed to connect to server";
+           << "WmiRequest creation failed to connect to server: "
+           << hresultToHex(hr);
   }
 
   // We need to set specific authentication information on the IWbemServices
@@ -410,7 +423,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
   hr = services->QueryInterface(IID_IClientSecurity, (LPVOID*)&pSecurity);
   if (FAILED(hr) || !pSecurity) {
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed in IClientSecurity interface query";
+           << "WmiRequest creation failed in IClientSecurity interface query: "
+           << hresultToHex(hr);
   }
 
   // Querying the current authentication information
@@ -435,7 +449,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
     pSecurity->Release();
 
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed in QueryBlanket call";
+           << "WmiRequest creation failed in QueryBlanket call: "
+           << hresultToHex(hr);
   }
 
   // Setting authentication information on proxy interface
@@ -452,7 +467,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
 
   if (FAILED(hr)) {
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed in SetBlanket call";
+           << "WmiRequest creation failed in SetBlanket call: "
+           << hresultToHex(hr);
   }
 
   wmi_request.services_.reset(services);
@@ -479,7 +495,8 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
   SysFreeString(language_str);
   if (hr != S_OK) {
     return createError(WmiError::ConstructionError)
-           << "WmiRequest creation failed in ExecQuery";
+           << "WmiRequest creation failed in ExecQuery: "
+           << hresultToHex(hr);
   }
 
   wmi_request.enum_.reset(wbem_enum);
@@ -494,6 +511,7 @@ Expected<WmiRequest, WmiError> WmiRequest::CreateWmiRequest(
       wmi_request.results_.emplace_back(result);
     }
   }
+  wmi_request.enum_result_ = hr;
 
   wmi_request.status_ = Status(0);
   return wmi_request;
