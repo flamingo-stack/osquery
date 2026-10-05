@@ -85,30 +85,47 @@ Status procGetProcessNamespaces(const std::string& process_id,
   return Status::success();
 }
 
-std::string procDecodeAddressFromHex(const std::string& encoded_address,
-                                     int family) {
+Status procDecodeAddressFromHex(const std::string& encoded_address,
+                                int family,
+                                std::string& decoded_address) {
+  decoded_address.clear();
   char addr_buffer[INET6_ADDRSTRLEN] = {0};
   if (family == AF_INET) {
     struct in_addr decoded;
-    if (encoded_address.length() == 8) {
-      sscanf(encoded_address.c_str(), "%X", &(decoded.s_addr));
-      inet_ntop(AF_INET, &decoded, addr_buffer, INET_ADDRSTRLEN);
+    if (encoded_address.length() != 8) {
+      return Status(1,
+                    "Invalid encoded IPv4 address length: " +
+                        encoded_address);
+    }
+    sscanf(encoded_address.c_str(), "%X", &(decoded.s_addr));
+    if (inet_ntop(AF_INET, &decoded, addr_buffer, INET_ADDRSTRLEN) ==
+        nullptr) {
+      return Status(1, "Failed to decode IPv4 address: " + encoded_address);
     }
 
   } else if (family == AF_INET6) {
     struct in6_addr decoded;
-    if (encoded_address.length() == 32) {
-      sscanf(encoded_address.c_str(),
-             "%8x%8x%8x%8x",
-             (unsigned int*)&(decoded.s6_addr[0]),
-             (unsigned int*)&(decoded.s6_addr[4]),
-             (unsigned int*)&(decoded.s6_addr[8]),
-             (unsigned int*)&(decoded.s6_addr[12]));
-      inet_ntop(AF_INET6, &decoded, addr_buffer, INET6_ADDRSTRLEN);
+    if (encoded_address.length() != 32) {
+      return Status(1,
+                    "Invalid encoded IPv6 address length: " +
+                        encoded_address);
     }
+    sscanf(encoded_address.c_str(),
+           "%8x%8x%8x%8x",
+           (unsigned int*)&(decoded.s6_addr[0]),
+           (unsigned int*)&(decoded.s6_addr[4]),
+           (unsigned int*)&(decoded.s6_addr[8]),
+           (unsigned int*)&(decoded.s6_addr[12]));
+    if (inet_ntop(AF_INET6, &decoded, addr_buffer, INET6_ADDRSTRLEN) ==
+        nullptr) {
+      return Status(1, "Failed to decode IPv6 address: " + encoded_address);
+    }
+  } else {
+    return Status(1, "Unsupported address family: " + std::to_string(family));
   }
 
-  return std::string(addr_buffer);
+  decoded_address = std::string(addr_buffer);
+  return Status::success();
 }
 
 unsigned short procDecodeUnsignedShortFromHex(
@@ -209,9 +226,18 @@ static Status procGetSocketListInet(int family,
     socket_info.net_ns = net_ns;
     socket_info.family = family;
     socket_info.protocol = protocol;
-    socket_info.local_address = procDecodeAddressFromHex(locals[0], family);
+
+    auto local_status = procDecodeAddressFromHex(
+        locals[0], family, socket_info.local_address);
+    auto remote_status = procDecodeAddressFromHex(
+        remotes[0], family, socket_info.remote_address);
+    if (!local_status.ok() || !remote_status.ok()) {
+      VLOG(1) << "Invalid socket address found: '" << line
+              << "'. Skipping this entry";
+      continue;
+    }
+
     socket_info.local_port = procDecodeUnsignedShortFromHex(locals[1]);
-    socket_info.remote_address = procDecodeAddressFromHex(remotes[0], family);
     socket_info.remote_port = procDecodeUnsignedShortFromHex(remotes[1]);
 
     if (protocol == IPPROTO_TCP) {
@@ -430,3 +456,4 @@ Expected<std::uint64_t, ProcError> getProcRSS(const std::string& process) {
 }
 
 } // namespace osquery
+

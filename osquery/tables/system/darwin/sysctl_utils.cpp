@@ -56,8 +56,13 @@ void opaquePushback(QueryData& results,
 void opaqueControlInfo(QueryData& results,
                        Row& r,
                        char* response,
-                       std::string& value) {
+                       std::string& value,
+                       size_t response_size) {
   if (value.compare("S,clockinfo") == 0) {
+    if (response_size < sizeof(clockinfo)) {
+      results.push_back(r);
+      return;
+    }
     struct clockinfo* ci = reinterpret_cast<clockinfo*>(response);
     opaquePushback(results, r, INTEGER(ci->hz), "hz");
     opaquePushback(results, r, INTEGER(ci->tick), "tick");
@@ -65,10 +70,18 @@ void opaqueControlInfo(QueryData& results,
     opaquePushback(results, r, INTEGER(ci->profhz), "profhz");
     opaquePushback(results, r, INTEGER(ci->stathz), "stathz");
   } else if (value.compare("S,timeval") == 0) {
+    if (response_size < sizeof(timeval)) {
+      results.push_back(r);
+      return;
+    }
     struct timeval* tv = reinterpret_cast<timeval*>(response);
     opaquePushback(results, r, INTEGER((long)tv->tv_sec), "sec");
     opaquePushback(results, r, INTEGER((long)tv->tv_usec), "usec");
   } else if (value.compare("S,loadavg") == 0) {
+    if (response_size < sizeof(loadavg)) {
+      results.push_back(r);
+      return;
+    }
     struct loadavg* tv = reinterpret_cast<loadavg*>(response);
     opaquePushback(results,
                    r,
@@ -83,6 +96,10 @@ void opaqueControlInfo(QueryData& results,
                    DOUBLE((double)tv->ldavg[2] / (double)tv->fscale),
                    "ldavg2");
   } else if (value.compare("S,xsw_usage") == 0) {
+    if (response_size < sizeof(xsw_usage)) {
+      results.push_back(r);
+      return;
+    }
     struct xsw_usage* xsu = reinterpret_cast<xsw_usage*>(response);
     opaquePushback(results,
                    r,
@@ -214,7 +231,7 @@ void genControlInfo(int* oid,
       value_size = CTL_MAX_VALUE;
     }
     sysctl(oid, oid_size, response, &value_size, 0, 0);
-    opaqueControlInfo(results, r, response, opaque_value);
+    opaqueControlInfo(results, r, response, opaque_value, value_size);
   } else {
     results.push_back(r);
   }
@@ -280,3 +297,4 @@ void genAllControls(QueryData& results,
 }
 }
 }
+
