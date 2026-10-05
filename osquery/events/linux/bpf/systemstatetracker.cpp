@@ -42,7 +42,9 @@ SystemStateTracker::Ref SystemStateTracker::create() {
   IProcessContextFactory::Ref process_context_factory;
   auto status = IProcessContextFactory::create(process_context_factory);
   if (!status) {
-    throw status;
+    LOG(ERROR) << "Failed to create the state tracker: "
+               << status.getMessage();
+    return nullptr;
   }
 
   return create(std::move(process_context_factory));
@@ -319,6 +321,8 @@ Status SystemStateTracker::expireProcessContexts(Context& context,
     bool exists{false};
     if (!fs.fileExists(exists, procfs_root.get(), process_id.c_str())) {
       return_error = true;
+      ++process_map_it;
+      continue;
     }
 
     if (!exists) {
@@ -1357,3 +1361,4 @@ SystemStateTracker::Context SystemStateTracker::getContextCopy() const {
 }
 
 } // namespace osquery
+
