@@ -269,3 +269,4 @@ std::string DiskArbitrationEventPublisher::getProperty(
   return "";
 }
 } // namespace osquery
+

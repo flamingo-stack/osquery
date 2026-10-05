@@ -123,7 +123,6 @@ Status EventSubscriberPlugin::addBatch(std::vector<Row>& row_list,
 
   for (auto& row : row_list) {
     auto event_identifier = getEventID();
-    event_id_list.push_back(event_identifier);
 
     auto string_event_identifier = toIndex(event_identifier);
 
@@ -137,6 +136,11 @@ Status EventSubscriberPlugin::addBatch(std::vector<Row>& row_list,
       VLOG(1) << status.getMessage();
       continue;
     }
+
+    // Only commit the event id to the index once its row data has been
+    // successfully serialized, so that the index never references a row
+    // that was never stored.
+    event_id_list.push_back(event_identifier);
 
     // Then remove the newline.
     if (serialized_row.size() > 0 && serialized_row.back() == '\n') {

@@ -208,6 +208,10 @@ double WindowsEventLogPublisher::cosineSimilarity(
   std::vector<double> buffer_freqs(kCharFreqVectorLen, 0.0);
 
   auto buffer_size = buffer.size();
+  if (buffer_size == 0) {
+    return 0.0;
+  }
+
   for (unsigned char chr : buffer) {
     if (chr < kCharFreqVectorLen) {
       buffer_freqs[chr] += 1.0 / buffer_size;
@@ -226,6 +230,10 @@ double WindowsEventLogPublisher::cosineSimilarity(
 
   mag1 = std::sqrt(mag1);
   mag2 = std::sqrt(mag2);
+
+  if (mag1 * mag2 == 0.0) {
+    return 0.0;
+  }
 
   return dot / (mag1 * mag2);
 }
