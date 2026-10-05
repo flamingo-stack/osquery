@@ -8,6 +8,10 @@
 #include <openssl/err.h>
 #include <stdexcept>
 
+#include "osquery/core/status.h"
+
+namespace osquery {
+
 class OpenframeEncryptionService {
 public:
     explicit OpenframeEncryptionService(const std::string& secret);
@@ -16,10 +20,10 @@ public:
     /**
      * Decrypts data using AES-GCM
      * @param data Base64 encoded encrypted data
-     * @return Decrypted data as string
-     * @throws std::runtime_error if decryption fails
+     * @param decrypted Output parameter for decrypted data
+     * @return Status indicating success or failure of decryption
      */
-    std::string decrypt(const std::string& data);
+    Status decrypt(const std::string& data, std::string& decrypted);
 
     std::vector<unsigned char> base64Decode(const std::string& encoded);
 
@@ -31,4 +35,6 @@ private:
     void handleOpenSSLError();
 
     std::string secret_;
-}; 
+};
+
+} // namespace osquery
