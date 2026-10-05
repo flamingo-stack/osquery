@@ -20,7 +20,7 @@
 
 namespace osquery {
 
-#define kLinuxMaxMemRead 0x10000
+constexpr size_t kLinuxMaxMemRead = 0x10000;
 
 const std::string kLinuxMemPath = "/dev/mem";
 
@@ -110,3 +110,4 @@ Status readRawMem(size_t base, size_t length, void** buffer) {
   return Status::success();
 }
 }
+

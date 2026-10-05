@@ -266,7 +266,7 @@ Status WmiResultItem::GetLongLong(const std::string& name,
     VariantClear(&value);
     return Status::failure("Invalid data type returned.");
   }
-  ret = value.lVal;
+  ret = value.llVal;
   VariantClear(&value);
   return Status::success();
 }
@@ -283,7 +283,7 @@ Status WmiResultItem::GetUnsignedLongLong(const std::string& name,
     VariantClear(&value);
     return Status::failure("Invalid data type returned.");
   }
-  ret = value.lVal;
+  ret = value.ullVal;
   VariantClear(&value);
   return Status::success();
 }
@@ -616,3 +616,4 @@ Status WmiRequest::ExecMethod(const WmiResultItem& object,
 }
 
 } // namespace osquery
+
