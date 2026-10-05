@@ -146,7 +146,7 @@ Expected<std::string, Pidfile::Error> Pidfile::readFile(
 
   auto remaining_bytes = buffer.size();
 
-  for (int retry = 0; retry < 5; ++retry) {
+  for (int retry = 0; retry < 5 && remaining_bytes > 0; ++retry) {
     auto buffer_ptr = buffer.data() + buffer.size() - remaining_bytes;
 
     DWORD bytes_read{};
@@ -161,6 +161,10 @@ Expected<std::string, Pidfile::Error> Pidfile::readFile(
     remaining_bytes -= static_cast<std::size_t>(bytes_read);
   }
 
+  if (remaining_bytes != 0) {
+    return createError(Pidfile::Error::IOError);
+  }
+
   return buffer;
 }
 
@@ -173,3 +177,4 @@ void Pidfile::destroyFile(FileHandle file_handle, const std::string&) noexcept {
 }
 
 } // namespace osquery
+
