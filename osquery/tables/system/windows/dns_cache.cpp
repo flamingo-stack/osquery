@@ -133,13 +133,37 @@ std::string dnsTypeToString(unsigned short wType) {
 QueryData genDnsCache(QueryContext& context) {
   QueryData results;
 
-  PDNSCACHEENTRY pEntry = (PDNSCACHEENTRY)malloc(sizeof(DNSCACHEENTRY));
   HINSTANCE hLib =
       LoadLibraryExW(L"DNSAPI.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (hLib == NULL) {
+    LOG(WARNING) << "Failed to load DNSAPI.dll, unable to enumerate DNS cache";
+    return results;
+  }
+
   DNS_GET_CACHE_DATA_TABLE DnsGetCacheDataTable =
       (DNS_GET_CACHE_DATA_TABLE)GetProcAddress(hLib, "DnsGetCacheDataTable");
+  if (DnsGetCacheDataTable == NULL) {
+    LOG(WARNING) << "Failed to resolve DnsGetCacheDataTable, unable to "
+                    "enumerate DNS cache";
+    FreeLibrary(hLib);
+    return results;
+  }
+
+  PDNSCACHEENTRY pEntry = (PDNSCACHEENTRY)malloc(sizeof(DNSCACHEENTRY));
+  if (pEntry == nullptr) {
+    LOG(WARNING) << "Failed to allocate memory for DNS cache entry";
+    FreeLibrary(hLib);
+    return results;
+  }
 
   int stat = DnsGetCacheDataTable(pEntry);
+  if (stat == 0) {
+    free(pEntry);
+    FreeLibrary(hLib);
+    return results;
+  }
+
+  PDNSCACHEENTRY pFirst = pEntry;
   pEntry = pEntry->pNext;
   while (pEntry != nullptr) {
     Row r;
@@ -151,9 +175,11 @@ QueryData genDnsCache(QueryContext& context) {
     results.push_back(r);
     pEntry = pEntry->pNext;
   }
-  free(pEntry);
+  free(pFirst);
+  FreeLibrary(hLib);
 
   return results;
 }
 } // namespace tables
 } // namespace osquery
+
