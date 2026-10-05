@@ -5,22 +5,41 @@
 #include <sstream>
 #include <iomanip>
 
+namespace {
+constexpr size_t kAes256KeySize = 32;
+}
+
 OpenframeEncryptionService::OpenframeEncryptionService(const std::string& secret)
-    : secret_(secret) {
+    : secret_(secret), initStatus_(osquery::Status::success()) {
     if (secret_.empty()) {
-        throw std::runtime_error("Secret cannot be empty");
+        initStatus_ = osquery::Status(1, "Secret cannot be empty");
+    } else if (secret_.size() != kAes256KeySize) {
+        initStatus_ = osquery::Status(1, "Secret must be exactly 32 bytes for AES-256-GCM");
     }
 }
 
-std::string OpenframeEncryptionService::decrypt(const std::string& data) {
+osquery::Status OpenframeEncryptionService::decrypt(const std::string& data, std::string& result) {
+    if (!initStatus_.ok()) {
+        return initStatus_;
+    }
+
     if (secret_.empty()) {
-        throw std::runtime_error("Encryption service not initialized with secret");
+        return osquery::Status(1, "Encryption service not initialized with secret");
+    }
+
+    if (secret_.size() != kAes256KeySize) {
+        return osquery::Status(1, "Secret must be exactly 32 bytes for AES-256-GCM");
     }
 
     // Decode base64 data
-    auto decoded = base64Decode(data);
+    std::vector<unsigned char> decoded;
+    osquery::Status decodeStatus = base64Decode(data, decoded);
+    if (!decodeStatus.ok()) {
+        return decodeStatus;
+    }
+
     if (decoded.size() < IV_SIZE + TAG_SIZE) {
-        throw std::runtime_error("Invalid encrypted data size");
+        return osquery::Status(1, "Invalid encrypted data size");
     }
 
     // Extract IV (first 12 bytes) and tag (last 16 bytes)
@@ -31,21 +50,23 @@ std::string OpenframeEncryptionService::decrypt(const std::string& data) {
     // Create and initialize the context
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
-        handleOpenSSLError();
+        return getOpenSSLErrorStatus();
     }
 
     // Initialize the decryption operation
     if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), nullptr, 
                                reinterpret_cast<const unsigned char*>(secret_.c_str()), 
                                iv.data())) {
+        osquery::Status status = getOpenSSLErrorStatus();
         EVP_CIPHER_CTX_free(ctx);
-        handleOpenSSLError();
+        return status;
     }
 
     // Set the tag
     if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, TAG_SIZE, tag.data())) {
+        osquery::Status status = getOpenSSLErrorStatus();
         EVP_CIPHER_CTX_free(ctx);
-        handleOpenSSLError();
+        return status;
     }
 
     // Decrypt the ciphertext
@@ -53,25 +74,29 @@ std::string OpenframeEncryptionService::decrypt(const std::string& data) {
     int len = 0;
     if (1 != EVP_DecryptUpdate(ctx, plaintext.data(), &len, 
                               ciphertext.data(), ciphertext.size())) {
+        osquery::Status status = getOpenSSLErrorStatus();
         EVP_CIPHER_CTX_free(ctx);
-        handleOpenSSLError();
+        return status;
     }
 
     // Finalize the decryption
     int finalLen = 0;
     if (1 != EVP_DecryptFinal_ex(ctx, plaintext.data() + len, &finalLen)) {
+        osquery::Status status = getOpenSSLErrorStatus();
         EVP_CIPHER_CTX_free(ctx);
-        handleOpenSSLError();
+        return status;
     }
 
     // Clean up
     EVP_CIPHER_CTX_free(ctx);
 
     // Convert the decrypted data to string
-    return std::string(plaintext.begin(), plaintext.begin() + len + finalLen);
+    result = std::string(plaintext.begin(), plaintext.begin() + len + finalLen);
+    return osquery::Status::success();
 }
 
-std::vector<unsigned char> OpenframeEncryptionService::base64Decode(const std::string& encoded) {
+osquery::Status OpenframeEncryptionService::base64Decode(const std::string& encoded,
+                                                          std::vector<unsigned char>& decodedOut) {
     BIO* b64 = BIO_new(BIO_f_base64());
     BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     
@@ -84,14 +109,15 @@ std::vector<unsigned char> OpenframeEncryptionService::base64Decode(const std::s
     BIO_free_all(bmem);
 
     if (decodedLen < 0) {
-        throw std::runtime_error("Failed to decode base64 data");
+        return osquery::Status(1, "Failed to decode base64 data");
     }
 
     decoded.resize(decodedLen);
-    return decoded;
+    decodedOut = std::move(decoded);
+    return osquery::Status::success();
 }
 
-void OpenframeEncryptionService::handleOpenSSLError() {
+osquery::Status OpenframeEncryptionService::getOpenSSLErrorStatus() {
     std::stringstream ss;
     unsigned long err;
     while ((err = ERR_get_error()) != 0) {
@@ -99,5 +125,5 @@ void OpenframeEncryptionService::handleOpenSSLError() {
         ERR_error_string_n(err, err_buf, sizeof(err_buf));
         ss << err_buf << "; ";
     }
-    throw std::runtime_error("OpenSSL error: " + ss.str());
+    return osquery::Status(1, "OpenSSL error: " + ss.str());
 } 

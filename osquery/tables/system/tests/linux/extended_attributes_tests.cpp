@@ -65,6 +65,29 @@ const std::unordered_map<std::string, ExtendedAttributeTestValue> kTestAttribute
   }
 };
 // clang-format on
+
+Status setTestExtendedAttributes(const std::string& path) {
+  for (const auto& p : kTestAttributeList) {
+    const auto& attribute_name = p.first;
+    if (attribute_name.find("user.") != 0U) {
+      return Status::failure("Invalid test attribute name");
+    }
+
+    const auto& desc = p.second;
+    const auto& input_value = desc.input;
+
+    if (setxattr(path.c_str(),
+                 attribute_name.c_str(),
+                 input_value.data(),
+                 input_value.size(),
+                 XATTR_CREATE) != 0) {
+      return Status::failure(
+          "Failed to set the extended attributes on the test file");
+    }
+  }
+
+  return Status::success();
+}
 } // namespace
 
 namespace tables {
@@ -84,24 +107,8 @@ class ExtendedAttributesTableTests : public testing::Test {
     // Set the user extended attributes
     const auto& path = temporary_file_path.string();
 
-    for (const auto& p : kTestAttributeList) {
-      const auto& attribute_name = p.first;
-      if (attribute_name.find("user.") != 0U) {
-        throw std::logic_error("Invalid test attribute name");
-      }
-
-      const auto& desc = p.second;
-      const auto& input_value = desc.input;
-
-      if (setxattr(path.c_str(),
-                   attribute_name.c_str(),
-                   input_value.data(),
-                   input_value.size(),
-                   XATTR_CREATE) != 0) {
-        throw std::runtime_error(
-            "Failed to set the extended attributes on the test file");
-      }
-    }
+    auto status = setTestExtendedAttributes(path);
+    ASSERT_TRUE(status.ok()) << status.getMessage();
 
     // Set the capabilities
     auto capabilities = cap_from_text(kInputCapabilities.c_str());

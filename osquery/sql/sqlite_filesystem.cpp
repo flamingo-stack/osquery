@@ -179,6 +179,10 @@ static void getParentDirectory(sqlite3_context* context,
     return;
   }
   char* result = reinterpret_cast<char*>(malloc(last_slash_pos));
+  if (result == nullptr) {
+    sqlite3_result_error_nomem(context);
+    return;
+  }
   memcpy(result, path, last_slash_pos);
   sqlite3_result_text(context, result, last_slash_pos, free);
 }
@@ -210,3 +214,4 @@ void registerFilesystemExtensions(sqlite3* db) {
                           nullptr);
 }
 } // namespace osquery
+
