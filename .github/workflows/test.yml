@@ -32,6 +32,8 @@ env:
 # =============================================================================
 
 jobs:
+  # Check the JSON exporter with small .table fixtures and simulated binary replies.
+  # The build jobs below separately verify the real catalog against real binaries.
   schema_test:
     name: Test Release Schema Exporter
     runs-on: ubuntu-latest
@@ -143,6 +145,9 @@ jobs:
           
           echo "Build completed successfully"
 
+      # Read the .table files selected by CMake, then run the newly built executable
+      # to check the engine version and advertised native table/column names and aliases.
+      # Export or verification errors fail this build; this step does not fetch table data.
       - name: Verify built table schema
         env:
           SOURCE_COMMIT: ${{ github.sha }}
@@ -202,6 +207,8 @@ jobs:
           cd build
           cmake --build . --config RelWithDebInfo -j10
 
+      # Perform the same catalog-versus-binary check on Windows, not on a Mac binary.
+      # --binary makes verification mandatory here; JSON is written only after it passes.
       - name: Verify built table schema
         shell: bash
         env:
@@ -214,6 +221,7 @@ jobs:
             --release-tag pr-test --osquery-version 5.9.1 --source-commit "$SOURCE_COMMIT" \
             --binary build/osquery/RelWithDebInfo/osqueryd.exe --output schema/osquery-schema.json
 
+  # Report failure if exporter tests or any platform build/schema check failed.
   all-checks:
     name: "All Checks"
     needs: [schema_test, build_macos, build_windows]
