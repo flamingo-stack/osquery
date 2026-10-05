@@ -38,6 +38,8 @@ const std::set<std::string> kHomebrewPrefixes = {
     "/opt/homebrew",
 };
 
+namespace {
+
 std::vector<std::string> getHomebrewAppInfoPlistPaths(const std::string& root) {
   std::vector<std::string> results;
   auto status = osquery::listDirectoriesInDirectory(root, results);
@@ -337,6 +339,8 @@ void packagesFromPrefix(QueryData& results,
   computeVersionsForFormulas(results, prefix, userRequested);
   computeVersionsForCasks(results, prefix, userRequested);
 }
+
+} // namespace
 
 QueryData genHomebrewPackages(QueryContext& context) {
   QueryData results;
