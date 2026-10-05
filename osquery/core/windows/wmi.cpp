@@ -88,13 +88,13 @@ void WmiResultItem::PrintType(const std::string& name) const {
   VARIANT value;
   HRESULT hr = result_->Get(property_name.c_str(), 0, &value, nullptr, nullptr);
   if (hr != S_OK) {
-    std::cerr << "Failed: " << name << "\n";
+    LOG(ERROR) << "Failed: " << name;
   } else {
-    std::cout << "Name=" << name << ", Type=" << value.vt << "\n";
+    VLOG(1) << "Name=" << name << ", Type=" << value.vt;
     if (value.vt == VT_I4) {
-      std::cout << "  Value=" << value.lVal << "\n";
+      VLOG(1) << "  Value=" << value.lVal;
     } else if (value.vt == VT_BSTR) {
-      std::wcout << "  Value=" << value.bstrVal << "\n";
+      VLOG(1) << "  Value=" << wstringToString(value.bstrVal);
     }
   }
   VariantClear(&value);
@@ -616,3 +616,4 @@ Status WmiRequest::ExecMethod(const WmiResultItem& object,
 }
 
 } // namespace osquery
+
