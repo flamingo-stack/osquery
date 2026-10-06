@@ -37,6 +37,14 @@ QueryData genOSVersion(QueryContext& context) {
   const std::vector<WmiResultItem>& wmiResults = wmiRequest->results();
 
   if (wmiResults.empty()) {
+    const auto enumResult = wmiRequest->getEnumerationResult();
+    if (FAILED(enumResult)) {
+      LOG(WARNING) << "WMI query on Win32_OperatingSystem failed while "
+                      "reading results: 0x"
+                   << std::hex << enumResult;
+    } else {
+      LOG(WARNING) << "WMI query on Win32_OperatingSystem returned no results";
+    }
     return {};
   }
 
