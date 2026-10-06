@@ -33,7 +33,6 @@ env:
 # =============================================================================
 
 jobs:
-  # Test exporter behavior. Release publication depends on this job succeeding.
   schema_test:
     name: Test Release Schema Exporter
     runs-on: ubuntu-latest
@@ -177,10 +176,8 @@ jobs:
           
           echo "Build completed successfully"
 
-      # Step 1: export this architecture's CMake-selected .table descriptions.
-      # Step 2: run the just-built binary to check version, native columns and aliases.
-      # JSON is written only after verification passes; errors fail the release build.
-      # This checks schema registration, not JOINs, column types or actual device data.
+      # Export CMake-selected .table files to JSON; SELECTs check version, columns and aliases in the built binary.
+      # Verification must pass before JSON is written; it does not test JOINs or device data.
       - name: Export and verify release schema
         env:
           RELEASE_TAG: ${{ inputs.version || 'latest' }}
@@ -195,7 +192,6 @@ jobs:
             --source-commit "$SOURCE_COMMIT" --binary build/osquery/osqueryd \
             --output schema/osquery-schema.json
 
-      # Keep each architecture's verified JSON for the final release aggregation.
       - name: Upload schema variant
         uses: actions/upload-artifact@v4
         with:
@@ -326,8 +322,7 @@ jobs:
           cd build
           cmake --build . --config RelWithDebInfo -j10
 
-      # Repeat steps 1 and 2 against the Windows executable and its selected tables.
-      # This runs before signing; it does not revalidate the final signed package.
+      # Export and verify the Windows schema against the built executable, before signing.
       - name: Export and verify release schema
         shell: bash
         env:
@@ -343,7 +338,6 @@ jobs:
             --source-commit "$SOURCE_COMMIT" --binary build/osquery/RelWithDebInfo/osqueryd.exe \
             --output schema/osquery-schema.json
 
-      # Keep the Windows JSON alongside the two verified Mac build catalogs.
       - name: Upload schema variant
         uses: actions/upload-artifact@v4
         with:
@@ -373,7 +367,6 @@ jobs:
           compression-level: 9
 
 
-  # Do not publish until exporter tests, all builds and Mac packaging succeed.
   release:
     name: "Create Release"
     needs: [schema_test, build_macos, create_universal_macos, build_windows]
@@ -397,8 +390,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Step 3: combine exactly Mac Intel, Mac ARM and Windows x64 catalogs.
-      # Reject missing/duplicate builds or mismatched source commits and versions.
+      # Merge the three build catalogs only when their release, source and version match.
       - name: Aggregate matching build schemas
         run: |
           python tools/codegen/release_schema.py aggregate \
@@ -433,7 +425,6 @@ jobs:
 
           ls -lh final-artifacts/clients/
 
-      # Write downloadable checksums for the exact JSON and client archive bytes.
       - name: Hash release artifacts
         run: |
           cd final-artifacts
@@ -456,8 +447,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release delete latest --yes --cleanup-tag || true
 
-      # Step 4: publish JSON as a separate asset beside binaries in the same release.
-      # Consumers download osquery-schema.json; they do not extract it from a binary.
+      # Publish JSON as a separate release asset beside the binaries.
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
