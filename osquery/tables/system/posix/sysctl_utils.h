@@ -16,7 +16,7 @@
 namespace osquery {
 namespace tables {
 
-#define CTL_MAX_VALUE 128
+constexpr int kCtlMaxValue = 128;
 
 #ifndef CTL_DEBUG_MAXID
 #define CTL_DEBUG_MAXID (CTL_MAXNAME * 2)
@@ -41,3 +41,4 @@ void genControlInfoFromName(const std::string& name,
                             const std::map<std::string, std::string>& config);
 }
 }
+
