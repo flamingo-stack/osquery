@@ -144,7 +144,7 @@ void FilePathsConfigParserPlugin::updateFilePathsQuery(
         for (const auto& row : sql.rows()) {
           auto pathIt = row.find("path");
           if (pathIt == row.end()) {
-            LOG(ERROR) << "Cold not find non-empty 'path' column in the "
+            LOG(ERROR) << "Could not find non-empty 'path' column in the "
                           "results of file_paths_query '"
                        << query.GetString() << "'";
           } else {

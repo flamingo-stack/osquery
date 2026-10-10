@@ -32,8 +32,7 @@ namespace {
 bool validateLoggerMode(const char* flagname, const std::string& value) {
   // Account for leading 0, special bit, and normal permissions
   if (value.size() > 5) {
-    osquery::systemLog(kLoggerModeInvalidValueError);
-    std::cerr << kLoggerModeInvalidValueError << std::endl;
+    LOG(ERROR) << kLoggerModeInvalidValueError;
 
     return false;
   }
@@ -41,8 +40,7 @@ bool validateLoggerMode(const char* flagname, const std::string& value) {
   const auto logger_mode_octal_exp = tryTo<std::int32_t>(value, 8);
 
   if (logger_mode_octal_exp.isError()) {
-    osquery::systemLog(kLoggerModeConversionFailureError);
-    std::cerr << kLoggerModeConversionFailureError << std::endl;
+    LOG(ERROR) << kLoggerModeConversionFailureError;
 
     return false;
   }
@@ -50,8 +48,7 @@ bool validateLoggerMode(const char* flagname, const std::string& value) {
   const auto logger_mode_octal = logger_mode_octal_exp.get();
 
   if (logger_mode_octal <= 0 || logger_mode_octal > 07777) {
-    osquery::systemLog(kLoggerModeInvalidValueError);
-    std::cerr << kLoggerModeInvalidValueError << std::endl;
+    LOG(ERROR) << kLoggerModeInvalidValueError;
     return false;
   }
 
@@ -320,3 +317,4 @@ void FilesystemLoggerPlugin::init(const std::string& name,
   FLAGS_stderrthreshold = stderr_threshold;
 }
 } // namespace osquery
+
