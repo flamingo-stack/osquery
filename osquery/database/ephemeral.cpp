@@ -154,7 +154,10 @@ Status EphemeralDatabasePlugin::putBatch(const std::string& domain,
 
 Status EphemeralDatabasePlugin::remove(const std::string& domain,
                                        const std::string& k) {
-  db_[domain].erase(k);
+  auto it = db_.find(domain);
+  if (it != db_.end()) {
+    it->second.erase(k);
+  }
   return Status(0);
 }
 
@@ -165,8 +168,12 @@ Status EphemeralDatabasePlugin::removeRange(const std::string& domain,
     return Status::failure("Invalid range: low > high");
   }
 
+  if (db_.count(domain) == 0) {
+    return Status(0);
+  }
+
   std::vector<std::string> keys;
-  for (const auto& it : db_[domain]) {
+  for (const auto& it : db_.at(domain)) {
     if (it.first >= low && it.first <= high) {
       keys.push_back(it.first);
     }

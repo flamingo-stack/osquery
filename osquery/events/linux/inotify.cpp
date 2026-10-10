@@ -67,6 +67,10 @@ Status INotifyEventPublisher::setUp() {
   }
 
   WriteLock lock(scratch_mutex_);
+  if (scratch_ != nullptr) {
+    free(scratch_);
+    scratch_ = nullptr;
+  }
   scratch_ = (char*)malloc(kINotifyBufferSize);
   if (scratch_ == nullptr) {
     return Status(1, "Could not allocate scratch space");
@@ -351,7 +355,8 @@ bool INotifyEventPublisher::shouldFire(const INotifySubscriptionContextRef& sc,
   // Need to have two finds,
   // what if somebody excluded an individual file inside a directory
   if (!exclude_paths_.empty() &&
-      (exclude_paths_.find(path) || exclude_paths_.find(ec->path))) {
+      (exclude_paths_.find(path) != exclude_paths_.end() ||
+       exclude_paths_.find(ec->path) != exclude_paths_.end())) {
     return false;
   }
 
@@ -486,3 +491,4 @@ bool INotifyEventPublisher::isPathMonitored(const std::string& path) const {
   return (path_iterator != path_descriptors_.end());
 }
 }
+

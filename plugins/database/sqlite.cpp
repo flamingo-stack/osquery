@@ -115,20 +115,29 @@ static int getData(void* argument, int argc, char* argv[], char* column[]) {
 Status SQLiteDatabasePlugin::get(const std::string& domain,
                                  const std::string& key,
                                  std::string& value) const {
-  QueryData results;
-  char* err = nullptr;
-  std::string q = "select value from " + domain + " where key = '" + key + "';";
-  sqlite3_exec(db_, q.c_str(), getData, &results, &err);
-  if (err != nullptr) {
-    sqlite3_free(err);
+  sqlite3_stmt* stmt = nullptr;
+  std::string q = "select value from " + domain + " where key = ?1;";
+  auto rc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (rc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    return Status(1);
   }
 
-  // Only assign value if the query found a result.
-  if (results.size() > 0) {
-    value = std::move(results[0]["value"]);
-    return Status(0);
+  sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_STATIC);
+
+  Status result = Status(1);
+  rc = sqlite3_step(stmt);
+  if (rc == SQLITE_ROW) {
+    const auto* text = sqlite3_column_text(stmt, 0);
+    value = (text != nullptr) ? std::string(reinterpret_cast<const char*>(text))
+                               : std::string();
+    result = Status(0);
   }
-  return Status(1);
+
+  sqlite3_finalize(stmt);
+  return result;
 }
 
 Status SQLiteDatabasePlugin::get(const std::string& domain,
@@ -156,9 +165,25 @@ static void tryVacuum(sqlite3* db) {
       "s1.rowid + 1 = s2.rowid; ";
 
   QueryData results;
-  sqlite3_exec(db, q.c_str(), getData, &results, nullptr);
+  char* err = nullptr;
+  auto rc = sqlite3_exec(db, q.c_str(), getData, &results, &err);
+  if (rc != SQLITE_OK) {
+    if (err != nullptr) {
+      LOG(WARNING) << "tryVacuum stat query failed: " << err;
+      sqlite3_free(err);
+    }
+    return;
+  }
+
   if (results.size() > 0 && results[0]["v"].back() == '1') {
-    sqlite3_exec(db, "vacuum;", nullptr, nullptr, nullptr);
+    err = nullptr;
+    rc = sqlite3_exec(db, "vacuum;", nullptr, nullptr, &err);
+    if (rc != SQLITE_OK) {
+      if (err != nullptr) {
+        LOG(WARNING) << "tryVacuum vacuum failed: " << err;
+        sqlite3_free(err);
+      }
+    }
   }
 }
 
@@ -195,7 +220,13 @@ Status SQLiteDatabasePlugin::putBatch(const std::string& domain,
 
   // Bind each value from the rows we got
   sqlite3_stmt* stmt = nullptr;
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    return Status(1);
+  }
 
   {
     int i = 1;
@@ -213,6 +244,7 @@ Status SQLiteDatabasePlugin::putBatch(const std::string& domain,
 
   auto rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
     return Status(1);
   }
 
@@ -228,11 +260,18 @@ Status SQLiteDatabasePlugin::remove(const std::string& domain,
                                     const std::string& key) {
   sqlite3_stmt* stmt = nullptr;
   std::string q = "delete from " + domain + " where key IN (?1);";
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    return Status(1);
+  }
 
   sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_STATIC);
   auto rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
     return Status(1);
   }
 
@@ -252,12 +291,19 @@ Status SQLiteDatabasePlugin::removeRange(const std::string& domain,
 
   sqlite3_stmt* stmt = nullptr;
   std::string q = "delete from " + domain + " where key >= ?1 and key <= ?2;";
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    return Status(1);
+  }
 
   sqlite3_bind_text(stmt, 1, low.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(stmt, 2, high.c_str(), -1, SQLITE_STATIC);
   auto rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
     return Status(1);
   }
 
@@ -272,24 +318,46 @@ Status SQLiteDatabasePlugin::scan(const std::string& domain,
                                   std::vector<std::string>& results,
                                   const std::string& prefix,
                                   uint64_t max) const {
-  QueryData _results;
-  char* err = nullptr;
-
-  std::string q =
-      "select key from " + domain + " where key LIKE '" + prefix + "%'";
+  sqlite3_stmt* stmt = nullptr;
+  std::string q = "select key from " + domain + " where key LIKE ?1 ESCAPE '\\'";
   if (max > 0) {
     q += " limit " + std::to_string(max);
   }
-  sqlite3_exec(db_, q.c_str(), getData, &_results, &err);
-  if (err != nullptr) {
-    sqlite3_free(err);
+  q += ";";
+
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK || stmt == nullptr) {
+    if (stmt != nullptr) {
+      sqlite3_finalize(stmt);
+    }
+    return Status::success();
   }
 
-  // Only assign value if the query found a result.
-  for (auto& r : _results) {
-    results.push_back(std::move(r["key"]));
+  // Escape LIKE wildcard characters in the prefix before binding, since the
+  // prefix is user/config-derived and must not alter the query semantics.
+  std::string escapedPrefix;
+  escapedPrefix.reserve(prefix.size());
+  for (const auto& c : prefix) {
+    if (c == '%' || c == '_' || c == '\\') {
+      escapedPrefix.push_back('\\');
+    }
+    escapedPrefix.push_back(c);
+  }
+  escapedPrefix += "%";
+
+  sqlite3_bind_text(stmt, 1, escapedPrefix.c_str(), -1, SQLITE_TRANSIENT);
+
+  int rc = 0;
+  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+    const auto* text = sqlite3_column_text(stmt, 0);
+    if (text != nullptr) {
+      results.push_back(std::string(reinterpret_cast<const char*>(text)));
+    } else {
+      results.push_back(std::string());
+    }
   }
 
+  sqlite3_finalize(stmt);
   return Status::success();
 }
 } // namespace osquery

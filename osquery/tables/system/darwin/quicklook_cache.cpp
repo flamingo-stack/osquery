@@ -119,6 +119,12 @@ QueryData genQuicklookCache(QueryContext& context) {
         "thumbnails GROUP BY file_id) t WHERE t.file_id = rowid;";
     sqlite3_stmt* stmt = nullptr;
     rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK || stmt == nullptr) {
+      VLOG(1) << "Cannot prepare query against " << index << ": " << rc
+              << " " << getStringForSQLiteReturnCode(rc);
+      sqlite3_close(db);
+      continue;
+    }
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       Row r;
       genQuicklookRow(stmt, r);

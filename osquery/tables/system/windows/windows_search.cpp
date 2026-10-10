@@ -31,6 +31,7 @@
 #include <osquery/utils/conversions/windows/windows_time.h>
 #include <osquery/utils/json/json.h>
 #include <osquery/utils/scope_guard.h>
+#include <osquery/utils/status/status.h>
 
 namespace osquery {
 namespace tables {
@@ -242,10 +243,65 @@ osquery::QueryData executeWindowsSearchQuery(CSession& cSession,
   return results;
 }
 
-std::string generateSqlFromUserQuery(const std::string& userInput,
-                                     std::set<std::string> columns,
-                                     std::string sort,
-                                     LONG maxResults) {
+// Validates that a candidate column/property name is safe to embed in the
+// SQL fragments passed to ISearchQueryHelper. Only allow alphanumeric
+// characters, dots and underscores (the shape of valid Windows Search
+// property names, e.g. "system.itemname"), and require it to be a known
+// (allowlisted) property.
+bool isAllowedSearchColumn(const std::string& column,
+                          const std::set<std::string>& allowedColumns) {
+  if (column.empty()) {
+    return false;
+  }
+
+  for (const auto& c : column) {
+    if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '.' ||
+          c == '_')) {
+      return false;
+    }
+  }
+
+  return allowedColumns.count(column) > 0;
+}
+
+// Validates a sort expression of the form "<column>[ ASC|DESC][, ...]"
+// against the allowlist of known columns.
+bool isAllowedSearchSort(const std::string& sort,
+                        const std::set<std::string>& allowedColumns) {
+  if (sort.empty()) {
+    return false;
+  }
+
+  for (const auto& clause : osquery::split(sort, ",")) {
+    auto parts = osquery::split(clause, " ");
+    if (parts.empty()) {
+      return false;
+    }
+
+    if (!isAllowedSearchColumn(parts[0], allowedColumns)) {
+      return false;
+    }
+
+    if (parts.size() == 2) {
+      std::string direction = parts[1];
+      std::transform(
+          direction.begin(), direction.end(), direction.begin(), ::toupper);
+      if (direction != "ASC" && direction != "DESC") {
+        return false;
+      }
+    } else if (parts.size() > 2) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+Status generateSqlFromUserQuery(const std::string& userInput,
+                               std::set<std::string> columns,
+                               std::string sort,
+                               LONG maxResults,
+                               std::string& generatedSql) {
   HRESULT hr = NULL;
 
   // Create ISearchManager instance
@@ -258,7 +314,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   if (FAILED(hr)) {
     LOG(ERROR) << windowsSearchTableName
                << ": failed to create ISearchManager instance";
-    return "";
+    return Status::failure("failed to create ISearchManager instance");
   }
   auto const pSearchManagerGuard =
       scope_guard::create([pSearchManager]() { pSearchManager->Release(); });
@@ -270,7 +326,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   hr = pSearchManager->GetCatalog(L"SystemIndex", &pSearchCatalogManager);
   if (FAILED(hr)) {
     LOG(ERROR) << windowsSearchTableName << ": failed to get catalog manager";
-    return "";
+    return Status::failure("failed to get catalog manager");
   }
   auto const pSearchCatalogManagerGuard = scope_guard::create(
       [pSearchCatalogManager]() { pSearchCatalogManager->Release(); });
@@ -281,7 +337,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   hr = pSearchCatalogManager->GetQueryHelper(&pQueryHelper);
   if (FAILED(hr)) {
     LOG(ERROR) << windowsSearchTableName << ": failed to get query helper";
-    return "";
+    return Status::failure("failed to get query helper");
   }
   auto const pQueryHelperGuard =
       scope_guard::create([pQueryHelper]() { pQueryHelper->Release(); });
@@ -289,13 +345,13 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   hr = pQueryHelper->put_QueryMaxResults(maxResults);
   if (FAILED(hr)) {
     LOG(ERROR) << windowsSearchTableName << ": failed to set max results";
-    return "";
+    return Status::failure("failed to set max results");
   }
 
   if (!columns.empty()) {
-    // TODO: find a way to verify that the columns requested exist before the
-    // query else we just get an error. If a new column is added or dropped on
-    // an OS could break existing queries.
+    // Every column name has already been validated against the allowlist
+    // of known Windows Search properties by the caller before reaching
+    // this point.
     std::string selectColumns;
     for (const auto& k : columns) {
       selectColumns += k + ",";
@@ -310,7 +366,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
         stringToWstring(selectColumns).c_str());
     if (FAILED(hr)) {
       LOG(ERROR) << windowsSearchTableName << ": failed to set columns";
-      return "";
+      return Status::failure("failed to set columns");
     }
   }
 
@@ -318,7 +374,7 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
     hr = pQueryHelper->put_QuerySorting(stringToWstring(sort).c_str());
     if (FAILED(hr)) {
       LOG(ERROR) << windowsSearchTableName << ": failed to set sort";
-      return "";
+      return Status::failure("failed to set sort");
     }
   }
 
@@ -328,12 +384,12 @@ std::string generateSqlFromUserQuery(const std::string& userInput,
   if (FAILED(hr)) {
     LOG(ERROR) << windowsSearchTableName
                << ": failed to generate SQL from user query";
-    return "";
+    return Status::failure("failed to generate SQL from user query");
   }
 
-  std::string ret = wstringToString(sql);
+  generatedSql = wstringToString(sql);
   CoTaskMemFree(sql);
-  return ret;
+  return Status::success();
 }
 
 QueryData genWindowsSearch(QueryContext& context) {
@@ -401,9 +457,26 @@ QueryData genWindowsSearch(QueryContext& context) {
     userInputAdditionalProperties =
         SQL_TEXT(*additionalPropertiesConstraint.begin());
 
-    // include the user defined additional properties in all properties
+    // include the user defined additional properties in all properties,
+    // but only if they look like valid Windows Search property names.
+    // Anything that doesn't match is dropped rather than passed through
+    // to the query helper, to avoid injecting arbitrary SQL fragments.
     for (const auto& v : osquery::split(userInputAdditionalProperties, ",")) {
-      allProperties.insert(v);
+      bool valid = !v.empty();
+      for (const auto& c : v) {
+        if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '.' ||
+              c == '_')) {
+          valid = false;
+          break;
+        }
+      }
+      if (valid) {
+        allProperties.insert(v);
+      } else {
+        LOG(WARNING) << windowsSearchTableName
+                     << ": ignoring invalid additional_properties entry: "
+                     << v;
+      }
     }
   }
 
@@ -411,6 +484,12 @@ QueryData genWindowsSearch(QueryContext& context) {
   if (context.hasConstraint("sort", EQUALS)) {
     auto sortConstraint = context.constraints["sort"].getAll(EQUALS);
     sort = SQL_TEXT(*sortConstraint.begin());
+
+    if (!sort.empty() && !isAllowedSearchSort(sort, allProperties)) {
+      LOG(ERROR) << windowsSearchTableName
+                 << ": invalid sort expression, ignoring: " << sort;
+      sort = "";
+    }
   }
 
   std::string query = "*";
@@ -419,8 +498,24 @@ QueryData genWindowsSearch(QueryContext& context) {
     query = SQL_TEXT(*queryContext.begin());
   }
 
-  auto generatedQuery =
-      generateSqlFromUserQuery(query, allProperties, sort, maxResults);
+  // Only pass through select columns that are in the validated allowlist.
+  std::set<std::string> selectColumns;
+  for (const auto& col : allProperties) {
+    if (isAllowedSearchColumn(col, allProperties)) {
+      selectColumns.insert(col);
+    }
+  }
+
+  std::string generatedQuery;
+  auto status = generateSqlFromUserQuery(
+      query, selectColumns, sort, maxResults, generatedQuery);
+  if (!status.ok()) {
+    LOG(ERROR) << windowsSearchTableName
+               << ": failed to generate SQL from user query: "
+               << status.getMessage();
+    return results;
+  }
+
   auto queryResults = executeWindowsSearchQuery(cSession, generatedQuery);
 
   for (size_t i = 0; i < queryResults.size(); i++) {
@@ -476,3 +571,4 @@ QueryData genWindowsSearch(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+

@@ -19,7 +19,6 @@ namespace osquery {
 namespace tables {
 
 QueryData genCpuInfo(QueryContext& context) {
-  Row r;
   QueryData results;
 
   const Expected<WmiRequest, WmiError> wmiSystemReq =
@@ -30,6 +29,7 @@ QueryData genCpuInfo(QueryContext& context) {
   }
   const std::vector<WmiResultItem>& wmiResults = wmiSystemReq->results();
   for (const auto& data : wmiResults) {
+    Row r;
     long number = 0;
     data.GetString("DeviceID", r["device_id"]);
     data.GetString("SocketDesignation", r["socket_designation"]);
@@ -67,3 +67,4 @@ QueryData genCpuInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

@@ -41,7 +41,7 @@ QueryData genWinOptionalFeatures(QueryContext& context) {
 
   for (const auto& wmiObj : wmiResults) {
     Row r;
-    uint32_t state;
+    uint32_t state = 0;
 
     wmiObj.GetString("Name", r["name"]);
     wmiObj.GetString("Caption", r["caption"]);
@@ -84,3 +84,4 @@ std::string getDismPackageFeatureStateName(uint32_t state) {
 
 } // namespace tables
 } // namespace osquery
+

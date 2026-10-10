@@ -209,6 +209,8 @@ TEST_F(GetDrivesForArrayTest, all_drives_removed) {
           {"slot", "5"},
       },
   };
+
+  EXPECT_EQ(got, expected);
 };
 
 TEST_F(GetDrivesForArrayTest, all_drives_faulty) {
@@ -1150,3 +1152,4 @@ TEST_F(ParseMDStatTest, negative_test_unexpected_texts_in_substr_receivers) {
 
 } // namespace tables
 } // namespace osquery
+

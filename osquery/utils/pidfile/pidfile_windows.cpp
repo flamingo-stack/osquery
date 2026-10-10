@@ -97,6 +97,7 @@ Expected<Pidfile::FileHandle, Pidfile::Error> Pidfile::lockFile(
                                FILE_FLAG_DELETE_ON_CLOSE);
 
   if (new_handle == INVALID_HANDLE_VALUE) {
+    CloseHandle(toNativeHandle(file_handle));
     return createError(Error::Busy);
   }
 
@@ -173,3 +174,4 @@ void Pidfile::destroyFile(FileHandle file_handle, const std::string&) noexcept {
 }
 
 } // namespace osquery
+
