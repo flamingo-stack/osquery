@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2014-present, The osquery authors
+ *
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
+ */
 #pragma once
 
 #include <string>
@@ -8,6 +16,10 @@
 #include <openssl/err.h>
 #include <stdexcept>
 
+#include <osquery/utils/status/status.h>
+
+namespace osquery {
+
 class OpenframeEncryptionService {
 public:
     explicit OpenframeEncryptionService(const std::string& secret);
@@ -16,10 +28,10 @@ public:
     /**
      * Decrypts data using AES-GCM
      * @param data Base64 encoded encrypted data
-     * @return Decrypted data as string
-     * @throws std::runtime_error if decryption fails
+     * @param out Decrypted data as string, populated on success
+     * @return Status::success() on success, Status::failure() with an error message on failure
      */
-    std::string decrypt(const std::string& data);
+    Status decrypt(const std::string& data, std::string& out);
 
     std::vector<unsigned char> base64Decode(const std::string& encoded);
 
@@ -31,4 +43,6 @@ private:
     void handleOpenSSLError();
 
     std::string secret_;
-}; 
+};
+
+} // namespace osquery
