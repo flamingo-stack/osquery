@@ -15,18 +15,19 @@
 #include <stdexcept>
 #include <string>
 
+#include <osquery/logger/logger.h>
+
 namespace osquery {
 
 PipeChannelTicket::PipeChannelTicket(std::array<int, 2> read_pipe_fds,
                                      std::array<int, 2> write_pipe_fds)
     : read_pipe_fds_(read_pipe_fds), write_pipe_fds_(write_pipe_fds) {}
 
-PipeChannelTicket PipeChannelFactory::createChannelTicket() {
-  PipeChannelTicket ticket;
+Status PipeChannelFactory::createChannelTicket(PipeChannelTicket& ticket) {
   auto result = pipe(ticket.read_pipe_fds_.data());
 
   if (result == -1) {
-    throw std::runtime_error(
+    return Status::failure(
         "Failed to create parent_write_child_read_pipe, error: " +
         std::to_string(errno));
   }
@@ -34,12 +35,12 @@ PipeChannelTicket PipeChannelFactory::createChannelTicket() {
   result = pipe(ticket.write_pipe_fds_.data());
 
   if (result == -1) {
-    throw std::runtime_error(
+    return Status::failure(
         "Failed to create parent_read_child_write_pipe, error: " +
         std::to_string(errno));
   }
 
-  return ticket;
+  return Status::success();
 }
 
 PipeChannel& PipeChannelFactory::createChildChannel(
