@@ -19,7 +19,6 @@ namespace osquery {
 namespace tables {
 
 QueryData genDiskInfo(QueryContext& context) {
-  Row r;
   QueryData results;
 
   const Expected<WmiRequest, WmiError> wmiSystemReq =
@@ -30,6 +29,7 @@ QueryData genDiskInfo(QueryContext& context) {
   }
   const std::vector<WmiResultItem>& wmiResults = wmiSystemReq->results();
   for (const auto& data : wmiResults) {
+    Row r;
     long partitionCount = 0;
     long index = 0;
     data.GetLong("Partitions", partitionCount);
@@ -52,3 +52,4 @@ QueryData genDiskInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

@@ -37,8 +37,14 @@ void UserInteractionSubscriber::configure() {
 Status UserInteractionSubscriber::Callback(
     const EventTappingEventContextRef& ec,
     const EventTappingSubscriptionContextRef& sc) {
+  // TODO/FIXME: this Row is not populated from `ec` (the
+  // EventTappingEventContextRef) and is therefore emitted empty. This is
+  // incomplete scaffolding; the table should be populated with the actual
+  // event data (e.g. timestamp, event type, coordinates) from `ec` before
+  // this subscriber is considered production-ready.
   Row r;
   add(r);
   return Status(0);
 }
 } // namespace osquery
+
