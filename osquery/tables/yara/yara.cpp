@@ -98,10 +98,9 @@ static YARAConfigParser getYaraParser(void) {
     return nullptr;
   }
 
-  YARAConfigParser yaraParser = nullptr;
-  try {
-    yaraParser = std::dynamic_pointer_cast<YARAConfigParserPlugin>(parser);
-  } catch (const std::bad_cast&) {
+  YARAConfigParser yaraParser =
+      std::dynamic_pointer_cast<YARAConfigParserPlugin>(parser);
+  if (isNull(yaraParser)) {
     LOG(ERROR) << "Cannot cast YARA config parser plugin";
     return nullptr;
   }
@@ -454,3 +453,4 @@ QueryData genYara(QueryContext& context) {
 
 } // namespace tables
 } // namespace osquery
+

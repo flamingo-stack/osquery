@@ -251,7 +251,7 @@ Status NTFSEventPublisher::getPathFromReferenceNumber(
   buffer.resize(required_characters);
   if (buffer.size() != required_characters) {
     ::CloseHandle(handle);
-    throw std::bad_alloc();
+    return Status::failure("Failed to allocate buffer for path resolution");
   }
 
   auto bytes_returned = static_cast<size_t>(

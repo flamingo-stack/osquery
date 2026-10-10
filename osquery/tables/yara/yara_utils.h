@@ -11,6 +11,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <rapidjson/document.h>
+
 #include <osquery/config/config.h>
 #include <osquery/core/tables.h>
 #include <osquery/filesystem/fileops.h>
@@ -70,6 +72,7 @@ using YaraCompilerResult = Expected<YaraRulesHandle, YaraCompilerError>;
 void YARACompilerCallback(int error_level,
                           const char* file_name,
                           int line_number,
+                          const YR_RULE* rule,
                           const char* message,
                           void* user_data);
 
@@ -82,7 +85,7 @@ YaraCompilerResult compileSingleFile(const std::string& file);
 YaraCompilerResult compileFromString(const std::string& buffer);
 
 Status handleRuleFiles(const std::string& category,
-                       const pt::ptree& rule_files,
+                       const rapidjson::Value& rule_files,
                        std::map<std::string, YaraRulesHandle>& rules);
 
 /**
@@ -134,3 +137,4 @@ class YARAConfigParserPlugin : public ConfigParserPlugin {
   Status update(const std::string& source, const ParserConfig& config) override;
 };
 } // namespace osquery
+

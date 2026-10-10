@@ -92,36 +92,33 @@ static inline Status getService(const SC_HANDLE& scmHandle,
     return Status(GetLastError(), "Failed to query service config");
   }
 
-  try {
-    (void)QueryServiceConfig2(
-        svcHandle.get(), SERVICE_CONFIG_DESCRIPTION, nullptr, 0, &cbBufSize);
-    err = GetLastError();
-    if (ERROR_INSUFFICIENT_BUFFER == err) {
-      svc_descr_t lpsd(static_cast<LPSERVICE_DESCRIPTION>(malloc(cbBufSize)),
-                       freePtr);
-      if (lpsd == nullptr) {
-        throw std::runtime_error("failed to malloc service description buffer");
-      }
+  (void)QueryServiceConfig2(
+      svcHandle.get(), SERVICE_CONFIG_DESCRIPTION, nullptr, 0, &cbBufSize);
+  err = GetLastError();
+  if (ERROR_INSUFFICIENT_BUFFER == err) {
+    svc_descr_t lpsd(static_cast<LPSERVICE_DESCRIPTION>(malloc(cbBufSize)),
+                     freePtr);
+    if (lpsd == nullptr) {
+      LOG(WARNING) << svc.lpServiceName
+                   << ": failed to malloc service description buffer";
+    } else {
       ret = QueryServiceConfig2(svcHandle.get(),
                                 SERVICE_CONFIG_DESCRIPTION,
                                 (LPBYTE)lpsd.get(),
                                 cbBufSize,
                                 &cbBufSize);
       if (ret == 0) {
-        std::stringstream ss;
-        ss << "failed to query size of service description buffer, error: "
-           << GetLastError();
-        throw std::runtime_error(ss.str());
-      }
-      if (lpsd->lpDescription != nullptr) {
+        LOG(WARNING) << svc.lpServiceName
+                     << ": failed to query size of service description "
+                        "buffer, error: "
+                     << GetLastError();
+      } else if (lpsd->lpDescription != nullptr) {
         r["description"] = SQL_TEXT(wstringToString(lpsd->lpDescription));
       }
-    } else if (ERROR_MUI_FILE_NOT_FOUND != err) {
-      // Bug in Windows 10 with CDPUserSvc_63718, just ignore description
-      throw std::runtime_error("failed to query service description");
     }
-  } catch (const std::runtime_error& e) {
-    LOG(WARNING) << svc.lpServiceName << ": " << e.what();
+  } else if (ERROR_MUI_FILE_NOT_FOUND != err) {
+    // Bug in Windows 10 with CDPUserSvc_63718, just ignore description
+    LOG(WARNING) << svc.lpServiceName << ": failed to query service description";
   }
 
   r["name"] = SQL_TEXT(wstringToString(svc.lpServiceName));
@@ -226,3 +223,4 @@ QueryData genServices(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

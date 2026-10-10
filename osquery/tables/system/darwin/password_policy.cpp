@@ -136,7 +136,12 @@ QueryData genPasswordPolicy(QueryContext& context) {
         CFRelease(user_policy);
       }
     }
-    CFRelease(records);
+    if (records != nullptr) {
+      CFRelease(records);
+    }
+    if (query != nullptr) {
+      CFRelease(query);
+    }
     CFRelease(uid_string);
   }
 

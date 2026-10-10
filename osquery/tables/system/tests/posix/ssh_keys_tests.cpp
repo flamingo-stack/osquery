@@ -13,8 +13,6 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/filesystem.hpp>
-#include <gtest/gtest.h>
 #include <osquery/sql/sql.h>
 #include <osquery/tables/system/posix/ssh_keys.h>
 #include <osquery/utils/scope_guard.h>
