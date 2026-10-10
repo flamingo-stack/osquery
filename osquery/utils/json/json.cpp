@@ -151,7 +151,7 @@ void JSON::add(const std::string& key, const char* value, rj::Value& obj) {
   }
 
   obj.AddMember(rj::Value(rj::StringRef(key), doc_.GetAllocator()).Move(),
-                rj::Value(value, strlen(value)).Move(),
+                rj::Value(value, strlen(value), doc_.GetAllocator()).Move(),
                 doc_.GetAllocator());
 }
 void JSON::add(const std::string& key, const char* value) {

@@ -40,7 +40,10 @@ Uri::Uri(const std::string& str) : hasAuthority_(false), port_(0) {
 
   std::smatch match;
   if (!std::regex_match(str, match, uriRegex)) {
-    throw std::invalid_argument("Invalid URL");
+    // Malformed URI (potentially attacker-controlled input); leave this
+    // Uri in a safe, empty default state instead of throwing so that a
+    // single bad remote-supplied URI cannot crash the process.
+    return;
   }
 
   scheme_ = submatch(match, 1);
@@ -66,7 +69,18 @@ Uri::Uri(const std::string& str) : hasAuthority_(false), port_(0) {
                           authority.second,
                           authorityMatch,
                           authorityRegex)) {
-      throw std::invalid_argument("Invalid URI authority");
+      // Malformed authority section (potentially attacker-controlled
+      // input); reset to a safe, empty default state instead of throwing.
+      scheme_.clear();
+      hasAuthority_ = false;
+      username_.clear();
+      password_.clear();
+      host_.clear();
+      path_.clear();
+      port_ = 0;
+      query_.clear();
+      fragment_.clear();
+      return;
     }
 
     std::string port(authorityMatch[4].first, authorityMatch[4].second);

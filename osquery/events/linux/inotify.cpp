@@ -69,6 +69,8 @@ Status INotifyEventPublisher::setUp() {
   WriteLock lock(scratch_mutex_);
   scratch_ = (char*)malloc(kINotifyBufferSize);
   if (scratch_ == nullptr) {
+    ::close(inotify_handle_);
+    inotify_handle_ = -1;
     return Status(1, "Could not allocate scratch space");
   }
   return Status::success();
@@ -486,3 +488,4 @@ bool INotifyEventPublisher::isPathMonitored(const std::string& path) const {
   return (path_iterator != path_descriptors_.end());
 }
 }
+
