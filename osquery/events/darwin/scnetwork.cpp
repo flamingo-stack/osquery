@@ -34,6 +34,7 @@ void SCNetworkEventPublisher::Callback(const SCNetworkReachabilityRef target,
   auto ec = createEventContext();
   ec->subscription = *(SCNetworkSubscriptionContextRef*)info;
   ec->flags = flags;
+  EventFactory::fire<SCNetworkEventPublisher>(ec);
 }
 
 bool SCNetworkEventPublisher::shouldFire(
@@ -116,14 +117,14 @@ void SCNetworkEventPublisher::configure() {
       if (sc->type == ADDRESS_TARGET) {
         auto existing_address = std::find(
             target_addresses_.begin(), target_addresses_.end(), sc->target);
-        if (existing_address != target_addresses_.end()) {
+        if (existing_address == target_addresses_.end()) {
           // Add the address target.
           addAddress(sc);
         }
       } else {
         auto existing_hostname =
             std::find(target_names_.begin(), target_names_.end(), sc->target);
-        if (existing_hostname != target_names_.end()) {
+        if (existing_hostname == target_names_.end()) {
           // Add the hostname target.
           addHostname(sc);
         }
@@ -183,3 +184,4 @@ Status SCNetworkEventPublisher::run() {
   return Status::success();
 }
 };
+

@@ -352,8 +352,13 @@ void EtwPublisherProcesses::providerPostProcessor(
         // Houskeeping of expired aggregation cache entries
         cleanOldAggregationCacheEntries();
 
+        // Houskeeping of the process image cache to avoid unbounded growth
+        cleanOldProcessImageCacheEntries();
+
         // Caching image full path
-        processImageCache_.insert({searchKey, procStartData->ImageName});
+        processImageCache_.insert(
+            {searchKey,
+             {procStartData->ImageName, std::time(nullptr)}});
       }
     }
   }
@@ -385,10 +390,31 @@ void EtwPublisherProcesses::cleanOldAggregationCacheEntries() {
     if ((eventTimestamp.QuadPart + expiredTime10secs) <
         currentTimestamp.QuadPart) {
       // event expire and should be deleted
-      processStartAggregationCache_.erase(it);
+      it = processStartAggregationCache_.erase(it);
+    } else {
+      ++it;
     }
+  }
+}
 
-    ++it;
+void EtwPublisherProcesses::cleanOldProcessImageCacheEntries() {
+  // Entries older than this many seconds are considered stale and removed
+  // to avoid unbounded growth of processImageCache_.
+  static constexpr std::time_t expiredTimeSecs = 300;
+
+  if (processImageCache_.empty()) {
+    return;
+  }
+
+  std::time_t currentTime = std::time(nullptr);
+
+  auto it = processImageCache_.begin();
+  while (it != processImageCache_.end()) {
+    if ((it->second.second + expiredTimeSecs) < currentTime) {
+      it = processImageCache_.erase(it);
+    } else {
+      ++it;
+    }
   }
 }
 
@@ -399,7 +425,11 @@ void EtwPublisherProcesses::updateImagePath(const std::uint64_t& key1,
   std::uint64_t searchKey = getComposedKey(key1, key2);
 
   // Event specific post processing callback logic
-  imagePath = tryTake(processImageCache_, searchKey).takeOr(imagePath);
+  auto cachedEntryIt = processImageCache_.find(searchKey);
+  if (cachedEntryIt != processImageCache_.end()) {
+    imagePath = cachedEntryIt->second.first;
+    processImageCache_.erase(cachedEntryIt);
+  }
 }
 
 void EtwPublisherProcesses::updateTokenInfo(const std::uint32_t& tokenType,
@@ -479,3 +509,4 @@ std::uint64_t EtwPublisherProcesses::getComposedKey(const std::uint64_t& key1,
 }
 
 } // namespace osquery
+

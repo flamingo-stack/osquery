@@ -110,10 +110,6 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
     r["path"] = ret == S_OK ? wstringToString(wTaskPath) : std::string();
     ::SysFreeString(taskPath);
 
-    VARIANT_BOOL hidden = false;
-    pRegisteredTask->get_Enabled(&hidden);
-    r["hidden"] = hidden ? INTEGER(1) : INTEGER(0);
-
     HRESULT lastTaskRun = E_FAIL;
     pRegisteredTask->get_LastTaskResult(&lastTaskRun);
     _com_error err(lastTaskRun);
@@ -141,10 +137,18 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
     ITaskDefinition* taskDef = nullptr;
     IActionCollection* tActionCollection = nullptr;
     pRegisteredTask->get_Definition(&taskDef);
+    VARIANT_BOOL hidden = false;
     if (taskDef != nullptr) {
+      ITaskSettings* tSettings = nullptr;
+      taskDef->get_Settings(&tSettings);
+      if (tSettings != nullptr) {
+        tSettings->get_Hidden(&hidden);
+        tSettings->Release();
+      }
       taskDef->get_Actions(&tActionCollection);
       taskDef->Release();
     }
+    r["hidden"] = hidden ? INTEGER(1) : INTEGER(0);
     pRegisteredTask->Release();
 
     long actionCount = 0;
@@ -231,3 +235,4 @@ QueryData genScheduledTasks(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

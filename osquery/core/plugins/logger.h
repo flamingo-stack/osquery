@@ -219,7 +219,7 @@ class LoggerPlugin : public Plugin {
 
     if (error_count != 0) {
       return Status::failure("logEventBatch has failed to log " +
-                             std::to_string(error_count) + "events");
+                             std::to_string(error_count) + " events");
     }
 
     return Status::success();
@@ -252,3 +252,4 @@ class LoggerPlugin : public Plugin {
 };
 
 } // namespace osquery
+

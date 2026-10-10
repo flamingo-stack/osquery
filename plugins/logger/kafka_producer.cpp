@@ -307,6 +307,7 @@ inline rd_kafka_topic_t* KafkaProducerPlugin::initTopic(
     LOG(ERROR) << "Could not initiate Kafka request.required.acks "
                   "configuration: "
                << errstr;
+    rd_kafka_topic_conf_destroy(topicConf);
     return nullptr;
   }
 
@@ -352,9 +353,17 @@ bool KafkaProducerPlugin::configureTopics() {
       topics_.push_back(std::unique_ptr<rd_kafka_topic_t,
                                         std::function<void(rd_kafka_topic_t*)>>(
           topic, delKafkaTopic));
-    }
 
-    queryToTopics_[kKafkaBaseTopic] = topic;
+      queryToTopics_[kKafkaBaseTopic] = topic;
+    } else {
+      LOG(ERROR) << "Could not configure base Kafka topic '"
+                 << FLAGS_logger_kafka_topic << "'";
+      if (topics_.empty()) {
+        return false;
+      }
+
+      queryToTopics_[kKafkaBaseTopic] = nullptr;
+    }
   } else {
     /* If no previous topics successfully configured and no base topic is set
      * then configuration fails.*/
@@ -368,3 +377,4 @@ bool KafkaProducerPlugin::configureTopics() {
   return true;
 }
 } // namespace osquery
+

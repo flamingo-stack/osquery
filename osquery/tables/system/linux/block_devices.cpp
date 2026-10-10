@@ -97,14 +97,18 @@ static void getBlockDevice(struct udev_device* dev,
   subdev = udev_device_get_parent_with_subsystem_devtype(dev, "scsi", nullptr);
   if (subdev != nullptr) {
     const char *model = udev_device_get_sysattr_value(subdev, "model");
-    std::string model_string = std::string(model);
-    boost::algorithm::trim(model_string);
-    r["model"] = model_string;
+    if (model != nullptr) {
+      std::string model_string = std::string(model);
+      boost::algorithm::trim(model_string);
+      r["model"] = model_string;
+    }
 
     model = udev_device_get_sysattr_value(subdev, "vendor");
-    model_string = std::string(model);
-    boost::algorithm::trim(model_string);
-    r["vendor"] = model_string;
+    if (model != nullptr) {
+      std::string model_string = std::string(model);
+      boost::algorithm::trim(model_string);
+      r["vendor"] = model_string;
+    }
   }
 
   blkid_probe pr = blkid_new_probe_from_filename(name);

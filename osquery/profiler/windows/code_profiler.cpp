@@ -51,6 +51,7 @@ CodeProfiler::~CodeProfiler() {
           code_profiler_data_end.getWallTime() -
           code_profiler_data_->getWallTime());
 
-  record(names_, ".time.wall.millis", query_duration.count());
+  record(names_, "time.wall.millis", query_duration.count());
 }
 } // namespace osquery
+

@@ -126,7 +126,7 @@ std::string getCDHash(const es_process_t* p) {
          << static_cast<unsigned int>(i);
   }
   auto s = hash.str();
-  return s.find_first_not_of(s.front()) == std::string::npos ? "" : s;
+  return s.find_first_not_of('0') == std::string::npos ? "" : s;
 }
 
 void getProcessProperties(const es_process_t* p,
@@ -146,7 +146,7 @@ void getProcessProperties(const es_process_t* p,
   ec->cwd = getCwdPathFromPid(ec->pid);
 
   ec->uid = audit_token_to_ruid(audit_token);
-  ec->euid = audit_token_to_egid(audit_token);
+  ec->euid = audit_token_to_euid(audit_token);
   ec->gid = audit_token_to_rgid(audit_token);
   ec->egid = audit_token_to_egid(audit_token);
 
@@ -171,3 +171,4 @@ void appendQuotedString(std::ostream& out, std::string s, char delim) {
 }
 
 } // namespace osquery
+

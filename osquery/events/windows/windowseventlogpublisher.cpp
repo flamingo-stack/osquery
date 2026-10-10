@@ -147,8 +147,6 @@ Status WindowsEventLogPublisher::run() {
   auto last_fired_event_time = std::chrono::steady_clock::now();
 
   while (!isEnding()) {
-    EvtSubscription::EventList event_list;
-
     for (auto& subscription : d_->subscription_list) {
       auto event_list = subscription->getEvents();
 
@@ -208,6 +206,10 @@ double WindowsEventLogPublisher::cosineSimilarity(
   std::vector<double> buffer_freqs(kCharFreqVectorLen, 0.0);
 
   auto buffer_size = buffer.size();
+  if (buffer_size == 0) {
+    return 0.0;
+  }
+
   for (unsigned char chr : buffer) {
     if (chr < kCharFreqVectorLen) {
       buffer_freqs[chr] += 1.0 / buffer_size;
@@ -249,3 +251,4 @@ bool WindowsEventLogPublisher::shouldFire(const SCRef& subscription,
   return (subscription->channel_list.count(lowercase_channel) > 0U);
 }
 } // namespace osquery
+
