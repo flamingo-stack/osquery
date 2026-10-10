@@ -186,8 +186,8 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchExtension(
     ::execve(arguments[0], argv, ::environ);
 
     // Code should never reach this point
-    std::cerr << "Could not start extension process: " << exec_path
-              << ", error: " << errno << std::endl;
+    LOG(ERROR) << "Could not start extension process: " << exec_path
+               << ", error: " << errno;
     ::exit(EXIT_FAILURE);
     return std::shared_ptr<PlatformProcess>();
   }
@@ -233,8 +233,8 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchTestPythonScript(
     std::string args = boost::algorithm::join(args_array, " ");
 
     // Should not reach this if everything executes correctly
-    std::cerr << "Could not start process at " << osquery_python_path
-              << ", args: " << args << ", error: " << errno << std::endl;
+    LOG(ERROR) << "Could not start process at " << osquery_python_path
+               << ", args: " << args << ", error: " << errno;
     ::exit(EXIT_FAILURE);
   } else if (process_pid > 0) {
     process.reset(new PlatformProcess(process_pid));
@@ -243,3 +243,4 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchTestPythonScript(
   return process;
 }
 } // namespace osquery
+
