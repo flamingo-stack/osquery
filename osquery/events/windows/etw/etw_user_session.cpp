@@ -176,6 +176,8 @@ void UserEtwSessionRunnable::initUserTraceSession(
 void UserEtwSessionRunnable::stopUserTraceSession(
     const std::string& sessionName) {
   if (sessionName.empty()) {
+    LOG(ERROR) << "Failed to stop user trace session - session does not have "
+                  "a name.";
     return;
   }
 
