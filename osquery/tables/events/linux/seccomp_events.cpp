@@ -73,6 +73,16 @@ void SeccompEventSubscriber::parseEvent(const AuditEvent& event,
   std::uint64_t arch = 0;
   std::uint64_t value = 0;
 
+  // The "arch" field must be processed before "syscall" because the
+  // symbolic decoding of the syscall number depends on the architecture.
+  // event_data.fields is an unordered_map, so its iteration order is not
+  // guaranteed; look up "arch" explicitly first instead of relying on
+  // iteration order.
+  auto arch_it = event_data.fields.find("arch");
+  if (arch_it != event_data.fields.end() && arch_it->second.which() == 1) {
+    arch = boost::get<const std::uint64_t>(arch_it->second);
+  }
+
   for (const auto& field : event_data.fields) {
     switch (field.second.which()) {
     case 0:
@@ -84,7 +94,6 @@ void SeccompEventSubscriber::parseEvent(const AuditEvent& event,
       value = boost::get<const std::uint64_t>(field.second);
       if (field.first == "arch") {
         std::string symbolic_code_value = "";
-        arch = value;
         parsed_event[field.first] =
             GetStringFieldFromIntMap(symbolic_code_value,
                                      SeccompEventSubscriber::arch_codes_map,
@@ -534,3 +543,4 @@ const std::unordered_map<std::uint64_t, std::string>
         {333, "io_pgetevents"},
         {334, "rseq"}};
 } // namespace osquery
+
