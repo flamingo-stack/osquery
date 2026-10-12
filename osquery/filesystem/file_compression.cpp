@@ -107,7 +107,7 @@ Status decompress(const boost::filesystem::path& in,
 
   PlatformFile outFile(out, PF_CREATE_ALWAYS | PF_WRITE);
   if (!outFile.isValid()) {
-    return Status::failure("Could not open in file: " + in.string() +
+    return Status::failure("Could not open out file: " + out.string() +
                            " for decompression");
   }
 
@@ -182,7 +182,12 @@ Status archive(const std::set<boost::filesystem::path>& paths,
     archive_entry_set_size(entry, pFile.size());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
-    archive_write_header(arch, entry);
+    auto headerRet = archive_write_header(arch, entry);
+    if (headerRet != ARCHIVE_OK) {
+      archive_entry_free(entry);
+      archive_write_free(arch);
+      return Status::failure("Failed to write tar header for: " + f.string());
+    }
 
     auto blkCount = static_cast<size_t>(ceil(static_cast<double>(pFile.size()) /
                                              static_cast<double>(block_size)));
@@ -193,7 +198,12 @@ Status archive(const std::set<boost::filesystem::path>& paths,
         // resize the buffer to size we read as last block is likely smaller
         block.resize(static_cast<std::size_t>(r));
       }
-      archive_write_data(arch, block.data(), block.size());
+      auto writeRet = archive_write_data(arch, block.data(), block.size());
+      if (writeRet < 0 || static_cast<std::size_t>(writeRet) != block.size()) {
+        archive_entry_free(entry);
+        archive_write_free(arch);
+        return Status::failure("Failed to write tar data for: " + f.string());
+      }
     }
     archive_entry_free(entry);
   }
@@ -201,3 +211,4 @@ Status archive(const std::set<boost::filesystem::path>& paths,
   return Status::success();
 };
 } // namespace osquery
+
