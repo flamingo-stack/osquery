@@ -13,7 +13,7 @@
 #include <fstream>
 
 #include <boost/algorithm/string/trim.hpp>
-#include <glog/logging.h>
+#include <osquery/logger/logger.h>
 
 namespace osquery {
 
@@ -70,3 +70,4 @@ std::string OpenframeMachineIdProvider::getMachineId() {
 }
 
 } // namespace osquery
+
