@@ -21,14 +21,16 @@ extern "C" {
 #include <libcryptsetup.h>
 }
 
+namespace osquery {
+namespace tables {
+namespace {
 // FIXME: Add enum generation for tables and remove following code
 // Copy of values in disk_encryption.mm
 const std::string kEncryptionStatusEncrypted = "encrypted";
 const std::string kEncryptionStatusUndefined = "undefined";
 const std::string kEncryptionStatusNotEncrypted = "not encrypted";
+} // namespace
 
-namespace osquery {
-namespace tables {
 void genFDEStatusForBlockDevice(const Row& block_device,
                                 std::map<std::string, Row>& block_devices,
                                 std::map<std::string, Row>& encrypted_rows) {
@@ -158,3 +160,4 @@ QueryData genFDEStatus(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
