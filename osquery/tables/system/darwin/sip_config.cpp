@@ -45,7 +45,7 @@ const std::map<std::string, uint32_t> kRootlessConfigFlags = {
     {"allow_unauthenticated_root", (1 << 11)},
 };
 
-#define kIODeviceTreeChosenPath_ "IODeviceTree:/options"
+constexpr char kIODeviceTreeChosenPath[] = "IODeviceTree:/options";
 typedef uint32_t csr_config_t;
 
 extern "C" {
@@ -55,7 +55,7 @@ int csr_get_active_config(csr_config_t* config);
 
 Status genCsrConfigFromNvram(uint32_t& config) {
   auto chosen =
-      IORegistryEntryFromPath(kIOMasterPortDefault, kIODeviceTreeChosenPath_);
+      IORegistryEntryFromPath(kIOMasterPortDefault, kIODeviceTreeChosenPath);
   if (chosen == MACH_PORT_NULL) {
     return Status(1, "Could not open IOKit DeviceTree");
   }
@@ -150,3 +150,4 @@ QueryData genSIPConfig(QueryContext& context) {
 }
 }
 }
+
