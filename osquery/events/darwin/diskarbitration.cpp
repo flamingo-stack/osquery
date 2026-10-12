@@ -147,16 +147,11 @@ bool DiskArbitrationEventPublisher::shouldFire(
   // We want events for physical disks as well
   if (sc->physical_disks) {
     return true;
-  } else {
-    // We 'could' only want only virtual disk (DMG) events
-    if (ec->action == "add") {
-      // Filter events by matching on Virtual Interface based on IO device path
-      // return (boost::starts_with(ec->device_path, kIOHIDXClassPath));
-      return true;
-    } else {
-      return true;
-    }
   }
+
+  // Only want virtual disk (DMG) events: filter by matching the Virtual
+  // Interface based on the IO device path.
+  return boost::starts_with(ec->device_path, kIOHIDXClassPath);
 }
 
 std::string DiskArbitrationEventPublisher::extractUdifChecksum(
@@ -269,3 +264,4 @@ std::string DiskArbitrationEventPublisher::getProperty(
   return "";
 }
 } // namespace osquery
+
