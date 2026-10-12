@@ -75,13 +75,21 @@ class INotifyTests : public testing::Test {
     event_pub_ = std::make_shared<INotifyEventPublisher>(true);
     auto status = EventFactory::registerEventPublisher(event_pub_);
     FILE* fd = fopen(real_test_path.c_str(), "w");
+    ASSERT_NE(fd, nullptr) << "Failed to open " << real_test_path
+                            << " for writing";
     fclose(fd);
     temp_thread_ = std::thread(EventFactory::run, "inotify");
   }
 
   void StopEventLoop() {
+    size_t delay = 0;
     while (!event_pub_->hasStarted()) {
       ::usleep(20);
+      delay += 20;
+      if (delay >= kMaxEventLatency * 1000) {
+        ADD_FAILURE() << "Publisher did not start within the deadline";
+        break;
+      }
     }
 
     EventFactory::end(true);
@@ -115,6 +123,7 @@ class INotifyTests : public testing::Test {
 
   void TriggerEvent(const std::string& path) {
     FILE* fd = fopen(path.c_str(), "w");
+    ASSERT_NE(fd, nullptr) << "Failed to open " << path << " for writing";
     fputs("inotify", fd);
     fclose(fd);
   }
@@ -364,6 +373,8 @@ TEST_F(INotifyTests, test_inotify_run) {
 
   // Create a temporary file to watch, open writeable
   FILE* fd = fopen(real_test_path.c_str(), "w");
+  ASSERT_NE(fd, nullptr) << "Failed to open " << real_test_path
+                          << " for writing";
 
   // Create a subscriber.
   auto sub = std::make_shared<TestINotifyEventSubscriber>();
@@ -557,3 +568,4 @@ TEST_F(INotifyTests, test_inotify_embedded_wildcards) {
   EventFactory::deregisterEventPublisher("inotify");
 }
 } // namespace osquery
+
