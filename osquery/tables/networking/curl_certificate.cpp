@@ -42,7 +42,7 @@ namespace osquery {
 namespace tables {
 
 // set default to no read timeout
-#define DEFAULT_READ_TIMEOUT 4
+static constexpr int kDefaultReadTimeout = 4;
 
 static std::string pem(X509* cert) {
   auto bio_out = BIO_new(BIO_s_mem());
@@ -359,6 +359,13 @@ Status getTLSCertificate(const std::string& hostname,
   if (sock < 0) {
     return Status::failure("Unable to create socket");
   }
+  auto const sock_guard = scope_guard::create([sock]() {
+#ifdef WIN32
+    closesocket(sock);
+#else
+    close(sock);
+#endif
+  });
 
   if (timeout > 0) {
 #ifdef WIN32
@@ -378,13 +385,6 @@ Status getTLSCertificate(const std::string& hostname,
       0) {
     return Status::failure("Failed to establish TCP connection");
   }
-  auto const sock_guard = scope_guard::create([sock]() {
-#ifdef WIN32
-    closesocket(sock);
-#else
-    close(sock);
-#endif
-  });
 
   auto ssl = SSL_new(ctx.get());
   if (ssl == nullptr) {
@@ -430,7 +430,7 @@ Status getTLSCertificate(const std::string& hostname,
 QueryData genTLSCertificate(QueryContext& context) {
   QueryData results;
   auto dump_certificate = 0;
-  auto timeout = DEFAULT_READ_TIMEOUT;
+  auto timeout = kDefaultReadTimeout;
   auto hostnames = context.constraints["hostname"].getAll(EQUALS);
 
   if (context.hasConstraint("dump_certificate", EQUALS)) {
@@ -440,10 +440,10 @@ QueryData genTLSCertificate(QueryContext& context) {
   if (context.hasConstraint("timeout", EQUALS)) {
     timeout =
         tryTo<int>(*(context.constraints["timeout"].getAll(EQUALS).begin()), 10)
-            .takeOr(DEFAULT_READ_TIMEOUT);
+            .takeOr(kDefaultReadTimeout);
     if (timeout < 0) {
       LOG(WARNING) << "Ignoring out of range timeout: " << timeout;
-      timeout = DEFAULT_READ_TIMEOUT;
+      timeout = kDefaultReadTimeout;
     }
   }
 
@@ -459,3 +459,4 @@ QueryData genTLSCertificate(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
