@@ -26,9 +26,18 @@ struct utf_converter {
   std::wstring from_bytes(const std::string& str) {
     std::wstring result;
     if (str.length() > 0) {
-      result.resize(str.length() * 2);
+      auto needed = MultiByteToWideChar(
+          CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+      if (needed <= 0) {
+        return result;
+      }
+      result.resize(needed);
       auto count = MultiByteToWideChar(
-          CP_UTF8, 0, str.c_str(), -1, &result[0], str.length() * 2);
+          CP_UTF8, 0, str.c_str(), -1, &result[0], needed);
+      if (count <= 0) {
+        result.clear();
+        return result;
+      }
       result.resize(count - 1);
     }
 
@@ -38,15 +47,24 @@ struct utf_converter {
   std::string to_bytes(const std::wstring& str) {
     std::string result;
     if (str.length() > 0) {
-      result.resize(str.length() * 4);
+      auto needed = WideCharToMultiByte(
+          CP_UTF8, 0, str.c_str(), -1, nullptr, 0, NULL, NULL);
+      if (needed <= 0) {
+        return result;
+      }
+      result.resize(needed);
       auto count = WideCharToMultiByte(CP_UTF8,
                                        0,
                                        str.c_str(),
                                        -1,
                                        &result[0],
-                                       str.length() * 4,
+                                       needed,
                                        NULL,
                                        NULL);
+      if (count <= 0) {
+        result.clear();
+        return result;
+      }
       result.resize(count - 1);
     }
 
@@ -169,3 +187,4 @@ std::string errorDwordToString(DWORD error_code) {
 }
 
 } // namespace osquery
+
