@@ -68,6 +68,9 @@ static iptcproxy_chain* get_chain_data(
   if (handle->chain_data.policy != NULL) {
     handle->chain_data.policy_data.pcnt = counters.pcnt;
     handle->chain_data.policy_data.bcnt = counters.bcnt;
+  } else {
+    handle->chain_data.policy_data.pcnt = 0;
+    handle->chain_data.policy_data.bcnt = 0;
   }
 
   return &(handle->chain_data);
@@ -202,3 +205,4 @@ const iptcproxy_rule* iptcproxy_next_rule(
       iptc_next_rule(handle->prev_rule, handle->handle),
       (iptcproxy_handle*) handle);
 }
+
