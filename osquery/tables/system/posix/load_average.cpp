@@ -24,7 +24,7 @@ static constexpr std::array<boost::string_view, 3> kPeriods = {
      boost::string_view("15m", 3)}};
 
 QueryData genLoadAverage(QueryContext& context) {
-  QueryData results(3);
+  QueryData results;
 
   double loads[3];
 
@@ -33,7 +33,7 @@ QueryData genLoadAverage(QueryContext& context) {
       Row r = {{"period", kPeriods[i].data()},
                {"average", std::to_string(loads[i])}};
 
-      results[i] = r;
+      results.push_back(r);
     }
   };
 
@@ -41,3 +41,4 @@ QueryData genLoadAverage(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
