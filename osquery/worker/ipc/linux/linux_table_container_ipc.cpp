@@ -150,7 +150,7 @@ Status LinuxTableContainerIPC::connectToContainer(
   std::string original_mnt_path =
       kProc + "/" + std::to_string(current_pid) + kMountNamespace;
 
-  if (original_mnt_fd_ > 0) {
+  if (original_mnt_fd_ >= 0) {
     close(original_mnt_fd_);
   }
 
@@ -456,3 +456,4 @@ QueryData generateInNamespace(const QueryContext& context,
 }
 
 }; // namespace osquery
+
