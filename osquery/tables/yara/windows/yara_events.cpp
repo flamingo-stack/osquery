@@ -140,7 +140,10 @@ Status YARAEventSubscriber::Callback(const FileEventContextRef& ec,
 
     Row r;
     auto action_description_it = kNTFSEventToStringMap.find(event.type);
-    assert(action_description_it != kNTFSEventToStringMap.end());
+    if (action_description_it == kNTFSEventToStringMap.end()) {
+      VLOG(1) << "Unknown NTFS event type encountered, skipping row";
+      continue;
+    }
 
     r["action"] = SQL_TEXT(action_description_it->second);
     r["target_path"] = event.path;
@@ -212,3 +215,4 @@ Status YARAEventSubscriber::Callback(const FileEventContextRef& ec,
   return Status::success();
 }
 } // namespace osquery
+
