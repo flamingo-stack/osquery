@@ -16,12 +16,12 @@
 #include <Windows.h>
 #include <boost/algorithm/string.hpp>
 
-#define MAX_BUFFER_SIZE 256
+constexpr size_t kMaxBufferSize = 256;
 
 namespace osquery {
 std::string platformAsctime(const struct tm* timeptr) {
   std::vector<char> buffer;
-  buffer.assign(MAX_BUFFER_SIZE, '\0');
+  buffer.assign(kMaxBufferSize, '\0');
 
   auto status = ::asctime_s(buffer.data(), buffer.size(), timeptr);
   if (status != 0) {
@@ -33,3 +33,4 @@ std::string platformAsctime(const struct tm* timeptr) {
   return time_str;
 }
 } // namespace osquery
+
