@@ -350,7 +350,8 @@ bool FSEventsEventPublisher::shouldFire(
   // Need to have two finds,
   // what if somebody excluded an individual file inside a directory
   if (!exclude_paths_.empty() &&
-      (exclude_paths_.find(path) || exclude_paths_.find(ec->path))) {
+      (exclude_paths_.find(path) != exclude_paths_.end() ||
+       exclude_paths_.find(ec->path) != exclude_paths_.end())) {
     return false;
   }
 
@@ -380,3 +381,4 @@ bool FSEventsEventPublisher::isStreamRunning() const {
   return CFRunLoopIsWaiting(run_loop_);
 }
 }
+
