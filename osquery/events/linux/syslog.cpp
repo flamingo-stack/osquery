@@ -74,14 +74,14 @@ Status NonBlockingFStream::openReadOnly(const std::string& path) {
 Status NonBlockingFStream::getline(std::string& output) {
   output.clear();
 
+  WriteLock lock(fd_mutex_);
+
   char* buffer_end = nullptr;
   if (offset_ > 0) {
     buffer_end = static_cast<char*>(memchr(buffer_.data(), '\n', offset_));
   }
 
   if (buffer_end == nullptr) {
-    WriteLock lock(fd_mutex_);
-
     // Poll for available data with a near-instant delay.
     // It is the caller's responsibility to yield context.
     fd_set set;
@@ -296,3 +296,4 @@ bool SyslogEventPublisher::shouldFire(const SyslogSubscriptionContextRef& sc,
   return true;
 }
 } // namespace osquery
+
