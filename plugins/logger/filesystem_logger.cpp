@@ -162,10 +162,15 @@ Status LogRotate::moveFiles(const std::vector<std::string>& moves,
     }
   }
 
-  for (size_t i = moves.size() - 1; i >= max_files; i--) {
-    auto s = this->removeFile(moves[i]);
-    if (!s.ok()) {
-      return s;
+  if (max_files < moves.size()) {
+    for (size_t i = moves.size() - 1; i != max_files - 1; i--) {
+      auto s = this->removeFile(moves[i]);
+      if (!s.ok()) {
+        return s;
+      }
+      if (i == 0) {
+        break;
+      }
     }
   }
 
