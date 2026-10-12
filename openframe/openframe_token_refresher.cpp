@@ -23,7 +23,13 @@ void OpenframeTokenRefresher::start() {
 
     running_ = true;
     refresh_thread_ = std::thread([this]() {
-        while (running_) {
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!running_) {
+                    break;
+                }
+            }
             process();
             std::this_thread::sleep_for(std::chrono::seconds(5));
         }
