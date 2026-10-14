@@ -22,6 +22,11 @@
 #include <algorithm>
 #include <string>
 
+namespace osquery {
+namespace tables {
+
+namespace {
+
 const int kWin8 = 256;
 const int kWin10PreCreator = 96;
 const int kWin10Creator = 104;
@@ -44,12 +49,17 @@ struct ShimcacheData {
   boost::optional<bool> execution_flag;
 };
 
-namespace osquery {
-namespace tables {
+} // namespace
 
 auto parseShimcacheData(const std::string& token,
                         const boost::optional<bool>& execution_flag_exists) {
   ShimcacheData shimcache;
+
+  if (token.length() < 20) {
+    shimcache.last_modified = 0LL;
+    return shimcache;
+  }
+
   std::string path_length = token.substr(16, 4);
 
   // swap endianess
@@ -65,6 +75,14 @@ auto parseShimcacheData(const std::string& token,
 
   // If the file path length is zero then there is no path
   if (shimcache_file_path == 0) {
+    shimcache.last_modified = 0LL;
+    return shimcache;
+  }
+
+  // Ensure the reported path length actually fits within the token before
+  // slicing it out; otherwise substr() would throw std::out_of_range on
+  // malformed/crafted registry data.
+  if (token.length() < 20 + (size_t)shimcache_file_path * 2) {
     shimcache.last_modified = 0LL;
     return shimcache;
   }
@@ -99,8 +117,13 @@ auto parseShimcacheData(const std::string& token,
   } else {
     shimcache_modified_start = 20;
   }
-  std::string shimcache_time = token.substr(
-      shimcache_modified_start + (size_t)shimcache_file_path * 2, 16);
+
+  size_t modified_start = shimcache_modified_start + (size_t)shimcache_file_path * 2;
+  if (token.length() < modified_start + 16) {
+    shimcache.last_modified = 0LL;
+    return shimcache;
+  }
+  std::string shimcache_time = token.substr(modified_start, 16);
 
   // Sometimes Shimcache artifacts have 0 as timestamp, if so skip filetime
   // conversion
@@ -109,15 +132,16 @@ auto parseShimcacheData(const std::string& token,
                                 : littleEndianToUnixTime(shimcache_time);
 
   if (execution_flag_exists == true) {
-    int shimcache_flag =
-        tryTo<int>(
-            token.substr(execution_flag_start + (size_t)shimcache_file_path * 2,
-                         2),
-            16)
-            .takeOr(0);
-    // Perform Bitwise AND to determine TRUE or FALSE
-    if (shimcache_flag & 2) {
-      shimcache.execution_flag = true;
+    size_t flag_start = execution_flag_start + (size_t)shimcache_file_path * 2;
+    if (token.length() >= flag_start + 2) {
+      int shimcache_flag =
+          tryTo<int>(token.substr(flag_start, 2), 16).takeOr(0);
+      // Perform Bitwise AND to determine TRUE or FALSE
+      if (shimcache_flag & 2) {
+        shimcache.execution_flag = true;
+      } else {
+        shimcache.execution_flag = false;
+      }
     } else {
       shimcache.execution_flag = false;
     }
@@ -133,19 +157,21 @@ void parseEntry(const Row& aKey, size_t& index, QueryData& results) {
   // Check if Registry data starts with any of supported WIN_START
   // values and if the Shimcache delimiter exists at the specific
   // substring
-  if ((boost::starts_with(data, kWin8Start)) &&
+  if (boost::starts_with(data, kWin8Start) && data.length() >= (size_t)kWin8 + 8 &&
       (data.substr(kWin8, 8) == kWin8110ShimcacheDelimiter)) {
     execution_flag_exists = true;
     delimter = kWin8110ShimcacheDelimiter;
   } else if (boost::starts_with(data, kWin10Start) &&
+             data.length() >= (size_t)kWin10PreCreator + 8 &&
              (data.substr(kWin10PreCreator, 8) == kWin8110ShimcacheDelimiter)) {
     delimter = kWin8110ShimcacheDelimiter;
   } else if (boost::starts_with(data, kWin10CreatorStart) &&
+             data.length() >= (size_t)kWin10Creator + 8 &&
              (data.substr(kWin10Creator, 8) == kWin8110ShimcacheDelimiter)) {
     delimter = kWin8110ShimcacheDelimiter;
   } else {
     LOG(WARNING) << "Unknown or unsupported shimcache data: "
-                 << data.substr(256, 8);
+                 << (data.length() >= 264 ? data.substr(256, 8) : data);
     return;
   }
 
