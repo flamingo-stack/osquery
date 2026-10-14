@@ -135,7 +135,7 @@ Status NonBlockingFStream::close() {
     ::close(fd_);
     fd_ = -1;
   }
-  return Status();
+  return Status::success();
 }
 
 Status SyslogEventPublisher::setUp() {
@@ -167,6 +167,7 @@ Status SyslogEventPublisher::setUp() {
 
   s = readStream_.openReadOnly(FLAGS_syslog_pipe_path);
   if (!s.ok()) {
+    unlockPipe();
     return s;
   }
 
@@ -296,3 +297,4 @@ bool SyslogEventPublisher::shouldFire(const SyslogSubscriptionContextRef& sc,
   return true;
 }
 } // namespace osquery
+

@@ -31,29 +31,36 @@ const std::vector<std::tuple<std::string, std::string>> kKnownCgroupPrefixList{
     {"/libpod-", "podman"},
 };
 
-std::string getProcUptimeContents() {
-  std::string uptime_contents;
+Status getProcUptimeContents(std::string& uptime_contents) {
+  uptime_contents.clear();
 
   {
     std::ifstream uptime_file(kProcUptimeFilePath.c_str(), std::ios::in);
     if (!uptime_file) {
-      throw std::runtime_error("Failed to access the following path: " +
-                               kProcUptimeFilePath);
+      return Status::failure("Failed to access the following path: " +
+                             kProcUptimeFilePath);
     }
 
     std::getline(uptime_file, uptime_contents);
   }
 
-  return uptime_contents;
+  return Status::success();
 }
 
-std::uint64_t getSystemBootTime() {
+Status getSystemBootTime(std::uint64_t& boot_time) {
+  boot_time = 0;
+
   auto current_time = std::time(nullptr);
-  auto uptime_contents = getProcUptimeContents();
+
+  std::string uptime_contents;
+  auto status = getProcUptimeContents(uptime_contents);
+  if (!status.ok()) {
+    return status;
+  }
 
   auto separator_index = uptime_contents.find('.');
   if (separator_index == std::string::npos) {
-    throw std::runtime_error("Invalid data read from " + kProcUptimeFilePath);
+    return Status::failure("Invalid data read from " + kProcUptimeFilePath);
   }
 
   auto string_uptime = uptime_contents.substr(0, separator_index);
@@ -63,10 +70,11 @@ std::uint64_t getSystemBootTime() {
       std::strtoull(string_uptime.c_str(), &last_parsed_char, 10);
   if (integer_uptime == 0 || last_parsed_char == nullptr ||
       *last_parsed_char != 0) {
-    throw std::runtime_error("Invalid data read from " + kProcUptimeFilePath);
+    return Status::failure("Invalid data read from " + kProcUptimeFilePath);
   }
 
-  return current_time - integer_uptime;
+  boot_time = current_time - integer_uptime;
+  return Status::success();
 }
 
 } // namespace
@@ -131,7 +139,11 @@ TableRows BPFProcessEventsTable::generate(QueryContext& context) {
   TableRows row_list;
   std::stringstream buffer;
 
-  auto system_boot_time = getSystemBootTime();
+  std::uint64_t system_boot_time{0U};
+  auto status = getSystemBootTime(system_boot_time);
+  if (!status.ok()) {
+    return row_list;
+  }
 
   for (const auto& event : d->event_list) {
     auto row = make_table_row();
