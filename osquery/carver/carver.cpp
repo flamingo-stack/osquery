@@ -280,6 +280,9 @@ Status Carver::blockwiseCopy(PlatformFile& src, PlatformFile& dst) {
       if (bytesWritten < 0) {
         return Status(1, "Error writing bytes to tmp fs");
       }
+      if (bytesWritten < bytesRead) {
+        return Status(1, "Partial write to tmp fs: wrote fewer bytes than read");
+      }
     }
   }
 
@@ -334,6 +337,7 @@ Status Carver::postCarve(const boost::filesystem::path& path) {
   auto contUri = TLSRequestHelper::makeURI(FLAGS_carver_continue_endpoint);
   Request<TLSTransport, JSONSerializer> contRequest(contUri);
   contRequest.setOption("hostname", FLAGS_tls_hostname);
+  size_t failedBlocks = 0;
   for (size_t i = 0; i < blkCount; i++) {
     std::vector<char> block(FLAGS_carver_block_size, 0);
     auto r = pFile.read(block.data(), FLAGS_carver_block_size);
@@ -354,8 +358,16 @@ Status Carver::postCarve(const boost::filesystem::path& path) {
     if (!status.ok()) {
       VLOG(1) << "Post of carved block " << i
               << " failed: " << status.getMessage();
+      failedBlocks++;
       continue;
     }
+  }
+
+  if (failedBlocks > 0) {
+    updateCarveValue(carveGuid_, "status", "DATA POST FAILED");
+    return Status(1,
+                  "Failed to post " + std::to_string(failedBlocks) + " of " +
+                      std::to_string(blkCount) + " carve blocks");
   }
 
   updateCarveValue(carveGuid_, "status", kCarverStatusSuccess);

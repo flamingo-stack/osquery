@@ -26,8 +26,8 @@ Status EtwProviderConfig::isValid() const {
     return Status::failure("Type handlers were not provided");
   }
 
-  if (getPostProcessor() == nullptr) {
-    return Status::failure("Invalid Provider PostProcessor function");
+  if (getPreProcessor() == nullptr) {
+    return Status::failure("Invalid Provider PreProcessor function");
   }
 
   return Status::success();

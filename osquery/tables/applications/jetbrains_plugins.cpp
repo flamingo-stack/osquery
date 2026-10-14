@@ -27,6 +27,9 @@ namespace tables {
 // Function to convert JetBrainsProductType enum to string
 const std::string getProductName(const JetBrainsProductType type) {
   auto product = kProductTypeToString.find(type);
+  if (product == kProductTypeToString.end()) {
+    return "unknown";
+  }
   return product->second;
 }
 
@@ -50,8 +53,7 @@ FileData extractSpecificFileFromArchive(const std::string& archive_file_path,
     if (archive != nullptr) {
       int free_result = archive_read_free(archive);
       if (free_result != ARCHIVE_OK) {
-        VLOG(1) << "Failed to close zip file: " << archive_error_string(archive)
-                << std::endl;
+        VLOG(1) << "Failed to close zip file: " << archive_error_string(archive);
       }
     }
   });
@@ -59,8 +61,7 @@ FileData extractSpecificFileFromArchive(const std::string& archive_file_path,
   result = archive_read_open_filename(
       archive, archive_file_path.c_str(), 10240); // 10KB buffer
   if (result != ARCHIVE_OK) {
-    VLOG(1) << "Failed to open zip file: " << archive_error_string(archive)
-            << std::endl;
+    VLOG(1) << "Failed to open zip file: " << archive_error_string(archive);
 
     return file_data;
   }
@@ -87,8 +88,7 @@ FileData extractSpecificFileFromArchive(const std::string& archive_file_path,
       }
 
       if (archive_errno(archive) != 0) {
-        VLOG(1) << "Error reading data block: " << archive_error_string(archive)
-                << std::endl;
+        VLOG(1) << "Error reading data block: " << archive_error_string(archive);
       }
 
       break;
@@ -437,3 +437,4 @@ QueryData genJetBrainsPlugins(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

@@ -80,7 +80,7 @@ std::string getKeychainPath(const SecKeychainItemRef& item) {
   char keychain_path[1024] = {0};
   OSQUERY_USE_DEPRECATED(
       status = SecKeychainGetPath(keychain, &path_size, keychain_path));
-  if (status != errSecSuccess || (path_size > 0 && keychain_path[0] != 0)) {
+  if (status == errSecSuccess && path_size > 0 && keychain_path[0] != 0) {
     path = std::string(keychain_path);
   }
 
@@ -196,3 +196,4 @@ void KeychainCache::Write(const boost::filesystem::path& path,
 
 } // namespace tables
 } // namespace osquery
+

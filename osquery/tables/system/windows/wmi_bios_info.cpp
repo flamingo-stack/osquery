@@ -126,8 +126,10 @@ Row getDellLegacyBiosInfo(const WmiResultItem& item) {
   if (vCurrentValue.size() == 1 && !vPossibleValues.empty()) {
     auto pos = std::find(
         vPossibleValues.begin(), vPossibleValues.end(), vCurrentValue[0]);
-    if (pos != vPossibleValues.end()) {
-      r["value"] = vPossibleValuesDescription[pos - vPossibleValues.begin()];
+    auto index = pos - vPossibleValues.begin();
+    if (pos != vPossibleValues.end() &&
+        static_cast<size_t>(index) < vPossibleValuesDescription.size()) {
+      r["value"] = vPossibleValuesDescription[index];
     } else {
       r["value"] = "N/A";
     }
@@ -466,3 +468,4 @@ QueryData genBiosInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

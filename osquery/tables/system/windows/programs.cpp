@@ -9,6 +9,9 @@
 
 #include <regex>
 
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+
 #include <osquery/core/core.h>
 #include <osquery/core/tables.h>
 #include <osquery/filesystem/filesystem.h>
@@ -19,52 +22,68 @@
 namespace osquery {
 namespace tables {
 
-// Function to extract attributes from a tag
-std::map<std::string, std::string> parseAttributes(
-    const std::string& tagContent) {
-  std::regex attributeRegex("((\\w+)=\"([^\"]*)\")");
-  std::smatch match;
-  std::map<std::string, std::string> attributes;
+namespace {
 
-  std::string::const_iterator searchStart(tagContent.cbegin());
-  while (std::regex_search(
-      searchStart, tagContent.cend(), match, attributeRegex)) {
-    // match[1] is the entire attribute="value" string
-    // match[2] is the attribute name
-    // match[3] is the attribute value
-    attributes[match[2]] = match[3];
-    searchStart = match.suffix().first;
+// Function to extract attributes from an xmlNode
+std::map<std::string, std::string> parseAttributes(xmlNodePtr node) {
+  std::map<std::string, std::string> attributes;
+  if (node == nullptr) {
+    return attributes;
+  }
+
+  for (xmlAttrPtr attr = node->properties; attr != nullptr;
+       attr = attr->next) {
+    if (attr->name == nullptr) {
+      continue;
+    }
+    xmlChar* value = xmlNodeListGetString(node->doc, attr->children, 1);
+    if (value != nullptr) {
+      attributes[reinterpret_cast<const char*>(attr->name)] =
+          reinterpret_cast<const char*>(value);
+      xmlFree(value);
+    }
   }
 
   return attributes;
 }
 
-// Function to extract the contents of a specific tag
-std::string getTagContent(const std::string& xml, const std::string& tagName) {
-  std::regex tagRegex("<" + tagName + "[\\s\\S]*?>([\\s\\S]*?)<\\/" + tagName +
-                      ">");
-  std::smatch match;
-
-  if (std::regex_search(xml, match, tagRegex)) {
-    // match[0] is the entire tag with contents <TagName>contents</TagName>
-    // match[1] is the contents of the tag
-    return match[1];
+// Recursively find the first descendant (including self) node with the
+// given tag name, honoring XML namespaces by comparing local names only.
+xmlNodePtr findNode(xmlNodePtr node, const std::string& tagName) {
+  for (xmlNodePtr cur = node; cur != nullptr; cur = cur->next) {
+    if (cur->type == XML_ELEMENT_NODE && cur->name != nullptr &&
+        tagName == reinterpret_cast<const char*>(cur->name)) {
+      return cur;
+    }
+    if (cur->children != nullptr) {
+      xmlNodePtr found = findNode(cur->children, tagName);
+      if (found != nullptr) {
+        return found;
+      }
+    }
   }
-  return "";
+  return nullptr;
 }
 
-// Function to find self closing tag in xml
-std::string findSelfClosingTag(const std::string& xml,
-                               const std::string& tagName) {
-  std::regex tagRegex("<" + tagName + "[\\s\\S]*?/>");
-  std::smatch match;
-
-  if (std::regex_search(xml, match, tagRegex)) {
-    // match[0] is the entire self-closing tag
-    return match[0];
+// Get the text content of the first descendant node found with the given
+// tag name, searching from the given root node.
+std::string getTagContent(xmlNodePtr root, const std::string& tagName) {
+  xmlNodePtr node = findNode(root, tagName);
+  if (node == nullptr) {
+    return "";
   }
-  return "";
+
+  xmlChar* content = xmlNodeGetContent(node);
+  if (content == nullptr) {
+    return "";
+  }
+
+  std::string result(reinterpret_cast<const char*>(content));
+  xmlFree(content);
+  return result;
 }
+
+} // namespace
 
 // Convert a Unix timestamp to a date in YYYYMMDD format
 std::string formatTimestampToDate(time_t timestamp) {
@@ -366,35 +385,56 @@ void genMsixPrograms(const std::string& key,
           continue;
         }
 
-        // Find the Identity tag, extract attributes
-        std::string identityTag = findSelfClosingTag(xmlContent, "Identity");
-        if (!identityTag.empty()) {
-          auto attributes = parseAttributes(identityTag);
-          result["name"] = attributes["Name"];
-          result["publisher"] = attributes["Publisher"];
-          result["version"] = attributes["Version"];
+        // Parse the manifest using a real XML parser rather than
+        // regex splicing, since AppxManifest.xml is untrusted,
+        // package-supplied data.
+        xmlDocPtr doc = xmlReadMemory(xmlContent.c_str(),
+                                      static_cast<int>(xmlContent.size()),
+                                      "AppxManifest.xml",
+                                      nullptr,
+                                      XML_PARSE_NOENT | XML_PARSE_NONET);
+        if (doc == nullptr) {
+          VLOG(1) << "Failed to parse manifest file:'" + filePath + "'";
+          result.clear();
+          continue;
         }
 
-        // Find the Properties tag, extract child tags
-        std::string propertiesTag = getTagContent(xmlContent, "Properties");
-        if (!propertiesTag.empty()) {
-          auto displayName = getTagContent(propertiesTag, "DisplayName");
-          auto publisherDisplayName =
-              getTagContent(propertiesTag, "PublisherDisplayName");
-
-          // "ms-resource:" prefix means that the string is dynamically
-          // generated from a .pri file .pri file is a binary index of all
-          // localized and scaled resources compiled from .resw files or
-          // .resources at build time
-          if (!displayName.empty() &&
-              displayName.find("ms-resource") == std::string::npos) {
-            result["name"] = displayName;
+        xmlNodePtr root = xmlDocGetRootElement(doc);
+        if (root != nullptr) {
+          // Find the Identity tag, extract attributes
+          xmlNodePtr identityNode = findNode(root, "Identity");
+          if (identityNode != nullptr) {
+            auto attributes = parseAttributes(identityNode);
+            result["name"] = attributes["Name"];
+            result["publisher"] = attributes["Publisher"];
+            result["version"] = attributes["Version"];
           }
-          if (!publisherDisplayName.empty() &&
-              publisherDisplayName.find("ms-resource") == std::string::npos) {
-            result["publisher"] = publisherDisplayName;
+
+          // Find the Properties tag, extract child tags
+          xmlNodePtr propertiesNode = findNode(root, "Properties");
+          if (propertiesNode != nullptr) {
+            auto displayName =
+                getTagContent(propertiesNode->children, "DisplayName");
+            auto publisherDisplayName = getTagContent(
+                propertiesNode->children, "PublisherDisplayName");
+
+            // "ms-resource:" prefix means that the string is dynamically
+            // generated from a .pri file .pri file is a binary index of all
+            // localized and scaled resources compiled from .resw files or
+            // .resources at build time
+            if (!displayName.empty() &&
+                displayName.find("ms-resource") == std::string::npos) {
+              result["name"] = displayName;
+            }
+            if (!publisherDisplayName.empty() &&
+                publisherDisplayName.find("ms-resource") ==
+                    std::string::npos) {
+              result["publisher"] = publisherDisplayName;
+            }
           }
         }
+
+        xmlFreeDoc(doc);
 
         // Done processing this package registry entries
         // No need to read anymore keys

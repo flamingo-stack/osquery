@@ -29,8 +29,8 @@ const std::vector<std::string> kFormFactors = {
 };
 
 std::string getFormFactor(long id) {
-  if (id < kFormFactors.size()) {
-    return kFormFactors[id];
+  if (id >= 0 && static_cast<std::size_t>(id) < kFormFactors.size()) {
+    return kFormFactors[static_cast<std::size_t>(id)];
   }
   return std::to_string(id);
 }
@@ -45,8 +45,8 @@ const std::vector<std::string> kMemoryTypes = {
     "DDR3",       "FBD2",   "DDR4"};
 
 std::string getMemoryType(int id) {
-  if (id < kMemoryTypes.size()) {
-    return kMemoryTypes[id];
+  if (id >= 0 && static_cast<std::size_t>(id) < kMemoryTypes.size()) {
+    return kMemoryTypes[static_cast<std::size_t>(id)];
   }
   return std::to_string(id);
 }

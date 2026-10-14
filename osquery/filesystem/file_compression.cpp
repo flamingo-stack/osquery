@@ -48,8 +48,8 @@ Status compress(const boost::filesystem::path& in,
 
   size_t const buffInSize = ZSTD_CStreamInSize();
   size_t const buffOutSize = ZSTD_CStreamOutSize();
-  std::vector<void*> buffIn(buffInSize);
-  std::vector<void*> buffOut(buffOutSize);
+  std::vector<unsigned char> buffIn(buffInSize);
+  std::vector<unsigned char> buffOut(buffOutSize);
   auto read = buffInSize;
   auto toRead = buffInSize;
   size_t readSoFar = 0;
@@ -114,8 +114,8 @@ Status decompress(const boost::filesystem::path& in,
   auto inFileSize = inFile.size();
   size_t const buffInSize = ZSTD_DStreamInSize();
   size_t const buffOutSize = ZSTD_DStreamOutSize();
-  std::vector<void*> buffIn(buffInSize);
-  std::vector<void*> buffOut(buffOutSize);
+  std::vector<unsigned char> buffIn(buffInSize);
+  std::vector<unsigned char> buffOut(buffOutSize);
 
   ZSTD_DStream* const dstream = ZSTD_createDStream();
   if (dstream == NULL) {
@@ -201,3 +201,4 @@ Status archive(const std::set<boost::filesystem::path>& paths,
   return Status::success();
 };
 } // namespace osquery
+

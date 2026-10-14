@@ -87,12 +87,15 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
     }
 
     Row r;
-    BSTR taskName;
+    BSTR taskName = nullptr;
     ret = pRegisteredTask->get_Name(&taskName);
-    std::wstring wTaskName(taskName, SysStringLen(taskName));
-    ::SysFreeString(taskName);
-    r["name"] =
-        ret == S_OK ? SQL_TEXT(wstringToString(wTaskName)) : std::string();
+    if (ret == S_OK && taskName != nullptr) {
+      std::wstring wTaskName(taskName, SysStringLen(taskName));
+      ::SysFreeString(taskName);
+      r["name"] = SQL_TEXT(wstringToString(wTaskName));
+    } else {
+      r["name"] = std::string();
+    }
 
     VARIANT_BOOL enabled = false;
     pRegisteredTask->get_Enabled(&enabled);
@@ -104,11 +107,15 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
                      ? kStateMap.at(taskState)
                      : kStateMap.at(TASK_STATE_UNKNOWN);
 
-    BSTR taskPath;
+    BSTR taskPath = nullptr;
     ret = pRegisteredTask->get_Path(&taskPath);
-    std::wstring wTaskPath(taskPath, SysStringLen(taskPath));
-    r["path"] = ret == S_OK ? wstringToString(wTaskPath) : std::string();
-    ::SysFreeString(taskPath);
+    if (ret == S_OK && taskPath != nullptr) {
+      std::wstring wTaskPath(taskPath, SysStringLen(taskPath));
+      r["path"] = wstringToString(wTaskPath);
+      ::SysFreeString(taskPath);
+    } else {
+      r["path"] = std::string();
+    }
 
     VARIANT_BOOL hidden = false;
     pRegisteredTask->get_Enabled(&hidden);
@@ -168,20 +175,29 @@ void enumerateTasksForFolder(std::string path, QueryData& results) {
         continue;
       }
 
-      BSTR taskExecPath;
-      execAction->get_Path(&taskExecPath);
-      std::wstring wTaskExecPath(taskExecPath, SysStringLen(taskExecPath));
-      ::SysFreeString(taskExecPath);
+      BSTR taskExecPath = nullptr;
+      auto execRet = execAction->get_Path(&taskExecPath);
+      std::wstring wTaskExecPath;
+      if (execRet == S_OK && taskExecPath != nullptr) {
+        wTaskExecPath.assign(taskExecPath, SysStringLen(taskExecPath));
+        ::SysFreeString(taskExecPath);
+      }
 
-      BSTR taskExecArgs;
-      execAction->get_Arguments(&taskExecArgs);
-      std::wstring wTaskExecArgs(taskExecArgs, SysStringLen(taskExecArgs));
-      ::SysFreeString(taskExecArgs);
+      BSTR taskExecArgs = nullptr;
+      execRet = execAction->get_Arguments(&taskExecArgs);
+      std::wstring wTaskExecArgs;
+      if (execRet == S_OK && taskExecArgs != nullptr) {
+        wTaskExecArgs.assign(taskExecArgs, SysStringLen(taskExecArgs));
+        ::SysFreeString(taskExecArgs);
+      }
 
-      BSTR taskExecRoot;
-      execAction->get_WorkingDirectory(&taskExecRoot);
-      std::wstring wTaskExecRoot(taskExecRoot, SysStringLen(taskExecRoot));
-      ::SysFreeString(taskExecRoot);
+      BSTR taskExecRoot = nullptr;
+      execRet = execAction->get_WorkingDirectory(&taskExecRoot);
+      std::wstring wTaskExecRoot;
+      if (execRet == S_OK && taskExecRoot != nullptr) {
+        wTaskExecRoot.assign(taskExecRoot, SysStringLen(taskExecRoot));
+        ::SysFreeString(taskExecRoot);
+      }
 
       execAction->Release();
 
@@ -231,3 +247,4 @@ QueryData genScheduledTasks(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
