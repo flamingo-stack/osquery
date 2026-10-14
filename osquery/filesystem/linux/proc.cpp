@@ -37,6 +37,17 @@ Status procGetNamespaceInode(ino_t& inode,
     return Status(1, "Failed to retrieve the inode for namespace " + path);
   }
 
+  // Ensure the buffer is null-terminated, since readlink() does not do this
+  // for us
+  link_destination[link_dest_length] = '\0';
+
+  // The link destination must be at least long enough to hold the
+  // namespace name, the ":[" separator and a closing "]"
+  if (static_cast<std::size_t>(link_dest_length) <
+      namespace_name.size() + 3) {
+    return Status(1, "Invalid descriptor for namespace " + path);
+  }
+
   // The link destination must be in the following form: namespace:[inode]
   if (std::strncmp(link_destination,
                    namespace_name.data(),
@@ -430,3 +441,4 @@ Expected<std::uint64_t, ProcError> getProcRSS(const std::string& process) {
 }
 
 } // namespace osquery
+

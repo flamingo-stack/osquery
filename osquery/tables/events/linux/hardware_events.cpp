@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include <osquery/core/flags.h>
 #include <osquery/core/tables.h>
 #include <osquery/events/linux/udev.h>
@@ -55,7 +58,17 @@ Status HardwareEventSubscriber::Callback(const ECRef& ec, const SCRef& sc) {
 
   struct udev_device* device = ec->device;
   r["type"] = ec->devtype;
-  if (FLAGS_hardware_disabled_types.find(r.at("type")) != std::string::npos) {
+
+  std::vector<std::string> disabled_types;
+  boost::split(disabled_types,
+               FLAGS_hardware_disabled_types,
+               boost::is_any_of(","));
+  for (auto& disabled_type : disabled_types) {
+    boost::trim(disabled_type);
+  }
+  if (std::find(disabled_types.begin(),
+                disabled_types.end(),
+                r.at("type")) != disabled_types.end()) {
     return Status::success();
   }
 
@@ -74,9 +87,8 @@ Status HardwareEventSubscriber::Callback(const ECRef& ec, const SCRef& sc) {
   r["vendor"] = UdevEventPublisher::getValue(device, "ID_VENDOR_FROM_DATABASE");
   r["vendor_id"] =
       INTEGER(UdevEventPublisher::getValue(device, "ID_VENDOR_ID"));
-  r["serial"] =
-      INTEGER(UdevEventPublisher::getValue(device, "ID_SERIAL_SHORT"));
-  r["revision"] = INTEGER(UdevEventPublisher::getValue(device, "ID_REVISION"));
+  r["serial"] = UdevEventPublisher::getValue(device, "ID_SERIAL_SHORT");
+  r["revision"] = UdevEventPublisher::getValue(device, "ID_REVISION");
   add(r);
   return Status(0);
 }

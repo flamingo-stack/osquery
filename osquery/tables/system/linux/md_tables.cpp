@@ -125,8 +125,8 @@ std::string MD::getPathByDevName(const std::string& name) {
       udev_device_get_property_value(device, "DEVNAME")
     );
     if (boost::ends_with(devName, name)) {
-      if (!boost::starts_with(devPath, "/")) {
-        devPath = "/dev/" + devPath;
+      if (!boost::starts_with(devName, "/")) {
+        devPath = "/dev/" + devName;
       } else {
         devPath = devName;
       }
@@ -162,10 +162,12 @@ std::string MD::getSuperblkVersion(const std::string& arrayName) {
 
   walkUdevDevices("block", [&](udev_device* const& device) {
     const char* devName = udev_device_get_property_value(device, "DEVNAME");
+    std::string devNameStr(devName);
 
-    if (arrayName.compare(strlen(devName) - arrayName.length(),
-                          std::string::npos,
-                          devName) == 0) {
+    if (devNameStr.length() >= arrayName.length() &&
+        devNameStr.compare(devNameStr.length() - arrayName.length(),
+                            std::string::npos,
+                            arrayName) == 0) {
       version = udev_device_get_property_value(device, "MD_METADATA");
       return true;
     }

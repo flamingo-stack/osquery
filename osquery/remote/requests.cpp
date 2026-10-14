@@ -12,6 +12,8 @@
 
 #include <zlib.h>
 
+#include <osquery/logger/logger.h>
+
 namespace osquery {
 
 #define MOD_GZIP_ZLIB_WINDOWSIZE 15
@@ -27,6 +29,8 @@ std::string compressString(const std::string& data) {
                    MOD_GZIP_ZLIB_WINDOWSIZE + 16,
                    MOD_GZIP_ZLIB_CFACTOR,
                    Z_DEFAULT_STRATEGY) != Z_OK) {
+    LOG(ERROR) << "compressString: deflateInit2 failed to initialize zlib "
+                  "stream";
     return std::string();
   }
 
@@ -51,9 +55,13 @@ std::string compressString(const std::string& data) {
 
   deflateEnd(&zs);
   if (ret != Z_STREAM_END) {
+    LOG(ERROR) << "compressString: deflate stream did not end cleanly, "
+                   "zlib return code: "
+                << ret;
     return std::string();
   }
 
   return output;
 }
 }
+
