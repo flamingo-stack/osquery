@@ -70,14 +70,13 @@ Status HardwareEventSubscriber::Callback(const ECRef& ec, const SCRef& sc) {
     return Status::success();
   }
 
-  r["model_id"] = INTEGER(UdevEventPublisher::getValue(device, "ID_MODEL_ID"));
+  r["model_id"] = UdevEventPublisher::getValue(device, "ID_MODEL_ID");
   r["vendor"] = UdevEventPublisher::getValue(device, "ID_VENDOR_FROM_DATABASE");
-  r["vendor_id"] =
-      INTEGER(UdevEventPublisher::getValue(device, "ID_VENDOR_ID"));
-  r["serial"] =
-      INTEGER(UdevEventPublisher::getValue(device, "ID_SERIAL_SHORT"));
+  r["vendor_id"] = UdevEventPublisher::getValue(device, "ID_VENDOR_ID");
+  r["serial"] = UdevEventPublisher::getValue(device, "ID_SERIAL_SHORT");
   r["revision"] = INTEGER(UdevEventPublisher::getValue(device, "ID_REVISION"));
   add(r);
   return Status(0);
 }
 }
+

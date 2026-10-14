@@ -69,7 +69,7 @@ class EphemeralDatabasePlugin : public DatabasePlugin {
   /// Database workflow: open and setup.
   Status setUp() override {
     DBType().swap(db_);
-    return Status(0);
+    return Status::success();
   }
 
  private:
@@ -85,22 +85,22 @@ Status EphemeralDatabasePlugin::getAny(const std::string& domain,
                                        T& value) const {
   auto domainIterator = db_.find(domain);
   if (domainIterator == db_.end()) {
-    return Status(1, "Domain " + domain + " does not exist");
+    return Status::failure("Domain " + domain + " does not exist");
   }
 
   auto keyIterator = domainIterator->second.find(key);
   if (keyIterator == domainIterator->second.end()) {
-    return Status(1, "Key " + key + " in domain " + domain + " does not exist");
+    return Status::failure("Key " + key + " in domain " + domain + " does not exist");
   }
 
   try {
     value = boost::get<T>(keyIterator->second);
   } catch (const boost::bad_get& e) {
-    return Status(1,
+    return Status::failure(
                   "Type error getting string value for " + key + " in domain " +
                       domain + ": " + e.what());
   }
-  return Status(0);
+  return Status::success();
 }
 
 Status EphemeralDatabasePlugin::get(const std::string& domain,
@@ -130,14 +130,14 @@ Status EphemeralDatabasePlugin::put(const std::string& domain,
                                     const std::string& key,
                                     const std::string& value) {
   setValue(domain, key, value);
-  return Status(0);
+  return Status::success();
 }
 
 Status EphemeralDatabasePlugin::put(const std::string& domain,
                                     const std::string& key,
                                     int value) {
   setValue(domain, key, value);
-  return Status(0);
+  return Status::success();
 }
 
 Status EphemeralDatabasePlugin::putBatch(const std::string& domain,
@@ -155,7 +155,7 @@ Status EphemeralDatabasePlugin::putBatch(const std::string& domain,
 Status EphemeralDatabasePlugin::remove(const std::string& domain,
                                        const std::string& k) {
   db_[domain].erase(k);
-  return Status(0);
+  return Status::success();
 }
 
 Status EphemeralDatabasePlugin::removeRange(const std::string& domain,
@@ -165,17 +165,22 @@ Status EphemeralDatabasePlugin::removeRange(const std::string& domain,
     return Status::failure("Invalid range: low > high");
   }
 
+  auto domainIterator = db_.find(domain);
+  if (domainIterator == db_.end()) {
+    return Status::success();
+  }
+
   std::vector<std::string> keys;
-  for (const auto& it : db_[domain]) {
+  for (const auto& it : domainIterator->second) {
     if (it.first >= low && it.first <= high) {
       keys.push_back(it.first);
     }
   }
 
   for (const auto& key : keys) {
-    db_[domain].erase(key);
+    domainIterator->second.erase(key);
   }
-  return Status(0);
+  return Status::success();
 }
 
 Status EphemeralDatabasePlugin::scan(const std::string& domain,
@@ -183,7 +188,7 @@ Status EphemeralDatabasePlugin::scan(const std::string& domain,
                                      const std::string& prefix,
                                      uint64_t max) const {
   if (db_.count(domain) == 0) {
-    return Status(0);
+    return Status::success();
   }
 
   for (const auto& key : db_.at(domain)) {
@@ -197,6 +202,6 @@ Status EphemeralDatabasePlugin::scan(const std::string& domain,
       break;
     }
   }
-  return Status(0);
+  return Status::success();
 }
 } // namespace osquery

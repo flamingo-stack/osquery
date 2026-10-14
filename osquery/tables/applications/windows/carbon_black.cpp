@@ -118,10 +118,13 @@ void getSettings(Row& r) {
       uint64_t int_sensor_id = strtoll(kKey.at("data").c_str(), nullptr, 10);
       std::stringstream hex_sensor_id;
       hex_sensor_id << std::hex << int_sensor_id;
-      unsigned int sensor_id;
-      std::string small_hex_sensor_id = hex_sensor_id.str().substr(11, 16);
-      std::stringstream converter(small_hex_sensor_id);
-      converter >> std::hex >> sensor_id;
+      unsigned int sensor_id = 0;
+      std::string hex_sensor_id_str = hex_sensor_id.str();
+      if (hex_sensor_id_str.size() > 11) {
+        std::string small_hex_sensor_id = hex_sensor_id_str.substr(11, 16);
+        std::stringstream converter(small_hex_sensor_id);
+        converter >> std::hex >> sensor_id;
+      }
       r["sensor_id"] = INTEGER(sensor_id);
     }
   }

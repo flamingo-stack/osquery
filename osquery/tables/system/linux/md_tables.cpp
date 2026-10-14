@@ -163,7 +163,9 @@ std::string MD::getSuperblkVersion(const std::string& arrayName) {
   walkUdevDevices("block", [&](udev_device* const& device) {
     const char* devName = udev_device_get_property_value(device, "DEVNAME");
 
-    if (arrayName.compare(strlen(devName) - arrayName.length(),
+    size_t devNameLen = strlen(devName);
+    if (devNameLen >= arrayName.length() &&
+        arrayName.compare(devNameLen - arrayName.length(),
                           std::string::npos,
                           devName) == 0) {
       version = udev_device_get_property_value(device, "MD_METADATA");

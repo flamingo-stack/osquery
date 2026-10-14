@@ -70,13 +70,13 @@ void SCNetworkEventPublisher::addHostname(
 void SCNetworkEventPublisher::addAddress(
     const SCNetworkSubscriptionContextRef& sc) {
   struct sockaddr* addr;
+  struct sockaddr_in ipv4_addr;
+  struct sockaddr_in6 ip6_addr;
   if (sc->family == AF_INET) {
-    struct sockaddr_in ipv4_addr;
     ipv4_addr.sin_family = AF_INET;
     inet_pton(AF_INET, sc->target.c_str(), &ipv4_addr.sin_addr);
     addr = (struct sockaddr*)&ipv4_addr;
   } else {
-    struct sockaddr_in6 ip6_addr;
     ip6_addr.sin6_family = AF_INET6;
     inet_pton(AF_INET6, sc->target.c_str(), &ip6_addr.sin6_addr);
     addr = (struct sockaddr*)&ip6_addr;
@@ -183,3 +183,4 @@ Status SCNetworkEventPublisher::run() {
   return Status::success();
 }
 };
+
