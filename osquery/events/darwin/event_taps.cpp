@@ -42,9 +42,9 @@ EventTappingEventPublisher::~EventTappingEventPublisher() {
 
 Status EventTappingEventPublisher::setUp() {
   if (!FLAGS_enable_keyboard_events && !FLAGS_enable_mouse_events) {
-    return Status(1, "Publisher disabled via configuration");
+    return Status::failure("Publisher disabled via configuration");
   }
-  return Status(0);
+  return Status::success();
 }
 
 void EventTappingEventPublisher::tearDown() {
@@ -94,13 +94,13 @@ Status EventTappingEventPublisher::restart() {
                                 nullptr);
   if (event_tap_ == nullptr) {
     run_loop_ = nullptr;
-    return Status(1, "Could not create event tap");
+    return Status::failure("Could not create event tap");
   }
   run_loop_source_ =
       CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap_, 0);
   CFRunLoopAddSource(run_loop_, run_loop_source_, kCFRunLoopCommonModes);
   CGEventTapEnable(event_tap_, true);
-  return Status(0);
+  return Status::success();
 }
 
 Status EventTappingEventPublisher::run() {
@@ -117,3 +117,4 @@ bool EventTappingEventPublisher::shouldFire(
   return true;
 }
 }
+
