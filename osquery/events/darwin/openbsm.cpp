@@ -47,7 +47,7 @@ Status OpenBSMEventPublisher::configureAuditPipe() {
   }
 
   if (ioctl(au_fd, AUDITPIPE_SET_QLIMIT, &kQLimit) == -1) {
-    LOG(INFO) << "The auditpipe:ioctl AUDITPIPE_SET_QLIMIT failed";
+    LOG(WARNING) << "The auditpipe:ioctl AUDITPIPE_SET_QLIMIT failed";
   }
 
   au_mask_t pr_flags = {0, 0};
