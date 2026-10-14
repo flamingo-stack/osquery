@@ -20,6 +20,8 @@ DECLARE_bool(enable_bpf_events);
 
 namespace {
 std::once_flag setrlimit_flag;
+bool setrlimit_succeeded = true;
+std::string setrlimit_error_message;
 
 void configureBPFMemoryLimitsHelper() {
   if (!FLAGS_enable_bpf_events) {
@@ -32,21 +34,23 @@ void configureBPFMemoryLimitsHelper() {
 
   auto err = setrlimit(RLIMIT_MEMLOCK, &rl);
   if (err != 0) {
-    throw std::runtime_error(
+    setrlimit_succeeded = false;
+    setrlimit_error_message =
         "Failed to setup the memory lock limits. The BPF tables may not work "
-        "correctly.");
+        "correctly.";
   }
 }
 } // namespace
 
 Status configureBPFMemoryLimits() {
-  try {
-    std::call_once(setrlimit_flag, configureBPFMemoryLimitsHelper);
-    return Status::success();
+  std::call_once(setrlimit_flag, configureBPFMemoryLimitsHelper);
 
-  } catch (const std::exception& e) {
-    return Status::failure(e.what());
+  if (!setrlimit_succeeded) {
+    return Status::failure(setrlimit_error_message);
   }
+
+  return Status::success();
 }
 
 } // namespace osquery
+
