@@ -117,9 +117,14 @@ void genSudoersFile(const std::string& filename,
 
     if (is_includedir) {
       // support both relative and full paths
-      if (rule_details.at(0) != '/') {
+      if (!rule_details.empty() && rule_details.at(0) != '/') {
         auto path = fs::path(filename).parent_path() / rule_details;
         rule_details = path.string();
+      }
+
+      if (rule_details.empty()) {
+        TLOG << "Empty includedir target in sudoers file: " << filename;
+        continue;
       }
 
       std::vector<std::string> inc_files;
@@ -144,9 +149,14 @@ void genSudoersFile(const std::string& filename,
     }
     if (is_include) {
       // support both relative and full paths
-      if (rule_details.at(0) != '/') {
+      if (!rule_details.empty() && rule_details.at(0) != '/') {
         auto path = fs::path(filename).parent_path() / rule_details;
         rule_details = path.string();
+      }
+
+      if (rule_details.empty()) {
+        TLOG << "Empty include target in sudoers file: " << filename;
+        continue;
       }
 
       genSudoersFile(rule_details, ++level, results);
@@ -167,3 +177,4 @@ QueryData genSudoers(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
