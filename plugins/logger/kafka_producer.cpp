@@ -14,9 +14,9 @@
 #include <osquery/remote/transports/tls.h>
 // clang-format on
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <io.h>
-#elif defined _unix_
+#else
 #include <unistd.h>
 #endif
 
@@ -368,3 +368,4 @@ bool KafkaProducerPlugin::configureTopics() {
   return true;
 }
 } // namespace osquery
+
