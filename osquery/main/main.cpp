@@ -81,8 +81,8 @@ int profile(int argc, char* argv[]) {
     auto status = osquery::queryInternal(query, results, dbc);
     dbc->clearAffectedTables();
     if (!status) {
-      std::cerr << "Query failed (" << status.getCode()
-                << "): " << status.what() << std::endl;
+      LOG(ERROR) << "Query failed (" << status.getCode()
+                 << "): " << status.what();
       return status.getCode();
     }
   }
@@ -193,3 +193,4 @@ int startOsquery(int argc, char* argv[]) {
   return runner.shutdown(retcode);
 }
 } // namespace osquery
+
