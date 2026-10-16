@@ -24,7 +24,7 @@
 namespace osquery {
 namespace tables {
 
-#define MAX_NETLINK_SIZE 64 * 1024
+constexpr size_t kMaxNetlinkSize = 64 * 1024;
 
 constexpr auto kDefaultIpv6Route = "::";
 constexpr auto kDefaultIpv4Route = "0.0.0.0";
@@ -87,8 +87,8 @@ Status readNetlink(int socket_fd, int seq, char* output, size_t* size) {
         continue;
       }
 
-      if (MAX_NETLINK_SIZE - *size >= sizeof(struct nlmsghdr)) {
-        bytes = recv(socket_fd, output, MAX_NETLINK_SIZE - *size, 0);
+      if (kMaxNetlinkSize - *size >= sizeof(struct nlmsghdr)) {
+        bytes = recv(socket_fd, output, kMaxNetlinkSize - *size, 0);
         if (bytes < 0) {
           // Unrecoverable NETLINK error, bail.
           return Status(1, "Could not read from NETLINK");
@@ -229,13 +229,13 @@ QueryData genRoutes(QueryContext& context) {
   }
 
   // Create netlink message header
-  auto netlink_buffer = (void*)malloc(MAX_NETLINK_SIZE);
+  auto netlink_buffer = (void*)malloc(kMaxNetlinkSize);
   if (netlink_buffer == nullptr) {
     close(socket_fd);
     return {};
   }
 
-  memset(netlink_buffer, 0, MAX_NETLINK_SIZE);
+  memset(netlink_buffer, 0, kMaxNetlinkSize);
   auto netlink_msg = (struct nlmsghdr*)netlink_buffer;
   netlink_msg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
   netlink_msg->nlmsg_type = RTM_GETROUTE; // routes from kernel routing table
@@ -272,3 +272,4 @@ QueryData genRoutes(QueryContext& context) {
 }
 }
 }
+

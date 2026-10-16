@@ -33,10 +33,10 @@ namespace osquery {
 namespace tables {
 
 // The maximum number of expected memory regions per process.
-#define MAX_MEMORY_MAPS 512
+constexpr size_t kMaxMemoryMaps = 512;
 
-#define NSEC_TO_MSEC_RATIO 1000000UL
-#define USEC_TO_SEC_RATIO NSEC_TO_MSEC_RATIO
+constexpr unsigned long kNsecToMsecRatio = 1000000UL;
+constexpr unsigned long kUsecToSecRatio = kNsecToMsecRatio;
 
 // Process states are as defined in sys/proc.h
 // SIDL   (1) Process being created by fork
@@ -129,9 +129,9 @@ inline bool genProcCredAndStartTime(QueryContext& context,
     cred.saved.uid = bsdinfo.pbi_svuid;
     cred.saved.gid = bsdinfo.pbi_svgid;
 
-    r.start_time_col = ((bsdinfo.pbi_start_tvsec * USEC_TO_SEC_RATIO) +
+    r.start_time_col = ((bsdinfo.pbi_start_tvsec * kUsecToSecRatio) +
                         bsdinfo.pbi_start_tvusec) /
-                       USEC_TO_SEC_RATIO;
+                       kUsecToSecRatio;
   } else if (proc_pidinfo(pid,
                           PROC_PIDT_SHORTBSDINFO,
                           1,
@@ -477,11 +477,11 @@ void genProcResourceUsage(const QueryContext& context,
     // time information
     r.user_time_col =
         ((rusage_info_data.ri_user_time * time_base.numer) / time_base.denom) /
-        NSEC_TO_MSEC_RATIO;
+        kNsecToMsecRatio;
 
     r.system_time_col = ((rusage_info_data.ri_system_time * time_base.numer) /
                          time_base.denom) /
-                        NSEC_TO_MSEC_RATIO;
+                        kNsecToMsecRatio;
 
     // disk i/o information
     r.disk_bytes_read_col = rusage_info_data.ri_diskio_bytesread;
@@ -742,7 +742,7 @@ void genProcessMemoryMap(int pid, QueryData& results, bool exe_only = false) {
   size_t map_count = 0;
   uint32_t depth = 0;
 
-  while (map_count++ < MAX_MEMORY_MAPS) {
+  while (map_count++ < kMaxMemoryMaps) {
     struct vm_region_submap_info_64 info;
     mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;
 
@@ -808,3 +808,4 @@ QueryData genProcessMemoryMap(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

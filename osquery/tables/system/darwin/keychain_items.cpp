@@ -19,7 +19,7 @@ namespace osquery {
 namespace tables {
 
 // The table key for Keychain cache access.
-static const KeychainTable KEYCHAIN_TABLE = KeychainTable::KEYCHAIN_ITEMS;
+static const KeychainTable kKeychainTable = KeychainTable::KEYCHAIN_ITEMS;
 
 const std::vector<CFTypeRef> kKeychainItemTypes = {
     kSecClassGenericPassword,
@@ -150,7 +150,7 @@ QueryData genKeychainItems(QueryContext& context) {
     // Check cache
     bool err = false;
     std::string hash;
-    bool hit = keychainCache.Read(source, KEYCHAIN_TABLE, hash, results, err);
+    bool hit = keychainCache.Read(source, kKeychainTable, hash, results, err);
     if (err) {
       TLOG << "Could not read the file at " << path << "" << ec.message();
       continue;
@@ -168,7 +168,7 @@ QueryData genKeychainItems(QueryContext& context) {
         CFRelease(keychain);
       }
       // Cache an empty result to prevent the above API call in the future.
-      keychainCache.Write(source, KEYCHAIN_TABLE, hash, {});
+      keychainCache.Write(source, kKeychainTable, hash, {});
       continue;
     }
 
@@ -181,7 +181,7 @@ QueryData genKeychainItems(QueryContext& context) {
       CFArrayRef items = CreateKeychainItems(keychains, item_type);
       if (items == nullptr) {
         // Cache an empty result to prevent the above API calls in the future.
-        keychainCache.Write(source, KEYCHAIN_TABLE, hash, {});
+        keychainCache.Write(source, kKeychainTable, hash, {});
         continue;
       }
       auto count = CFArrayGetCount(items);
@@ -195,7 +195,7 @@ QueryData genKeychainItems(QueryContext& context) {
     CFRelease(keychains);
 
     // Update cache and results
-    keychainCache.Write(source, KEYCHAIN_TABLE, hash, new_results);
+    keychainCache.Write(source, kKeychainTable, hash, new_results);
     results.insert(results.end(), new_results.begin(), new_results.end());
   }
 
@@ -207,3 +207,4 @@ QueryData genKeychainItems(QueryContext& context) {
 }
 }
 }
+
