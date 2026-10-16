@@ -20,8 +20,6 @@
 
 #include <osquery/core/query.h>
 
-#include <gtest/gtest_prod.h>
-
 namespace osquery {
 
 /// Statistics about Pack discovery query actions.
@@ -187,3 +185,4 @@ uint64_t splayValue(uint64_t original, uint64_t splay_percent);
  */
 uint64_t restoreSplayedValue(const std::string& name, uint64_t interval);
 } // namespace osquery
+

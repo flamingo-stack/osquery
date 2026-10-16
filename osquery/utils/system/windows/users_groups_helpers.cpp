@@ -84,6 +84,7 @@ std::unique_ptr<BYTE[]> getSidFromAccountName(LPCWSTR account_name) {
   } else if (IsValidSid(sid_buffer.get()) == FALSE) {
     VLOG(1) << "The SID for " << wstringToString(account_name)
             << " is invalid.";
+    return nullptr;
   }
 
   // Implicit move operation. Caller "owns" returned pointer:

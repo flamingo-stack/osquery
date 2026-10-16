@@ -44,67 +44,67 @@ tables::WindowsFirewallRules generateTestRules() {
   rules.push_back(rule);
 
   rule = r;
-  r.action = NET_FW_ACTION_ALLOW;
+  rule.action = NET_FW_ACTION_ALLOW;
   rules.push_back(rule);
 
   rule = r;
-  r.enabled = true;
+  rule.enabled = true;
   rules.push_back(rule);
 
   rule = r;
-  r.enabled = false;
+  rule.enabled = false;
   rules.push_back(rule);
 
   rule = r;
-  r.direction = NET_FW_RULE_DIR_OUT;
+  rule.direction = NET_FW_RULE_DIR_OUT;
   rules.push_back(rule);
 
   rule = r;
-  r.protocol = NET_FW_IP_VERSION_V6;
+  rule.protocol = NET_FW_IP_VERSION_V6;
   rules.push_back(rule);
 
   rule = r;
-  r.protocol = NET_FW_IP_VERSION_ANY;
+  rule.protocol = NET_FW_IP_VERSION_ANY;
   rules.push_back(rule);
 
   rule = r;
-  r.profileBitmask = NET_FW_PROFILE2_DOMAIN;
+  rule.profileBitmask = NET_FW_PROFILE2_DOMAIN;
   rules.push_back(rule);
 
   rule = r;
-  r.profileBitmask = NET_FW_PROFILE2_PUBLIC;
+  rule.profileBitmask = NET_FW_PROFILE2_PUBLIC;
   rules.push_back(rule);
 
   rule = r;
-  r.profileBitmask = NET_FW_PROFILE2_PRIVATE;
+  rule.profileBitmask = NET_FW_PROFILE2_PRIVATE;
   rules.push_back(rule);
 
   rule = r;
-  r.profileBitmask = NET_FW_PROFILE2_DOMAIN | NET_FW_PROFILE2_PUBLIC;
+  rule.profileBitmask = NET_FW_PROFILE2_DOMAIN | NET_FW_PROFILE2_PUBLIC;
   rules.push_back(rule);
 
   rule = r;
-  r.profileBitmask = NET_FW_PROFILE2_PUBLIC | NET_FW_PROFILE2_PRIVATE;
+  rule.profileBitmask = NET_FW_PROFILE2_PUBLIC | NET_FW_PROFILE2_PRIVATE;
   rules.push_back(rule);
 
   rule = r;
-  r.localAddresses = "*";
+  rule.localAddresses = "*";
   rules.push_back(rule);
 
   rule = r;
-  r.remoteAddresses = "LocalSubnet";
+  rule.remoteAddresses = "LocalSubnet";
   rules.push_back(rule);
 
   rule = r;
-  r.localPorts = "*";
+  rule.localPorts = "*";
   rules.push_back(rule);
 
   rule = r;
-  r.remotePorts = "*";
+  rule.remotePorts = "*";
   rules.push_back(rule);
 
   rule = r;
-  r.icmpTypesCodes = "8:*";
+  rule.icmpTypesCodes = "8:*";
   rules.push_back(rule);
   return rules;
 }

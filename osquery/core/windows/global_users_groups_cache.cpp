@@ -10,6 +10,7 @@
 #include "global_users_groups_cache.h"
 
 #include <osquery/core/shutdown.h>
+#include <osquery/logger/logger.h>
 
 namespace osquery {
 
@@ -20,7 +21,6 @@ std::shared_ptr<UsersCache> GlobalUsersGroupsCache::global_users_cache_ =
 std::shared_future<void> GlobalUsersGroupsCache::global_groups_cache_future_;
 std::shared_ptr<GroupsCache> GlobalUsersGroupsCache::global_groups_cache_ =
     std::make_shared<GroupsCache>();
-;
 
 const UsersCache& GlobalUsersGroupsCache::getUsersCache() {
   std::future_status status;
@@ -28,6 +28,11 @@ const UsersCache& GlobalUsersGroupsCache::getUsersCache() {
     status = global_users_cache_future_.wait_for(std::chrono::seconds(1));
   } while (status == std::future_status::timeout &&
            !osquery::shutdownRequested());
+
+  if (status == std::future_status::timeout) {
+    LOG(WARNING) << "Users cache initialization was preempted by shutdown; "
+                    "returning an incomplete cache";
+  }
 
   return *global_users_cache_;
 }
@@ -39,6 +44,12 @@ const GroupsCache& GlobalUsersGroupsCache::getGroupsCache() {
   } while (status == std::future_status::timeout &&
            !osquery::shutdownRequested());
 
+  if (status == std::future_status::timeout) {
+    LOG(WARNING) << "Groups cache initialization was preempted by shutdown; "
+                    "returning an incomplete cache";
+  }
+
   return *global_groups_cache_;
 }
 } // namespace osquery
+

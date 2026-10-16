@@ -69,6 +69,10 @@ static void sqliteCidrBlockFunc(sqlite3_context* context,
     bool is_in_range =
         all_network_hosts.find(ipaddr.to_v6()) != all_network_hosts.end();
     sqlite3_result_int(context, is_in_range);
+  } else {
+    sqlite3_result_error(
+        context, "IP address is neither v4 nor v6", -1);
+    return;
   }
 }
 
@@ -83,3 +87,4 @@ void registerNetworkExtensions(sqlite3* db) {
                           nullptr);
 }
 } // namespace osquery
+

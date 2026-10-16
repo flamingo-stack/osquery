@@ -103,7 +103,7 @@ def sc(*args):
             ['sc.exe'] + list(args),
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE)
-    except subprocess.CalledProcessError, err:
+    except subprocess.CalledProcessError as err:
         return (err.returncode, err.output)
 
     out, _ = p.communicate()

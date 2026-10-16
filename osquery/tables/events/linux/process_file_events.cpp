@@ -201,18 +201,26 @@ std::string NormalizePath(const std::string& cwd,
 
   // Remove the surrounding quotes, if any (they are only present if
   // the path contains spaces)
-  if (path[0] == '"') {
-    translated_path = path.substr(1, path.size() - 2);
+  if (!path.empty() && path[0] == '"') {
+    if (path.size() >= 2) {
+      translated_path = path.substr(1, path.size() - 2);
+    } else {
+      translated_path = path;
+    }
   } else {
     translated_path = path;
   }
 
   // Also use the working directory if the path is not absolute
-  if (translated_path[0] != '/') {
+  if (translated_path.empty() || translated_path[0] != '/') {
     std::string translated_cwd;
 
-    if (cwd[0] == '"') {
-      translated_cwd = cwd.substr(1, cwd.size() - 2);
+    if (!cwd.empty() && cwd[0] == '"') {
+      if (cwd.size() >= 2) {
+        translated_cwd = cwd.substr(1, cwd.size() - 2);
+      } else {
+        translated_cwd = cwd;
+      }
     } else {
       translated_cwd = cwd;
     }

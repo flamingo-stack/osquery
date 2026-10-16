@@ -195,7 +195,11 @@ Status SQLiteDatabasePlugin::putBatch(const std::string& domain,
 
   // Bind each value from the rows we got
   sqlite3_stmt* stmt = nullptr;
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK) {
+    return Status::failure("Cannot prepare statement: " +
+                           std::to_string(prc));
+  }
 
   {
     int i = 1;
@@ -228,7 +232,11 @@ Status SQLiteDatabasePlugin::remove(const std::string& domain,
                                     const std::string& key) {
   sqlite3_stmt* stmt = nullptr;
   std::string q = "delete from " + domain + " where key IN (?1);";
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK) {
+    return Status::failure("Cannot prepare statement: " +
+                           std::to_string(prc));
+  }
 
   sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_STATIC);
   auto rc = sqlite3_step(stmt);
@@ -252,7 +260,11 @@ Status SQLiteDatabasePlugin::removeRange(const std::string& domain,
 
   sqlite3_stmt* stmt = nullptr;
   std::string q = "delete from " + domain + " where key >= ?1 and key <= ?2;";
-  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  auto prc = sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+  if (prc != SQLITE_OK) {
+    return Status::failure("Cannot prepare statement: " +
+                           std::to_string(prc));
+  }
 
   sqlite3_bind_text(stmt, 1, low.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(stmt, 2, high.c_str(), -1, SQLITE_STATIC);

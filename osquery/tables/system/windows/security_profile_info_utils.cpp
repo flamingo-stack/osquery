@@ -48,9 +48,14 @@ Status SceClientHelper::initialize() {
 
   // Sanity check to ensure that function pointers are not initialized if
   // running process is a WoW64 process
-  Status wow64Status = isWow64Process();
-  if (wow64Status.ok()) {
+  bool isWow64 = false;
+  Status wow64Status = isWow64Process(isWow64);
+  if (!wow64Status.ok()) {
     return Status::failure("Init failed: " + wow64Status.getMessage());
+  }
+
+  if (isWow64) {
+    return Status::failure("Init failed: Current process is a WoW64 process.");
   }
 
   // Checking if the input DLL is already mapped to memory before loading it.
@@ -153,13 +158,15 @@ Status SceClientHelper::releaseSceProfileData(const PVOID& profileData) {
   return Status::success();
 }
 
-Status SceClientHelper::isWow64Process() {
+Status SceClientHelper::isWow64Process(bool& isWow64) {
   BOOL wow64 = FALSE;
-  if ((IsWow64Process(GetCurrentProcess(), &wow64)) && (wow64)) {
-    return Status::success();
+  if (!IsWow64Process(GetCurrentProcess(), &wow64)) {
+    return Status::failure("Failed to determine WoW64 status of process.");
   }
 
-  return Status::failure("Current process is a WoW64 process.");
+  isWow64 = (wow64 != FALSE);
+
+  return Status::success();
 }
 
 Status SceClientHelper::getSceSecurityProfileInfo(PVOID& profileData) {
@@ -245,3 +252,4 @@ int SceProfileData::getNormalizedInt(const DWORD& input) {
 
 } // namespace tables
 } // namespace osquery
+

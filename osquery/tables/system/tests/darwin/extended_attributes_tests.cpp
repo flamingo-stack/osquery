@@ -157,7 +157,7 @@ TEST_F(ExtendedAttributesTests, test_extended_attributes) {
       auto key = elems.first;
       auto value = elems.second;
       if (expected.count(key) > 0) {
-        if (key == "quarantime_timestamp") {
+        if (key == "quarantine_timestamp") {
           long timeExpected = std::stol(expected.at("quarantine_timestamp"));
           long actual = std::stol(value);
           EXPECT_GE(timeExpected, actual);
@@ -170,3 +170,4 @@ TEST_F(ExtendedAttributesTests, test_extended_attributes) {
 }
 } // namespace tables
 } // namespace osquery
+
