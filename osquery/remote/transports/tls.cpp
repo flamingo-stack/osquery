@@ -231,7 +231,7 @@ static auto getClient() {
 }
 
 void printRawStderr(const std::string& s) {
-  fprintf(stderr, "%s\n", s.c_str());
+  VLOG(1) << s;
 }
 
 Status TLSTransport::sendRequest() {
@@ -252,7 +252,8 @@ Status TLSTransport::sendRequest() {
 
     const auto& response_body = response_.body();
     if (FLAGS_verbose && FLAGS_tls_dump) {
-      // Not using VLOG to avoid logging whole body to logging destination.
+      // Logged via VLOG(1); guarded behind --verbose and --tls_dump to avoid
+      // flooding the log destination with whole bodies in normal operation.
       printRawStderr(response_body);
     }
     response_status_ =
@@ -287,7 +288,8 @@ Status TLSTransport::sendRequest(const std::string& params, bool compress) {
   VLOG(1) << "TLS/HTTPS " << ((verb == HTTP_POST) ? "POST" : "PUT")
           << " request to URI: " << destination_;
   if (FLAGS_verbose && FLAGS_tls_dump) {
-    // Not using VLOG to avoid logging whole body to logging destination.
+    // Logged via VLOG(1); guarded behind --verbose and --tls_dump to avoid
+    // flooding the log destination with whole bodies in normal operation.
     printRawStderr(params);
   }
 
@@ -303,7 +305,8 @@ Status TLSTransport::sendRequest(const std::string& params, bool compress) {
 
     const auto& response_body = response_.body();
     if (FLAGS_verbose && FLAGS_tls_dump) {
-      // Not using VLOG to avoid logging whole body to logging destination.
+      // Logged via VLOG(1); guarded behind --verbose and --tls_dump to avoid
+      // flooding the log destination with whole bodies in normal operation.
       printRawStderr(response_body);
     }
     response_status_ =
@@ -314,3 +317,4 @@ Status TLSTransport::sendRequest(const std::string& params, bool compress) {
   return response_status_;
 }
 } // namespace osquery
+

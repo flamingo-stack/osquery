@@ -165,7 +165,7 @@ bool validateIMDSV2RequestAttempts(const char* flagname, std::uint32_t value) {
     std::string error_message =
         "Only values higher than 0 are supported for " + std::string(flagname);
     osquery::systemLog(error_message);
-    std::cerr << error_message << std::endl;
+    LOG(ERROR) << error_message;
 
     return false;
   } // namespace osquery
@@ -763,3 +763,4 @@ void enableFIPSInClientConfig(const AWSServiceType service_type,
                             config.region + ".amazonaws.com";
 }
 } // namespace osquery
+

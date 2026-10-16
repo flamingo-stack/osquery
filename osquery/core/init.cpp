@@ -258,7 +258,7 @@ void signalHandler(int num) {
 bool validateAlarmTimeout(const char* flagname, std::uint64_t value) {
   if (value < 10) {
     osquery::systemLog("Alarm timeout cannot be lower than 10 seconds");
-    std::cerr << "Alarm timeout cannot be lower than 10 seconds" << std::endl;
+    LOG(ERROR) << "Alarm timeout cannot be lower than 10 seconds";
     return false;
   }
 
@@ -954,3 +954,4 @@ void Initializer::shutdownNow(int retcode) {
   _Exit(retcode);
 }
 } // namespace osquery
+
