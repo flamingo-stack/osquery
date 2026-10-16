@@ -121,9 +121,11 @@ std::string MD::getPathByDevName(const std::string& name) {
   std::string devPath;
 
   walkUdevDevices("block", [&](udev_device* const& device) {
-    auto const devName = std::string(
-      udev_device_get_property_value(device, "DEVNAME")
-    );
+    const char* devNamePtr = udev_device_get_property_value(device, "DEVNAME");
+    if (devNamePtr == nullptr) {
+      return false;
+    }
+    auto const devName = std::string(devNamePtr);
     if (boost::ends_with(devName, name)) {
       if (!boost::starts_with(devPath, "/")) {
         devPath = "/dev/" + devPath;
@@ -146,8 +148,15 @@ std::string MD::getDevName(int major, int minor) {
     const char* devMajor = udev_device_get_property_value(device, "MAJOR");
     const char* devMinor = udev_device_get_property_value(device, "MINOR");
 
+    if (devMajor == nullptr || devMinor == nullptr) {
+      return false;
+    }
+
     if (std::stoi(devMajor) == major && std::stoi(devMinor) == minor) {
-      devName = udev_device_get_property_value(device, "DEVNAME");
+      const char* name = udev_device_get_property_value(device, "DEVNAME");
+      if (name != nullptr) {
+        devName = name;
+      }
       return true;
     }
 
@@ -163,10 +172,18 @@ std::string MD::getSuperblkVersion(const std::string& arrayName) {
   walkUdevDevices("block", [&](udev_device* const& device) {
     const char* devName = udev_device_get_property_value(device, "DEVNAME");
 
+    if (devName == nullptr) {
+      return false;
+    }
+
     if (arrayName.compare(strlen(devName) - arrayName.length(),
                           std::string::npos,
                           devName) == 0) {
-      version = udev_device_get_property_value(device, "MD_METADATA");
+      const char* metadata =
+          udev_device_get_property_value(device, "MD_METADATA");
+      if (metadata != nullptr) {
+        version = metadata;
+      }
       return true;
     }
 
@@ -785,3 +802,4 @@ QueryData genMDPersonalities(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

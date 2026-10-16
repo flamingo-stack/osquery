@@ -426,9 +426,6 @@ Status RocksDBDatabasePlugin::removeRange(const std::string& domain,
     options.sync = false;
   }
   auto s = getDB()->DeleteRange(options, cfh, low, high);
-  if (low <= high) {
-    s = getDB()->Delete(options, cfh, high);
-  }
   return Status(s.code(), s.ToString());
 }
 
@@ -466,3 +463,4 @@ Status RocksDBDatabasePlugin::scan(const std::string& domain,
   return Status::success();
 }
 } // namespace osquery
+

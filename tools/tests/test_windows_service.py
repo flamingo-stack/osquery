@@ -103,11 +103,11 @@ def sc(*args):
             ['sc.exe'] + list(args),
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE)
-    except subprocess.CalledProcessError, err:
+    except subprocess.CalledProcessError as err:
         return (err.returncode, err.output)
 
     out, _ = p.communicate()
-    out = [x.strip() for x in out.split('\r\n') if x.strip() is not '']
+    out = [x.strip() for x in out.split('\r\n') if x.strip() != '']
 
     if len(out) >= 1:
         if 'SUCCESS' in out[0]:
@@ -246,10 +246,10 @@ class OsquerydTest(unittest.TestCase):
         self.flagfile = os.path.join(self.tmp_dir, 'osquery.flags')
 
         # Write out our mock configuration files
-        with open(self.config_path, 'wb') as fd:
+        with open(self.config_path, 'w') as fd:
             fd.write(CONFIG_FILE)
 
-        with open(self.flagfile, 'wb') as fd:
+        with open(self.flagfile, 'w') as fd:
             fd.write(
                 FLAGS_FILE.format(self.log_path, self.pidfile,
                                   test_http_server.HTTP_SERVER_CA,

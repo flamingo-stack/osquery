@@ -64,7 +64,10 @@ void WindowsEventLoggerPlugin::init(const std::string& name,
     return;
   }
 
-  logStatus(log);
+  auto log_status = logStatus(log);
+  if (!log_status.ok()) {
+    LOG(ERROR) << log_status.getMessage();
+  }
 }
 
 Status WindowsEventLoggerPlugin::acquireHandle(REGHANDLE& registration_handle) {
@@ -141,3 +144,4 @@ Status WindowsEventLoggerPlugin::emitLogRecord(
   return Status();
 }
 } // namespace osquery
+

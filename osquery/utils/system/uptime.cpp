@@ -22,7 +22,7 @@
 namespace osquery {
 
 long getUptime() {
-#if defined(DARWIN)
+#if defined(__APPLE__)
   struct timeval boot_time;
   size_t len = sizeof(boot_time);
   int mib[2] = {CTL_KERN, KERN_BOOTTIME};
@@ -51,3 +51,4 @@ long getUptime() {
 }
 
 } // namespace osquery
+
