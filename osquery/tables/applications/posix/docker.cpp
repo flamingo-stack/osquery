@@ -525,9 +525,26 @@ QueryData genContainerLabels(QueryContext& context) {
 }
 
 /**
- * @brief Entry point for docker_container_mounts table.
+ * @brief Utility method shared by docker_container_mounts and
+ * docker_container_ports tables to iterate over containers and extract a
+ * child array of details into rows via the provided callback.
+ *
+ * @param context Query context.
+ * @param child_path Path of the child array node to iterate (e.g. "Mounts",
+ * "Ports").
+ * @param error_label Label used in the VLOG error message on failure.
+ * @param row_builder Callback invoked with the container node, the set of
+ * constrained ids, and the child node to populate a Row which is appended to
+ * results.
  */
-QueryData genContainerMounts(QueryContext& context) {
+QueryData getContainerChildRows(
+    QueryContext& context,
+    const std::string& child_path,
+    const std::string& error_label,
+    const std::function<void(const pt::ptree&,
+                             const std::set<std::string>&,
+                             const pt::ptree&,
+                             Row&)>& row_builder) {
   QueryData results;
   std::set<std::string> ids;
   pt::ptree containers;
@@ -539,9 +556,32 @@ QueryData genContainerMounts(QueryContext& context) {
   for (const auto& entry : containers) {
     const pt::ptree& container = entry.second;
     try {
-      for (const auto& node : container.get_child("Mounts")) {
-        const pt::ptree& mount = node.second;
+      for (const auto& node : container.get_child(child_path)) {
+        const pt::ptree& child = node.second;
         Row r;
+        row_builder(container, ids, child, r);
+        results.push_back(r);
+      }
+    } catch (const pt::ptree_error& e) {
+      VLOG(1) << "Error getting docker " << error_label << " " << e.what();
+    }
+  }
+
+  return results;
+}
+
+/**
+ * @brief Entry point for docker_container_mounts table.
+ */
+QueryData genContainerMounts(QueryContext& context) {
+  return getContainerChildRows(
+      context,
+      "Mounts",
+      "container mounts",
+      [](const pt::ptree& container,
+         const std::set<std::string>& ids,
+         const pt::ptree& mount,
+         Row& r) {
         r["id"] = getValue(container, ids, "Id");
         r["type"] = mount.get<std::string>("Type", "");
         r["name"] = mount.get<std::string>("Name", "");
@@ -551,14 +591,7 @@ QueryData genContainerMounts(QueryContext& context) {
         r["mode"] = mount.get<std::string>("Mode", "");
         r["rw"] = (mount.get<bool>("RW", false) ? INTEGER(1) : INTEGER(0));
         r["propagation"] = mount.get<std::string>("Propagation", "");
-        results.push_back(r);
-      }
-    } catch (const pt::ptree_error& e) {
-      VLOG(1) << "Error getting docker container mounts " << e.what();
-    }
-  }
-
-  return results;
+      });
 }
 
 /**
@@ -605,33 +638,20 @@ QueryData genContainerNetworks(QueryContext& context) {
  * @brief Entry point for docker_container_ports table.
  */
 QueryData genContainerPorts(QueryContext& context) {
-  QueryData results;
-  std::set<std::string> ids;
-  pt::ptree containers;
-  Status s = getContainers(context, ids, containers);
-  if (!s.ok()) {
-    return results;
-  }
-
-  for (const auto& entry : containers) {
-    const pt::ptree& container = entry.second;
-    try {
-      for (const auto& node : container.get_child("Ports")) {
-        const pt::ptree& details = node.second;
-        Row r;
+  return getContainerChildRows(
+      context,
+      "Ports",
+      "container ports",
+      [](const pt::ptree& container,
+         const std::set<std::string>& ids,
+         const pt::ptree& details,
+         Row& r) {
         r["id"] = getValue(container, ids, "Id");
         r["type"] = details.get<std::string>("Type", "");
         r["port"] = INTEGER(details.get<int>("PrivatePort", 0));
         r["host_ip"] = details.get<std::string>("IP", "");
         r["host_port"] = INTEGER(details.get<int>("PublicPort", 0));
-        results.push_back(r);
-      }
-    } catch (const pt::ptree_error& e) {
-      VLOG(1) << "Error getting docker container ports " << e.what();
-    }
-  }
-
-  return results;
+      });
 }
 
 /**
@@ -1081,52 +1101,6 @@ void getImageLayers(const std::string& image_id, QueryData& results) {
 }
 
 /**
- * @brief Calls layer extractor for all images for docker_image_layers table
- */
-void getImageLayersAll(QueryData& results) {
-  pt::ptree tree;
-  Status s = dockerApi("/images/json", tree);
-  if (!s.ok()) {
-    VLOG(1) << "Error getting docker images: " << s.what();
-    return;
-  }
-  for (const auto& entry : tree) {
-    try {
-      const pt::ptree& node = entry.second;
-      std::string id = node.get<std::string>("Id", "");
-      if (boost::starts_with(id, "sha256:")) {
-        id.erase(0, 7);
-      }
-      getImageLayers(id, results);
-    } catch (const pt::ptree_error& e) {
-      VLOG(1) << "Error getting docker image details: " << e.what();
-    }
-  }
-}
-
-/**
- * @brief Entry point for docker_image_layers table.
- */
-QueryData genImageLayers(QueryContext& context) {
-  QueryData results;
-  pt::ptree tree;
-  std::vector<std::string> layers;
-
-  if (context.constraints["id"].exists(
-          EQUALS)) { // get layers for specific image
-    for (const auto& id : context.constraints["id"].getAll(EQUALS)) {
-      if (!checkConstraintValue(id)) {
-        continue;
-      }
-      getImageLayers(id, results);
-    }
-  } else { // get layers for all images
-    getImageLayersAll(results);
-  }
-  return results;
-}
-
-/**
  * @brief Image history extractor for docker_image_history table
  */
 void getImageHistory(const std::string& image_id, QueryData& results) {
@@ -1163,9 +1137,19 @@ void getImageHistory(const std::string& image_id, QueryData& results) {
 }
 
 /**
- * @brief Calls history for all images for docker_image_history table
+ * @brief Utility method shared by docker_image_layers and
+ * docker_image_history tables to invoke a per-image extractor function for
+ * every image reported by the docker API.
+ *
+ * @param results Results collection to populate.
+ * @param error_label Label used in the VLOG error message on failure.
+ * @param extractor Per-image extraction function (getImageLayers or
+ * getImageHistory).
  */
-void getImageHistoryAll(QueryData& results) {
+void getImageDetailsAll(
+    QueryData& results,
+    const std::string& error_label,
+    const std::function<void(const std::string&, QueryData&)>& extractor) {
   pt::ptree tree;
   Status s = dockerApi("/images/json", tree);
   if (!s.ok()) {
@@ -1179,11 +1163,33 @@ void getImageHistoryAll(QueryData& results) {
       if (boost::starts_with(id, "sha256:")) {
         id.erase(0, 7);
       }
-      getImageHistory(id, results);
+      extractor(id, results);
     } catch (const pt::ptree_error& e) {
-      VLOG(1) << "Error getting docker image history: " << e.what();
+      VLOG(1) << "Error getting docker " << error_label << ": " << e.what();
     }
   }
+}
+
+/**
+ * @brief Entry point for docker_image_layers table.
+ */
+QueryData genImageLayers(QueryContext& context) {
+  QueryData results;
+  pt::ptree tree;
+  std::vector<std::string> layers;
+
+  if (context.constraints["id"].exists(
+          EQUALS)) { // get layers for specific image
+    for (const auto& id : context.constraints["id"].getAll(EQUALS)) {
+      if (!checkConstraintValue(id)) {
+        continue;
+      }
+      getImageLayers(id, results);
+    }
+  } else { // get layers for all images
+    getImageDetailsAll(results, "image details", getImageLayers);
+  }
+  return results;
 }
 
 /**
@@ -1199,7 +1205,7 @@ QueryData genImageHistory(QueryContext& context) {
       getImageHistory(id, results);
     }
   } else {
-    getImageHistoryAll(results);
+    getImageDetailsAll(results, "image history", getImageHistory);
   }
   return results;
 }
@@ -1258,3 +1264,4 @@ QueryData genImageLabels(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+
