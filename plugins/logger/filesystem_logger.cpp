@@ -86,6 +86,11 @@ DEFINE_validator(logger_mode, &validateLoggerMode);
 const std::string kFilesystemLoggerFilename = "osqueryd.results.log";
 const std::string kFilesystemLoggerSnapshots = "osqueryd.snapshots.log";
 
+/// Safe fallback mode used if the logger_mode flag somehow fails to convert
+/// at runtime, even though validateLoggerMode() should have already rejected
+/// any invalid value.
+const std::int32_t kDefaultLoggerModeOctal = 0640;
+
 bool LogRotate::shouldRotate() {
   return this->fileSize(path_) >= this->getRotateSize();
 }
@@ -178,12 +183,17 @@ struct FilesystemLoggerPlugin::impl {
         tryTo<std::int32_t>(FLAGS_logger_mode, 8);
 
     /* This is here as safety, but the logger_mode flag should be already
-       validated, so no exception should be really thrown here */
+       validated, so no exception should be really thrown here. If this is
+       somehow reached (e.g. the validator was bypassed), log the error and
+       fall back to a safe default mode instead of throwing from the
+       constructor, since plugin setup code does not expect exceptions. */
     if (logger_mode_octal_exp.isError()) {
-      throw std::runtime_error("Failed to convert logger_mode string to octal");
+      LOG(ERROR) << kLoggerModeConversionFailureError
+                 << "; falling back to default logger_mode";
+      logger_mode_octal = kDefaultLoggerModeOctal;
+    } else {
+      logger_mode_octal = logger_mode_octal_exp.get();
     }
-
-    logger_mode_octal = logger_mode_octal_exp.get();
   }
 
   /// The folder where Glog and the result/snapshot files are written.

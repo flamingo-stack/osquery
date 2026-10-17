@@ -46,9 +46,9 @@ class EtwPublisherDNS
   /**
    * @brief Publisher constants
    */
-  static const USHORT etwDefaultKernelID = 0;
-  static const USHORT etwDNSStartID = 1;
-  static const USHORT etwDNSStopID = 2;
+  static const USHORT kEtwDefaultKernelId = 0;
+  static const USHORT kEtwDnsStartId = 1;
+  static const USHORT kEtwDnsStopId = 2;
 
   /**
    * @brief Supported User Start DNS Events versions
@@ -122,3 +122,4 @@ class EtwPublisherDNS
 };
 
 } // namespace osquery
+

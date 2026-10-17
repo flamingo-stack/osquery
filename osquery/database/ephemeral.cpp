@@ -165,15 +165,20 @@ Status EphemeralDatabasePlugin::removeRange(const std::string& domain,
     return Status::failure("Invalid range: low > high");
   }
 
+  auto domainIterator = db_.find(domain);
+  if (domainIterator == db_.end()) {
+    return Status(0);
+  }
+
   std::vector<std::string> keys;
-  for (const auto& it : db_[domain]) {
+  for (const auto& it : domainIterator->second) {
     if (it.first >= low && it.first <= high) {
       keys.push_back(it.first);
     }
   }
 
   for (const auto& key : keys) {
-    db_[domain].erase(key);
+    domainIterator->second.erase(key);
   }
   return Status(0);
 }

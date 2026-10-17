@@ -56,9 +56,13 @@ void genIOKitFirmware(const io_service_t& device,
     r["device"] = std::string(name);
   }
 
-  CFMutableDictionaryRef details;
-  IORegistryEntryCreateCFProperties(
+  CFMutableDictionaryRef details = nullptr;
+  kr = IORegistryEntryCreateCFProperties(
       device, &details, kCFAllocatorDefault, kNilOptions);
+  if (kr != KERN_SUCCESS || details == nullptr) {
+    return;
+  }
+
   CFDictionaryApplyFunction(details, &genFirmware, &r);
   if (r.count("version") != 0) {
     // If the version is filled in from the dictionary walk callback then

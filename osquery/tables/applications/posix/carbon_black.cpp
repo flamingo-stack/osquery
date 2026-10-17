@@ -42,9 +42,13 @@ void getSensorId(Row& r) {
   }
 
   unsigned int sensor_id;
-  std::string hex_sensor_id = file_contents.substr(11, 16);
+  std::string hex_sensor_id = file_contents.substr(8, 8);
   std::stringstream converter(hex_sensor_id);
   converter >> std::hex >> sensor_id;
+  if (converter.fail() || !converter.eof()) {
+    LOG(ERROR) << "Error parsing sensor id from " << kCbSensorIdFile;
+    return;
+  }
   r["sensor_id"] = INTEGER(sensor_id);
 }
 
@@ -135,3 +139,4 @@ QueryData genCarbonBlackInfo(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

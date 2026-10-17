@@ -55,5 +55,5 @@ class FilesystemLoggerPlugin : public LoggerPlugin {
   std::unique_ptr<impl> pimpl_{nullptr};
 };
 
-REGISTER(FilesystemLoggerPlugin, "logger", "filesystem");
-}
+} // namespace osquery
+

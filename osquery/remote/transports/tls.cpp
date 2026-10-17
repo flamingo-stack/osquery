@@ -98,7 +98,9 @@ void TLSTransport::decorateRequest(http::Request& r) {
   r << http::Request::Header("Accept", serializer_->getContentType());
   r << http::Request::Header("User-Agent", kTLSUserAgentBase + kVersion);
   
-  if (FLAGS_openframe_mode) {
+  if (FLAGS_openframe_mode &&
+      (FLAGS_tls_hostname.empty() ||
+       destination_.find(FLAGS_tls_hostname) != std::string::npos)) {
     auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
     std::string token = auth_manager.getToken();
     if (!token.empty()) {
@@ -117,11 +119,6 @@ http::Client::Options TLSTransport::getOptions() {
 
   options.follow_redirects(true).timeout(16);
 
-  if (FLAGS_openframe_mode) {
-    options.always_verify_peer(false);
-    return options;
-  } 
-  
   options.always_verify_peer(verify_peer_);
   if (server_certificate_file_.size() > 0) {
     if (!osquery::isReadable(server_certificate_file_).ok()) {
@@ -314,3 +311,4 @@ Status TLSTransport::sendRequest(const std::string& params, bool compress) {
   return response_status_;
 }
 } // namespace osquery
+
