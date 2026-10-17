@@ -105,7 +105,10 @@ void genSuidBinsFromPath(const std::string& path,
 
     auto perms = dir_entry.status().permissions();
     if ((perms & 04000) == 04000 || (perms & 02000) == 02000) {
-      genBin(dir_entry_path, perms, results);
+      auto status = genBin(dir_entry_path, perms, results);
+      if (!status.ok()) {
+        logger.log(google::GLOG_WARNING, status.getMessage());
+      }
     }
   }
 }
@@ -131,3 +134,4 @@ QueryData genSuidBin(QueryContext& context) {
 }
 } // namespace tables
 } // namespace osquery
+

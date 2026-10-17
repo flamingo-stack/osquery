@@ -25,7 +25,7 @@ EtwController& EtwPublisherBase::EtwEngine() {
 }
 
 Status EtwPublisherBase::run() {
-  return Status::failure(0,
+  return Status::failure(1,
                          "ETW provider is driven by event callbacks. "
                          "A pooling thread is not required.");
 }
@@ -120,3 +120,4 @@ void EtwPublisherBase::updateHardVolumeWithLogicalDrive(std::string& path) {
 }
 
 } // namespace osquery
+

@@ -116,12 +116,21 @@ Status SQLiteDatabasePlugin::get(const std::string& domain,
                                  const std::string& key,
                                  std::string& value) const {
   QueryData results;
-  char* err = nullptr;
-  std::string q = "select value from " + domain + " where key = '" + key + "';";
-  sqlite3_exec(db_, q.c_str(), getData, &results, &err);
-  if (err != nullptr) {
-    sqlite3_free(err);
+  sqlite3_stmt* stmt = nullptr;
+  std::string q = "select value from " + domain + " where key = ?1;";
+  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+
+  sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_STATIC);
+
+  int rc = 0;
+  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+    Row r;
+    const unsigned char* val = sqlite3_column_text(stmt, 0);
+    r["value"] = (val != nullptr) ? reinterpret_cast<const char*>(val) : "";
+    results.push_back(std::move(r));
   }
+
+  sqlite3_finalize(stmt);
 
   // Only assign value if the query found a result.
   if (results.size() > 0) {
@@ -273,17 +282,25 @@ Status SQLiteDatabasePlugin::scan(const std::string& domain,
                                   const std::string& prefix,
                                   uint64_t max) const {
   QueryData _results;
-  char* err = nullptr;
+  sqlite3_stmt* stmt = nullptr;
 
-  std::string q =
-      "select key from " + domain + " where key LIKE '" + prefix + "%'";
+  std::string q = "select key from " + domain + " where key LIKE ?1 || '%'";
   if (max > 0) {
     q += " limit " + std::to_string(max);
   }
-  sqlite3_exec(db_, q.c_str(), getData, &_results, &err);
-  if (err != nullptr) {
-    sqlite3_free(err);
+  sqlite3_prepare_v2(db_, q.c_str(), -1, &stmt, nullptr);
+
+  sqlite3_bind_text(stmt, 1, prefix.c_str(), -1, SQLITE_STATIC);
+
+  int rc = 0;
+  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+    Row r;
+    const unsigned char* val = sqlite3_column_text(stmt, 0);
+    r["key"] = (val != nullptr) ? reinterpret_cast<const char*>(val) : "";
+    _results.push_back(std::move(r));
   }
+
+  sqlite3_finalize(stmt);
 
   // Only assign value if the query found a result.
   for (auto& r : _results) {

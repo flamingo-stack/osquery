@@ -62,6 +62,15 @@ void DistributedRunner::start() {
           "Reading distributed queries", read_status, last_read_error);
       logOutcomeChange(
           "Writing distributed query results", write_status, last_write_error);
+    } else {
+      if (!read_status.ok()) {
+        LOG(ERROR) << "Error reading distributed queries: "
+                    << read_status.getMessage();
+      }
+      if (!write_status.ok()) {
+        LOG(ERROR) << "Error writing distributed query results: "
+                    << write_status.getMessage();
+      }
     }
 
     dist.cleanupExpiredRunningQueries();
@@ -89,3 +98,4 @@ Status startDistributed() {
   }
 }
 } // namespace osquery
+

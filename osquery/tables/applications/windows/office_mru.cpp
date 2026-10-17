@@ -45,19 +45,36 @@ void parseOfficeData(QueryData& results,
     return;
   }
 
+  // Extract the office application version from the registry path
+  auto office_prefix_pos = office_version.find("Office\\");
+  if (office_prefix_pos == std::string::npos ||
+      office_version.size() < office_prefix_pos + 11) {
+    LOG(WARNING) << "Office registry path malformed: " << office_version;
+    return;
+  }
+  auto version = office_version.substr(office_prefix_pos, 11).substr(7);
+
+  // Extract the office application name from the registry path
+  auto version_pos = office_version.find(version);
+  if (version_pos == std::string::npos) {
+    LOG(WARNING) << "Office registry path malformed: " << office_version;
+    return;
+  }
+  auto office_app = office_version.substr(version_pos);
+
+  auto slash_pos = office_app.find("\\");
+  auto mru_pos = office_app.find(" MRU");
+  if (slash_pos == std::string::npos || mru_pos == std::string::npos ||
+      mru_pos < 10) {
+    LOG(WARNING) << "Office registry path malformed: " << office_version;
+    return;
+  }
+
   Row r;
   // File path starts with *
   r["path"] = file_path.substr(file_path.find("*") + 1);
-
-  // Extract the office application version from the registry path
-  auto version = office_version;
-  r["version"] = version.substr(office_version.find("Office\\"), 11).substr(7);
-
-  // Extract the office application name from the registry path
-  auto application = office_version;
-  auto office_app = application.substr(office_version.find(r["version"]));
-  r["application"] = office_app.substr(office_app.find("\\") + 1,
-                                       office_app.find(" MRU") - 10);
+  r["version"] = version;
+  r["application"] = office_app.substr(slash_pos + 1, mru_pos - 10);
 
   // Last opened time stored in Big endian Windows FILETIME Hex format, also
   // starts with T

@@ -50,6 +50,7 @@
 #include <osquery/utils/info/platform_type.h>
 #include <osquery/utils/info/version.h>
 #include <osquery/utils/pidfile/pidfile.h>
+#include <osquery/utils/status/status.h>
 #include <osquery/utils/system/system.h>
 #include <osquery/utils/system/time.h>
 
@@ -92,7 +93,7 @@ enum {
 #endif
 
 // OpenFrame includes
-#include "openframe/openframe_authorization_manager_provider.h"
+#include "openframe/openframe_authorization_manager.h"
 #include "openframe/openframe_encryption_service.h"
 #include "openframe/openframe_token_extractor.h"
 #include "openframe/openframe_token_refresher.h"
@@ -208,35 +209,32 @@ void initWorkDirectories() {
   }
 }
 
-void initOpenFrame() {
+Status initOpenFrame() {
   VLOG(1) << "OpenFrame mode enabled";
 
   // Initialize OpenFrame components if secret is provided
   if (FLAGS_openframe_secret.empty()) {
-    LOG(ERROR) << "OpenFrame mode enabled but secret not set";
-    return;
+    return Status::failure("OpenFrame mode enabled but secret not set");
   }
 
-  try {
-    // Create openframe token services
-    auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
-    auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
-    
-    auto initial_token = token_extractor->extractToken();
-    if (!initial_token.empty()) {
-      auto& auth_manager = OpenframeAuthorizationManagerProvider::getInstance();
-      auth_manager.updateToken(initial_token);
-      LOG(INFO) << "OpenFrame token extracted successfully";
-    } else {
-      LOG(ERROR) << "Failed to get initial token from token file";
-    }
-    
-    // Create and start token refresher
-    static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
-    token_refresher->start();
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Failed to initialize OpenFrame components: " << e.what();
+  // Create openframe token services
+  auto encryption_service = std::make_shared<OpenframeEncryptionService>(FLAGS_openframe_secret);
+  auto token_extractor = std::make_shared<OpenframeTokenExtractor>(encryption_service, FLAGS_openframe_token_path);
+
+  auto initial_token = token_extractor->extractToken();
+  if (!initial_token.empty()) {
+    auto& auth_manager = OpenframeAuthorizationManager::getInstance();
+    auth_manager.updateToken(initial_token);
+    LOG(INFO) << "OpenFrame token extracted successfully";
+  } else {
+    return Status::failure("Failed to get initial token from token file");
   }
+
+  // Create and start token refresher
+  static auto token_refresher = std::make_shared<OpenframeTokenRefresher>(token_extractor);
+  token_refresher->start();
+
+  return Status::success();
 }
 
 void signalHandler(int num) {
@@ -258,7 +256,6 @@ void signalHandler(int num) {
 bool validateAlarmTimeout(const char* flagname, std::uint64_t value) {
   if (value < 10) {
     osquery::systemLog("Alarm timeout cannot be lower than 10 seconds");
-    std::cerr << "Alarm timeout cannot be lower than 10 seconds" << std::endl;
     return false;
   }
 
@@ -459,7 +456,11 @@ Initializer::Initializer(int& argc,
     
     // Initialize OpenFrame authorization manager and token refresher if mode is enabled
     if (FLAGS_openframe_mode) {
-      initOpenFrame();
+      auto openframe_status = initOpenFrame();
+      if (!openframe_status.ok()) {
+        LOG(ERROR) << "Failed to initialize OpenFrame components: "
+                   << openframe_status.getMessage();
+      }
     } else {
       VLOG(1) << "OpenFrame mode disabled";
     }
@@ -954,3 +955,4 @@ void Initializer::shutdownNow(int retcode) {
   _Exit(retcode);
 }
 } // namespace osquery
+
