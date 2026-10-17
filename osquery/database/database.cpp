@@ -300,9 +300,12 @@ Status getDatabaseValue(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot get database value: " + key);
+    return Status(1, "Cannot get database value: " + key);
   } else {
     auto plugin = getDatabasePlugin();
+    if (plugin == nullptr) {
+      return Status(1, "Cannot get database plugin for value: " + key);
+    }
     return plugin->get(domain, key, value);
   }
 }
@@ -342,10 +345,13 @@ Status setDatabaseBatch(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot set database values");
+    return Status(1, "Cannot set database values");
   }
 
   auto plugin = getDatabasePlugin();
+  if (plugin == nullptr) {
+    return Status(1, "Cannot get database plugin to set values");
+  }
   return plugin->putBatch(domain, data);
 }
 
@@ -370,9 +376,12 @@ Status deleteDatabaseValue(const std::string& domain, const std::string& key) {
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot delete database value: " + key);
+    return Status(1, "Cannot delete database value: " + key);
   } else {
     auto plugin = getDatabasePlugin();
+    if (plugin == nullptr) {
+      return Status(1, "Cannot get database plugin to delete value: " + key);
+    }
     return plugin->remove(domain, key);
   }
 }
@@ -396,10 +405,14 @@ Status deleteDatabaseRange(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot delete database values: " + low + " - " +
-                             high);
+    return Status(1, "Cannot delete database values: " + low + " - " + high);
   } else {
     auto plugin = getDatabasePlugin();
+    if (plugin == nullptr) {
+      return Status(1,
+                    "Cannot get database plugin to delete values: " + low +
+                        " - " + high);
+    }
     return plugin->removeRange(domain, low, high);
   }
 }
@@ -439,9 +452,12 @@ Status scanDatabaseKeys(const std::string& domain,
 
   ReadLock lock(kDatabaseReset);
   if (!kDBInitialized) {
-    throw std::runtime_error("Cannot scan database values: " + prefix);
+    return Status(1, "Cannot scan database values: " + prefix);
   } else {
     auto plugin = getDatabasePlugin();
+    if (plugin == nullptr) {
+      return Status(1, "Cannot get database plugin to scan values: " + prefix);
+    }
     return plugin->scan(domain, keys, prefix, max);
   }
 }

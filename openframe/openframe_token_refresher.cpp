@@ -1,12 +1,13 @@
 #include "openframe_token_refresher.h"
 #include "openframe_authorization_manager_provider.h"
+#include <osquery/logger/logger.h>
 
 namespace osquery {
 
 OpenframeTokenRefresher::OpenframeTokenRefresher(std::shared_ptr<OpenframeTokenExtractor> extractor)
     : running_(false), extractor_(extractor) {
     if (!extractor_) {
-        throw std::runtime_error("Token extractor cannot be null");
+        LOG(ERROR) << "Token extractor cannot be null; token refresher will be inert";
     }
 }
 
@@ -18,6 +19,11 @@ void OpenframeTokenRefresher::start() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (running_) {
         LOG(WARNING) << "Token refresher is already running";
+        return;
+    }
+
+    if (!extractor_) {
+        LOG(ERROR) << "Cannot start token refresher: token extractor is null";
         return;
     }
 
@@ -48,6 +54,11 @@ void OpenframeTokenRefresher::stop() {
 
 void OpenframeTokenRefresher::process() {
     try {
+        if (!extractor_) {
+            LOG(ERROR) << "Token extractor is null; skipping token refresh";
+            return;
+        }
+
         auto new_token = extractor_->extractToken();
         if (new_token.empty()) {
             LOG(ERROR) << "Failed to extract new token - empty token received";
