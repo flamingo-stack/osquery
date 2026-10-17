@@ -29,6 +29,12 @@ struct utf_converter {
       result.resize(str.length() * 2);
       auto count = MultiByteToWideChar(
           CP_UTF8, 0, str.c_str(), -1, &result[0], str.length() * 2);
+      if (count <= 0) {
+        LOG(WARNING) << "Failed to convert string to wstring, "
+                         "MultiByteToWideChar error "
+                      << GetLastError();
+        return std::wstring();
+      }
       result.resize(count - 1);
     }
 
@@ -47,6 +53,12 @@ struct utf_converter {
                                        str.length() * 4,
                                        NULL,
                                        NULL);
+      if (count <= 0) {
+        LOG(WARNING) << "Failed to convert wstring to string, "
+                         "WideCharToMultiByte error "
+                      << GetLastError();
+        return std::string();
+      }
       result.resize(count - 1);
     }
 
@@ -169,3 +181,4 @@ std::string errorDwordToString(DWORD error_code) {
 }
 
 } // namespace osquery
+

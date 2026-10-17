@@ -100,7 +100,7 @@ void YARACompilerCallback(int error_level,
   else
     ss << "YARA rule file " << file_name;
   if (error_level == YARA_ERROR_LEVEL_ERROR) {
-    VLOG(1) << ss.str() << "(" << line_number << "): error: " << message;
+    LOG(ERROR) << ss.str() << "(" << line_number << "): error: " << message;
   } else {
     VLOG(1) << ss.str() << "(" << line_number << "): warning: " << message;
   }
@@ -472,3 +472,4 @@ Status YARAConfigParserPlugin::update(const std::string& source,
 /// Call the simple YARA ConfigParserPlugin "yara".
 REGISTER(YARAConfigParserPlugin, "config_parser", "yara");
 } // namespace osquery
+
