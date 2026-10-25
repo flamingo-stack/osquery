@@ -128,3 +128,4 @@ class Templite(object):
         # execute template code
         exec(self._code, namespace)
         return ''.join(stack)
+# probe: CU-17tkuw60a9u tests and checks job (do not merge)
