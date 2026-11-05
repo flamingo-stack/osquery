@@ -268,6 +268,9 @@ void keyEnumPrograms(const std::string& key,
       }
     }
 
+    bool systemComponent = false;
+    bool windowsInstaller = false;
+    bool portable = false;
     for (const auto& aKey : appResults) {
       auto name = aKey.find("name");
       if (identifyingNumber.empty() && name->second == "BundleIdentifier") {
@@ -297,9 +300,30 @@ void keyEnumPrograms(const std::string& key,
       if (name->second == "InstallDate") {
         r["install_date"] = aKey.at("data");
       }
+      if (name->second == "SystemComponent") {
+        systemComponent =
+            aKey.at("type") == "REG_DWORD" && aKey.at("data") != "0";
+      }
+      if (name->second == "WindowsInstaller") {
+        windowsInstaller =
+            aKey.at("type") == "REG_DWORD" && aKey.at("data") != "0";
+      }
+      if (name->second == "WinGetInstallerType") {
+        portable = aKey.at("data") == "portable";
+      }
     }
     if (!r.empty()) {
       r["arp_key"] = rKey.at("name");
+      r["system_component"] = systemComponent ? "1" : "0";
+      r["installer_type"] =
+          portable ? "portable" : (windowsInstaller ? "msi" : "exe");
+      if (key.rfind("HKEY_USERS", 0) == 0) {
+        r["install_scope"] = "user";
+      } else {
+        r["install_scope"] = "machine";
+        r["install_arch"] =
+            key.find("WOW6432Node") != std::string::npos ? "32" : "64";
+      }
       results.push_back(r);
     }
   }
@@ -326,6 +350,7 @@ void genMsixPrograms(const std::string& key,
     result["identifying_name"] = regPackageFullName;
     result["package_family_name"] =
         packageFamilyNameFromPackageFullName(regPackageFullName);
+    result["installer_type"] = "msix";
 
     for (const auto& aKey : appResults) {
       auto name = aKey.find("name");

@@ -36,7 +36,11 @@ TEST_F(ProgramsTest, test_sanity) {
                            {"identifying_number", NormalType},
                            {"package_family_name", NormalType},
                            {"upgrade_code", NormalType},
-                           {"arp_key", NormalType}};
+                           {"arp_key", NormalType},
+                           {"system_component", NormalType},
+                           {"installer_type", NormalType},
+                           {"install_scope", NormalType},
+                           {"install_arch", NormalType}};
   validate_rows(data, row_map);
 }
 
