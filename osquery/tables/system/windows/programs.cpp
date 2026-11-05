@@ -299,6 +299,7 @@ void keyEnumPrograms(const std::string& key,
       }
     }
     if (!r.empty()) {
+      r["arp_key"] = rKey.at("name");
       results.push_back(r);
     }
   }
