@@ -291,6 +291,7 @@ function(generateNativeTables)
     "windows/winbaseobj.table:windows"
     "windows/wmi_bios_info.table:windows"
     "windows/programs.table:windows"
+    "windows/winget_packages.table:windows"
     "windows/wmi_script_event_consumers.table:windows"
     "windows/physical_disk_performance.table:windows"
     "windows/autoexec.table:windows"
