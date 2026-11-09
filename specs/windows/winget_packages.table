@@ -1,0 +1,24 @@
+table_name("winget_packages")
+description("Packages installed by the Windows Package Manager (winget) that are still installed, read from each user's winget tracking catalog. A package is listed while one of its Uninstall registry keys or package families is present; a user scope install shows only while its owner is logged on.")
+schema([
+    Column("id", TEXT, "Package identifier, as taken by winget --id"),
+    Column("name", TEXT, "Package name"),
+    Column("version", TEXT, "Version winget installed or upgraded to", collate="version"),
+    Column("moniker", TEXT, "Package moniker"),
+    Column("source", TEXT, "winget source the package came from: winget, msstore or the source folder name"),
+    Column("installed_at", BIGINT, "Time of winget's last install or upgrade of the package, 0 if not recorded"),
+    Column("installed_architecture", TEXT, "Architecture winget installed"),
+    Column("installed_locale", TEXT, "Locale winget installed"),
+    Column("pinned_state", TEXT, "Pin winget recorded for the package, empty if none"),
+    Column("product_codes", TEXT, "Comma-separated Uninstall registry keys of the package"),
+    Column("upgrade_codes", TEXT, "Comma-separated MSI upgrade codes of the package"),
+    Column("package_family_names", TEXT, "Comma-separated MSIX package family names of the package"),
+    Column("uid", BIGINT, "The local user whose winget recorded the package", additional=True, optimized=True),
+    Column("path", TEXT, "Path to the tracking catalog the row came from")
+])
+attributes(user_data=True)
+implementation("system/windows/winget_packages@genWingetPackages")
+examples([
+  "select id, version, source from winget_packages",
+  "select u.username, w.id, w.version from users u cross join winget_packages w using (uid)",
+])
