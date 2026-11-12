@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -37,8 +38,9 @@ const std::string kWingetUninstallKey =
     "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\";
 const std::string kWingetWow64UninstallKey =
     "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\";
+// Relative to the user's classes, which UsrClass.dat holds
 const std::string kWingetFamiliesKey =
-    "Software\\Classes\\Local "
+    "Local "
     "Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\Reposi"
     "tory\\Families\\";
 
@@ -81,12 +83,154 @@ bool wingetKeyExists(HKEY root, const std::string& path) {
   return true;
 }
 
+// The Offline Registry Library reads a hive file without loading it into the
+// registry. RegLoadAppKeyW refuses user profile hives with ERROR_BADDB.
+struct WingetOffreg {
+  using Handle = void*;
+  DWORD(WINAPI* openHive)(PCWSTR, Handle*) = nullptr;
+  DWORD(WINAPI* openKey)(Handle, PCWSTR, Handle*) = nullptr;
+  DWORD(WINAPI* closeKey)(Handle) = nullptr;
+  DWORD(WINAPI* closeHive)(Handle) = nullptr;
+};
+
+const WingetOffreg* wingetOffreg() {
+  static const auto api = []() -> std::unique_ptr<WingetOffreg> {
+    auto lib =
+        LoadLibraryExW(L"offreg.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (lib == nullptr) {
+      VLOG(1) << "offreg.dll is not available: " << GetLastError();
+      return nullptr;
+    }
+    auto api = std::make_unique<WingetOffreg>();
+    api->openHive = reinterpret_cast<decltype(api->openHive)>(
+        GetProcAddress(lib, "OROpenHive"));
+    api->openKey = reinterpret_cast<decltype(api->openKey)>(
+        GetProcAddress(lib, "OROpenKey"));
+    api->closeKey = reinterpret_cast<decltype(api->closeKey)>(
+        GetProcAddress(lib, "ORCloseKey"));
+    api->closeHive = reinterpret_cast<decltype(api->closeHive)>(
+        GetProcAddress(lib, "ORCloseHive"));
+    if (api->openHive == nullptr || api->openKey == nullptr ||
+        api->closeKey == nullptr || api->closeHive == nullptr) {
+      VLOG(1) << "offreg.dll does not export the hive functions";
+      FreeLibrary(lib);
+      return nullptr;
+    }
+    return api;
+  }();
+  return api.get();
+}
+
+// The registry of one user. Windows loads it under HKEY_USERS only while the
+// user is logged on; otherwise a copy of the hive file is read offline, so the
+// original stays free for the user's next logon.
+class WingetUserHive {
+ public:
+  WingetUserHive(const std::string& sid, const fs::path& profile)
+      : sid_(sid),
+        profile_(profile),
+        loaded_(!sid.empty() && wingetKeyExists(HKEY_USERS, sid)) {}
+
+  ~WingetUserHive() {
+    for (auto hive : {user_, classes_}) {
+      if (hive != nullptr) {
+        wingetOffreg()->closeHive(hive);
+      }
+    }
+    if (!copies_.empty()) {
+      boost::system::error_code ec;
+      fs::remove_all(copies_, ec);
+    }
+  }
+
+  WingetUserHive(const WingetUserHive&) = delete;
+  WingetUserHive& operator=(const WingetUserHive&) = delete;
+
+  bool userKeyExists(const std::string& path) {
+    if (loaded_) {
+      return wingetKeyExists(HKEY_USERS, sid_ + "\\" + path);
+    }
+    if (!userTried_) {
+      userTried_ = true;
+      user_ = openCopy(profile_ / "NTUSER.DAT");
+    }
+    return user_ != nullptr && offlineKeyExists(user_, path);
+  }
+
+  bool classesKeyExists(const std::string& path) {
+    if (loaded_) {
+      return wingetKeyExists(HKEY_USERS,
+                             sid_ + "\\Software\\Classes\\" + path);
+    }
+    if (!classesTried_) {
+      classesTried_ = true;
+      classes_ =
+          openCopy(profile_ / "AppData/Local/Microsoft/Windows/UsrClass.dat");
+    }
+    return classes_ != nullptr && offlineKeyExists(classes_, path);
+  }
+
+ private:
+  static bool offlineKeyExists(WingetOffreg::Handle hive,
+                               const std::string& path) {
+    WingetOffreg::Handle key = nullptr;
+    if (wingetOffreg()->openKey(hive, stringToWstring(path).c_str(), &key) !=
+        ERROR_SUCCESS) {
+      return false;
+    }
+    wingetOffreg()->closeKey(key);
+    return true;
+  }
+
+  // Windows writes the hive file when it unloads the hive at sign-out, so the
+  // file alone is current; its transaction logs are not needed
+  WingetOffreg::Handle openCopy(const fs::path& hive) {
+    if (wingetOffreg() == nullptr) {
+      return nullptr;
+    }
+
+    boost::system::error_code ec;
+    if (copies_.empty()) {
+      auto copies = fs::temp_directory_path(ec) /
+                    fs::unique_path("osquery-winget-%%%%-%%%%-%%%%");
+      if (ec || !fs::create_directories(copies, ec)) {
+        VLOG(1) << "Cannot create a folder for registry hive copies";
+        return nullptr;
+      }
+      copies_ = copies;
+    }
+
+    const auto copy = copies_ / hive.filename();
+    fs::copy_file(hive, copy, ec);
+    if (ec) {
+      VLOG(1) << "Cannot copy registry hive " << hive.string() << ": "
+              << ec.message();
+      return nullptr;
+    }
+
+    WingetOffreg::Handle opened = nullptr;
+    auto rc = wingetOffreg()->openHive(copy.wstring().c_str(), &opened);
+    if (rc != ERROR_SUCCESS) {
+      VLOG(1) << "Cannot open registry hive " << hive.string() << ": " << rc;
+      return nullptr;
+    }
+    return opened;
+  }
+
+  const std::string sid_;
+  const fs::path profile_;
+  const bool loaded_;
+  fs::path copies_;
+  WingetOffreg::Handle user_ = nullptr;
+  WingetOffreg::Handle classes_ = nullptr;
+  bool userTried_ = false;
+  bool classesTried_ = false;
+};
+
 // winget keeps a record after it uninstalls the package, so a record counts
-// only while one of its Uninstall keys or package families is present. A user
-// scope install is visible only while the owner's hive is loaded, that is
-// while the owner is logged on.
-bool wingetIsInstalled(const WingetRecord& record, const std::string& sid) {
-  const bool hiveLoaded = !sid.empty() && wingetKeyExists(HKEY_USERS, sid);
+// only while one of its Uninstall keys or package families is present. The
+// owner's hive is read only when the machine keys do not answer.
+bool wingetIsInstalled(const WingetRecord& record, WingetUserHive& hive) {
   for (auto code : record.productCodes) {
     boost::algorithm::trim(code);
     if (code.empty()) {
@@ -94,16 +238,12 @@ bool wingetIsInstalled(const WingetRecord& record, const std::string& sid) {
     }
     if (wingetKeyExists(HKEY_LOCAL_MACHINE, kWingetUninstallKey + code) ||
         wingetKeyExists(HKEY_LOCAL_MACHINE, kWingetWow64UninstallKey + code) ||
-        (hiveLoaded && wingetKeyExists(HKEY_USERS,
-                                       sid + "\\" + kWingetUninstallKey +
-                                           code))) {
+        hive.userKeyExists(kWingetUninstallKey + code)) {
       return true;
     }
   }
   for (const auto& familyName : record.familyNames) {
-    if (hiveLoaded &&
-        wingetKeyExists(HKEY_USERS,
-                        sid + "\\" + kWingetFamiliesKey + familyName)) {
+    if (hive.classesKeyExists(kWingetFamiliesKey + familyName)) {
       return true;
     }
   }
@@ -153,7 +293,7 @@ int64_t wingetWriteTime(const WingetRecord& record) {
 
 void genWingetTrackingCatalog(const std::string& path,
                               const std::string& uid,
-                              const std::string& sid,
+                              WingetUserHive& hive,
                               QueryData& results) {
   sqlite3* db = nullptr;
   auto rc = sqlite3_open_v2(
@@ -260,7 +400,7 @@ void genWingetTrackingCatalog(const std::string& path,
       wingetSourceName(fs::path(path).parent_path().filename().string());
   for (const auto& package : latest) {
     const auto& record = *package.second.second;
-    if (!wingetIsInstalled(record, sid)) {
+    if (!wingetIsInstalled(record, hive)) {
       continue;
     }
 
@@ -302,11 +442,12 @@ QueryData genWingetPackages(QueryContext& context) {
       continue;
     }
 
+    WingetUserHive hive(sid->second, *profile);
     for (const auto& pattern : kWingetTrackingCatalogs) {
       std::vector<std::string> catalogs;
       resolveFilePattern(fs::path(*profile) / pattern, catalogs, GLOB_FILES);
       for (const auto& catalog : catalogs) {
-        genWingetTrackingCatalog(catalog, uid->second, sid->second, results);
+        genWingetTrackingCatalog(catalog, uid->second, hive, results);
       }
     }
   }
