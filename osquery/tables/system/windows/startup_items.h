@@ -22,5 +22,13 @@ namespace tables {
  */
 bool parseStartupPath(const std::string& entry, Row& r);
 
+/**
+ * @brief Read the enabled flag of an Explorer StartupApproved value
+ *
+ * @param approved The StartupApproved value data as a hex string
+ * @return true if the first byte marks the entry as disabled
+ */
+bool isStartupItemDisabled(const std::string& approved);
+
 } // namespace tables
 } // namespace osquery
