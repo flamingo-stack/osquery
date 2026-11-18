@@ -12,7 +12,6 @@
 #include <osquery/utils/system/system.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 
 #include <osquery/core/core.h>
@@ -59,8 +58,9 @@ const std::set<std::string> kStartupStatusRegKeys = {
     "\\%%",
 };
 
-// Starts with 0[0-9] but not followed by all 0s
-const auto kStartupDisabledRegex = boost::regex("^0[0-9](?!0+$).*$");
+bool isStartupItemDisabled(const std::string& approved) {
+  return (tryTo<int>(approved.substr(0, 2), 16).takeOr(0) & 1) != 0;
+}
 
 bool parseStartupPath(const std::string& entry, Row& r) {
   // In case the path is already quoted, splitArgs(...) extract correctly the
@@ -164,9 +164,8 @@ QueryData genStartupItems(QueryContext& context) {
       continue;
     }
 
-    r["status"] = regex_match(startup.at("status"), kStartupDisabledRegex)
-                      ? "disabled"
-                      : "enabled";
+    r["status"] =
+        isStartupItemDisabled(startup.at("status")) ? "disabled" : "enabled";
     r["name"] = startup.at("name");
     r["source"] = startup.at("key");
     r["type"] = "Startup Item";

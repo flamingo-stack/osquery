@@ -125,5 +125,19 @@ TEST_F(StartupItemsTests, test_quoted_non_existing_path) {
   ASSERT_FALSE(parseStartupPath("\"" + file.string() + "\" /g /h", r));
   EXPECT_TRUE(r.empty());
 }
+
+TEST_F(StartupItemsTests, test_status_enabled) {
+  EXPECT_FALSE(isStartupItemDisabled(""));
+  EXPECT_FALSE(isStartupItemDisabled("020000000000000000000000"));
+  EXPECT_FALSE(isStartupItemDisabled("0200000070D3C6E8A1B4D901"));
+  EXPECT_FALSE(isStartupItemDisabled("060000000000000000000000"));
+}
+
+TEST_F(StartupItemsTests, test_status_disabled) {
+  EXPECT_TRUE(isStartupItemDisabled("010000000000000000000000"));
+  EXPECT_TRUE(isStartupItemDisabled("030000000000000000000000"));
+  EXPECT_TRUE(isStartupItemDisabled("0300000070D3C6E8A1B4D901"));
+  EXPECT_TRUE(isStartupItemDisabled("070000000000000000000000"));
+}
 } // namespace tables
 } // namespace osquery
