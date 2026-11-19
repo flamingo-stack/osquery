@@ -195,6 +195,7 @@ function(generateOsqueryTablesSystemWindowsTests)
     windows/windows_optional_features_tests.cpp
     windows/windows_update_history_tests.cpp
     windows/startup_items_tests.cpp
+    windows/os_version_tests.cpp
   )
 
   target_link_libraries(osquery_tables_system_windows_tests-test PRIVATE
